@@ -517,7 +517,7 @@ git commit -m "feat: explain generated template values"
 - Create: `Sources/MCTemplates/TemplateStore.swift`
 - Test: `Tests/MCTemplatesTests/TemplateStoreTests.swift`
 
-- [ ] **Step 1: Write failing round-trip, secret rejection, and atomicity tests**
+- [x] **Step 1: Write failing round-trip, secret rejection, and atomicity tests**
 
 ```swift
 @Test func roundTripsWithoutSecrets() async throws {
@@ -544,13 +544,13 @@ git commit -m "feat: explain generated template values"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter TemplateStoreTests`
 
 Expected: FAIL because store types do not exist.
 
-- [ ] **Step 3: Implement document and injected atomic file system**
+- [x] **Step 3: Implement document and injected atomic file system**
 
 ```swift
 public struct TemplateDocument: Codable, Identifiable, Equatable, Sendable {
@@ -591,13 +591,13 @@ public actor TemplateStore {
 
 The concrete file system writes a sibling UUID temporary file with mode `0600`, calls `FileHandle.synchronize()`, uses `FileManager.replaceItemAt`, synchronizes the parent directory, and deletes the temporary file with `defer`. Document IDs must match `^[a-z0-9][a-z0-9-]{0,63}$`, so no caller controls paths.
 
-- [ ] **Step 4: Run store tests with a real temporary-directory fixture**
+- [x] **Step 4: Run store tests with a real temporary-directory fixture**
 
 Run: `swift test --filter TemplateStoreTests`
 
 Expected: PASS and the test's `defer` removes its unique temporary directory.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCTemplates Tests/MCTemplatesTests/TemplateStoreTests.swift
