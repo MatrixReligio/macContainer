@@ -210,7 +210,7 @@ git commit -m "feat: define direct runtime bridge contracts"
 - Create: `Sources/MCContainerBridge/OperationCoordinator.swift`
 - Test: `Tests/MCContainerBridgeTests/OperationCoordinatorTests.swift`
 
-- [ ] **Step 1: Write failing serialization and cancellation tests**
+- [x] **Step 1: Write failing serialization and cancellation tests**
 
 ```swift
 @Suite("Operation coordinator")
@@ -237,13 +237,13 @@ struct OperationCoordinatorTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter OperationCoordinatorTests`
 
 Expected: FAIL because the actor is undefined.
 
-- [ ] **Step 3: Implement lock keys and FIFO waiter ownership**
+- [x] **Step 3: Implement lock keys and FIFO waiter ownership**
 
 ```swift
 public enum OperationLockKey: Hashable, Sendable {
@@ -275,13 +275,13 @@ public actor OperationCoordinator {
 
 `acquire` installs a cancellation handler that removes and resumes a cancelled waiter with `CancellationError`; `release` transfers ownership exactly once to the oldest insertion-ordered waiter. Lifecycle acquisition additionally blocks system and all mutation keys; system-service acquisition conflicts with lifecycle.
 
-- [ ] **Step 4: Run the race suite under Thread Sanitizer**
+- [x] **Step 4: Run the race suite under Thread Sanitizer**
 
 Run: `swift test --filter OperationCoordinatorTests && xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -configuration Debug -enableThreadSanitizer YES CODE_SIGNING_ALLOWED=NO build`
 
 Expected: PASS and no sanitizer diagnostic.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/OperationCoordinator.swift Tests/MCContainerBridgeTests/OperationCoordinatorTests.swift
