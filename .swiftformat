@@ -1,0 +1,12 @@
+--swiftversion 6.0
+--indent 4
+--linebreaks lf
+--semicolons never
+--self remove
+--stripunusedargs closure-only
+--commas inline
+--decimalgrouping 3,6
+--binarygrouping none
+--octalgrouping none
+--hexgrouping none
+--exclude .build,.tools,.worktrees,MacContainer.xcodeproj,Sources/MCContracts/Resources

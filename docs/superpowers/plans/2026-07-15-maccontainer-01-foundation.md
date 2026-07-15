@@ -760,7 +760,7 @@ git commit -m "build: compose app helper and agent targets"
 - Create: `scripts/check-repository.sh`
 - Test: `Tests/ToolingTests/check-no-container-cli.bats`
 
-- [ ] **Step 1: Write the failing forbidden-backend test**
+- [x] **Step 1: Write the failing forbidden-backend test**
 
 ```bash
 #!/bin/zsh
@@ -778,19 +778,21 @@ print -r -- 'let name = "container"' > "$fixture/Sources/Good.swift"
 scripts/check-no-container-cli.sh "$fixture"
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `zsh Tests/ToolingTests/check-no-container-cli.bats`
 
 Expected: FAIL because the scanner does not exist.
 
-- [ ] **Step 3: Add deterministic tooling**
+- [x] **Step 3: Add deterministic tooling**
 
 `Config/release-tools.json` pins:
 
 ```json
 {
   "xcodegen": {"version": "2.45.4", "sha256": "090ec29491aad50aec10631bf6e62253fed733c50f3aab0f5ffc86bc170bdbef"},
+  "swiftFormat": {"version": "0.62.1", "sha256": "7cb1cb1fae04932047c7015441c543848e8e60e1572d808d080e0a1f1661114a"},
+  "swiftLint": {"version": "0.65.0", "sha256": "d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6"},
   "sparkle": {"version": "2.9.4", "sha256": "ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9"},
   "swiftTerm": {"version": "1.13.0"}
 }
@@ -798,13 +800,13 @@ Expected: FAIL because the scanner does not exist.
 
 The scanner only inspects production Swift/shell files and rejects invocations of `/usr/local/bin/container`, `update-container.sh`, or `uninstall-container.sh`; it permits literals in contracts, tests, docs, and the exact helper invocation of `/usr/sbin/installer`. `check-generated-project.sh` generates into a temporary project-local directory, diffs it against committed `MacContainer.xcodeproj`, and cleans via `trap`. `bootstrap-tools.sh` downloads into `.tools/downloads`, verifies SHA-256 before extraction, and never calls Homebrew.
 
-- [ ] **Step 4: Run the tooling suite**
+- [x] **Step 4: Run the tooling suite**
 
 Run: `zsh Tests/ToolingTests/check-no-container-cli.bats && scripts/check-generated-project.sh && scripts/check-repository.sh`
 
 Expected: PASS; no global package manager is invoked and temporary fixture paths are removed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .swiftformat .swiftlint.yml Config/release-tools.json scripts Tests/ToolingTests

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "xcodegen": {
+    "version": "2.45.4",
+    "archive": "xcodegen.zip",
+    "sha256": "090ec29491aad50aec10631bf6e62253fed733c50f3aab0f5ffc86bc170bdbef"
+  },
+  "sparkle": {
+    "version": "2.9.4",
+    "archive": "Sparkle-2.9.4.tar.xz",
+    "sha256": "ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9"
+  },
+  "swiftTerm": {
+    "version": "1.13.0"
+  },
+  "swiftFormat": {
+    "version": "0.62.1",
+    "archive": "swiftformat.zip",
+    "sha256": "7cb1cb1fae04932047c7015441c543848e8e60e1572d808d080e0a1f1661114a"
+  },
+  "swiftLint": {
+    "version": "0.65.0",
+    "archive": "portable_swiftlint.zip",
+    "sha256": "d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6"
+  }
+}
