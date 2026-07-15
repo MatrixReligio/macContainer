@@ -121,7 +121,7 @@ git commit -m "feat: journal runtime lifecycle transactions"
 - Create: `Config/compatibility/apple-container-1.1.0-package.json`
 - Test: `Tests/MCSystemLifecycleTests/RuntimePackageVerifierTests.swift`
 
-- [ ] **Step 1: Write failing trust tests**
+- [x] **Step 1: Write failing trust tests**
 
 ```swift
 @Test func acceptsOnlyExactReviewed110Package() async throws {
@@ -153,13 +153,13 @@ func rejectsAnyTrustMismatch(_ mutation: PackageMutation) async {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter RuntimePackageVerifierTests`
 
 Expected: FAIL because verifier types are undefined.
 
-- [ ] **Step 3: Implement layered verification**
+- [x] **Step 3: Implement layered verification**
 
 ```swift
 public struct RuntimePackageManifest: Codable, Equatable, Sendable {
@@ -202,13 +202,13 @@ Add this product and target to `Package.swift`:
 
 The tool accepts exactly `--manifest <repository-relative JSON path> <package path>`, opens the package read-only, runs `RuntimePackageVerifier`, prints only the redacted trust report, and has no install/helper operation.
 
-- [ ] **Step 4: Run trust and real-package read-only verification**
+- [x] **Step 4: Run trust and real-package read-only verification**
 
 Run: `swift test --filter RuntimePackageVerifierTests && swift run mc-verify-package --manifest Config/compatibility/apple-container-1.1.0-package.json /tmp/container-1.1.0-installer-signed.pkg`
 
 Expected: unit suite PASS and the local official fixture reports `Package trust PASS: Apple container 1.1.0`; the command performs no install and deletes no file.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Package.swift Tools/MCVerifyPackage Sources/MCSystemLifecycle/Package Config/compatibility/apple-container-1.1.0-package.json Tests/MCSystemLifecycleTests/RuntimePackageVerifierTests.swift

@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "MCCompatibility", targets: ["MCCompatibility"]),
         .library(name: "MCSystemLifecycle", targets: ["MCSystemLifecycle"]),
         .library(name: "MCAppCore", targets: ["MCAppCore"]),
+        .executable(name: "mc-verify-package", targets: ["MCVerifyPackage"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/container.git", exact: "1.1.0"),
@@ -63,6 +64,11 @@ let package = Package(
                 "MCCompatibility",
                 "MCSystemLifecycle",
             ]
+        ),
+        .executableTarget(
+            name: "MCVerifyPackage",
+            dependencies: ["MCSystemLifecycle"],
+            path: "Tools/MCVerifyPackage"
         ),
         .target(
             name: "TestSupport",
