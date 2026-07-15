@@ -10,10 +10,16 @@ mkdir -p "$fixture/Sources" "$fixture/scripts" "$fixture/Tests" "$fixture/docs"
 assert_rejected() {
     local source_line="$1"
     local fixture_path="$2"
+    local output
 
     print -r -- "$source_line" > "$fixture_path"
-    if "$repo_root/scripts/check-no-container-cli.sh" "$fixture"; then
+    if output="$("$repo_root/scripts/check-no-container-cli.sh" "$fixture" 2>&1)"; then
         print -u2 -- "expected forbidden backend scanner to reject: $source_line"
+        exit 1
+    fi
+    if [[ "$output" != *"Forbidden backend scan FAIL"* ]]; then
+        print -u2 -- "scanner rejection did not include the expected diagnostic"
+        print -u2 -- "$output"
         exit 1
     fi
     rm "$fixture_path"
