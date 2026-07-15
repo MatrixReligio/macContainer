@@ -294,7 +294,7 @@ git commit -m "feat: coordinate conflicting runtime work"
 - Create: `Sources/MCContainerBridge/System/SystemServiceController.swift`
 - Test: `Tests/MCContainerBridgeTests/SystemServiceControllerTests.swift`
 
-- [ ] **Step 1: Write failing path, registration, health, and cleanup tests**
+- [x] **Step 1: Write failing path, registration, health, and cleanup tests**
 
 ```swift
 @Test func startUsesInstalledAPIServerNotAppExecutable() async throws {
@@ -319,13 +319,13 @@ git commit -m "feat: coordinate conflicting runtime work"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter SystemServiceControllerTests`
 
 Expected: FAIL because the controller is undefined.
 
-- [ ] **Step 3: Implement direct service lifecycle**
+- [x] **Step 3: Implement direct service lifecycle**
 
 The production controller builds `LaunchPlist` for `/usr/local/bin/container-apiserver`, loads configuration through `ConfigurationLoader`, calls `ServiceManager.register`, polls `ClientHealthCheck.ping` with bounded exponential backoff, verifies `MachineClient().list()`, and deregisters on partial start failure. Stop obtains direct container/machine inventories, refuses unsafe stop without explicit policy, asks clients to stop gracefully, and calls `ServiceManager.deregister`; it never calls `Application.SystemStart`, `/usr/local/bin/container`, or shell scripts. The fixed `/bin/launchctl` subprocess used internally by upstream `ServiceManager` is allowlisted only for `bootstrap`, `bootout`, `kickstart`, `kill`, `list`, and `managername` with validated labels/plists.
 
@@ -344,13 +344,13 @@ public protocol HealthChecking: Sendable {
 }
 ```
 
-- [ ] **Step 4: Run focused tests and forbidden-backend scanner**
+- [x] **Step 4: Run focused tests and forbidden-backend scanner**
 
 Run: `swift test --filter SystemServiceControllerTests && scripts/check-no-container-cli.sh .`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/System Tests/MCContainerBridgeTests/SystemServiceControllerTests.swift
