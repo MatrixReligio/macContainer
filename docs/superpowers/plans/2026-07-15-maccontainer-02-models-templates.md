@@ -348,7 +348,7 @@ git commit -m "feat: recommend safe host resources"
 - Create: `Sources/MCTemplates/BuiltInTemplates.swift`
 - Test: `Tests/MCTemplatesTests/BuiltInTemplatesTests.swift`
 
-- [ ] **Step 1: Write failing built-in identity and security tests**
+- [x] **Step 1: Write failing built-in identity and security tests**
 
 ```swift
 import Testing
@@ -366,29 +366,30 @@ struct BuiltInTemplatesTests {
 
     @Test func restrictedTemplateIsSecureByDefault() throws {
         let result = try BuiltInTemplates.restrictedSecure.render(context: .fixture)
-        #expect(result.fields["readOnlyRoot"]?.value == .bool(true))
-        #expect(result.fields["capabilitiesDrop"]?.value == .strings(["ALL"]))
-        #expect(result.fields["network"]?.value == .string("none"))
-        #expect(result.fields["tmpfs"]?.value == .strings(["/tmp"]))
+        #expect(result.fields["readOnlyRootFilesystem"]?.value == .bool(true))
+        #expect(result.fields["capabilitiesToDrop"]?.value == .strings(["ALL"]))
+        #expect(result.fields["networks"]?.value == .strings(["none"]))
+        #expect(result.fields["temporaryFilesystems"]?.value == .strings(["/tmp"]))
         #expect(result.fields["mounts"] == nil)
+        #expect(result.fields["volumes"] == nil)
     }
 
     @Test func localDatabaseNeverRemovesOnExit() throws {
         let result = try BuiltInTemplates.localDatabase.render(context: .fixture)
-        #expect(result.fields["removeOnExit"]?.value == .bool(false))
+        #expect(result.fields["removeAfterStop"]?.value == .bool(false))
         #expect(result.fields["volumes"] != nil)
-        #expect(result.fields["publish"] != nil)
+        #expect(result.fields["publishedPorts"] != nil)
     }
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter BuiltInTemplatesTests`
 
 Expected: FAIL because template types are undefined.
 
-- [ ] **Step 3: Implement stable template definitions**
+- [x] **Step 3: Implement stable template definitions**
 
 ```swift
 public struct ImageProfile: Codable, Equatable, Sendable {
@@ -431,20 +432,20 @@ Implement each built-in as a static constant. Required concrete defaults are:
 | `interactive-shell` | `core.run` | TTY true, interactive true, shell from image then `/bin/sh`, remove-on-exit true |
 | `web-service` | `core.run` | detached true, explicit publish mapping, optional named volume, preflight port check capability |
 | `development-workspace` | `core.run` | explicit directory mount, workdir equal selected container path, recommended development resources, SSH forwarding false |
-| `local-database` | `core.run` | explicit named volume and port, stop timeout 30 seconds, remove-on-exit false |
-| `restricted-secure` | `core.run` | read-only root, drop ALL, tmpfs `/tmp`, network none, no implicit host mount |
+| `local-database` | `core.run` | explicit `volumes` and `publishedPorts`, lifecycle stop policy 30 seconds, `removeAfterStop` false |
+| `restricted-secure` | `core.run` | `readOnlyRootFilesystem`, `capabilitiesToDrop=ALL`, `temporaryFilesystems=/tmp`, `networks=none`, no `mounts` or `volumes` |
 | `cross-architecture` | `core.run` | platform `linux/amd64`, Rosetta true only when `host.capabilities` contains `rosetta` |
-| `linux-machine-workspace` | `machines.create` | persistent true, home sharing absent until consent, nested virtualization false until capability and consent |
+| `linux-machine-workspace` | `machines.create` | persistent true, `homeMount=none` until consent, nested virtualization false until capability and consent |
 
 All generated fields use `.scenarioRule` except CPU/memory fields, which use `.hostRecommendation`, and image-derived shell/ports, which use `.imageMetadata`.
 
-- [ ] **Step 4: Run built-in and full template suites**
+- [x] **Step 4: Run built-in and full template suites**
 
 Run: `swift test --filter BuiltInTemplatesTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel/ImageProfile.swift Sources/MCTemplates Tests/MCTemplatesTests/BuiltInTemplatesTests.swift
