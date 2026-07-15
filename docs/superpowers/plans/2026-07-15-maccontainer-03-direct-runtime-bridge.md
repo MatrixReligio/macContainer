@@ -366,7 +366,7 @@ git commit -m "feat: manage container services through direct APIs"
 - Test: `Tests/MCContainerBridgeTests/ContainerAdapterTests.swift`
 - Test: `Tests/MCContainerBridgeTests/ContainerProcessAdapterTests.swift`
 
-- [ ] **Step 1: Write failing request mapping and batch-result tests**
+- [x] **Step 1: Write failing request mapping and batch-result tests**
 
 ```swift
 @Test func createMapsEveryAffectingField() async throws {
@@ -393,19 +393,19 @@ git commit -m "feat: manage container services through direct APIs"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ContainerAdapterTests`
 
 Expected: FAIL because production adapters are undefined.
 
-- [ ] **Step 3: Implement all 14 container operations plus core run composition**
+- [x] **Step 3: Implement all 14 container operations plus core run composition**
 
 Map app requests to `ContainerClient` configuration and direct methods for create/list/get/bootstrap/stop/kill/delete/createProcess/log/stats/copy/export. `core.run` is composed as create → bootstrap → optional process attach, guarded by one per-container lock; remove-on-exit cleanup executes in `defer` and reports cleanup failure separately from process exit.
 
 Every batch mutation uses a stable input order and returns `BatchItemResult` for each item. Prefix resolution rejects zero or multiple matches before mutation. Export/save destinations are already-open security-scoped URLs supplied by the app, not arbitrary strings.
 
-- [ ] **Step 4: Implement and test direct interactive process streams**
+- [x] **Step 4: Implement and test direct interactive process streams**
 
 ```swift
 public protocol ProcessSession: Sendable {
@@ -429,7 +429,7 @@ Run: `swift test --filter ContainerAdapterTests && swift test --filter Container
 
 Expected: PASS, including TTY resize, binary bytes, split stdout/stderr, cancellation, detach, and exit-status cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/Containers Sources/MCContainerBridge/UpstreamValueMapper.swift Sources/MCModel Tests/MCContainerBridgeTests/ContainerAdapterTests.swift Tests/MCContainerBridgeTests/ContainerProcessAdapterTests.swift
