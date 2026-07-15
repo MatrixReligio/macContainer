@@ -76,6 +76,10 @@ fi
 if ! /usr/bin/grep -Fq 'scripts/check-repository.sh' "$ci"; then
     errors+=("ci.yml must run scripts/check-repository.sh")
 fi
+arm64_build_count="$(/usr/bin/grep -cF 'ARCHS=arm64' "$ci" || true)"
+if [[ "$arm64_build_count" != "4" ]]; then
+    errors+=("ci.yml must restrict all four application build/test invocations to arm64")
+fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "$ci"; then
     errors+=("ci.yml must grant only read access to repository contents")
 fi

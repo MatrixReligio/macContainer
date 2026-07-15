@@ -67,6 +67,14 @@ if ! /usr/bin/diff -u \
 fi
 
 workspace_lock="$committed_project/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+/usr/bin/grep -Eq '^[[:space:]]+ARCHS: arm64$' "$repo_root/project.yml" || {
+    print -u2 -- "Generated project check FAIL: project.yml must restrict application products to arm64"
+    exit 1
+}
+/usr/bin/grep -Eq 'ARCHS = arm64;' "$committed_project/project.pbxproj" || {
+    print -u2 -- "Generated project check FAIL: generated project is not restricted to arm64"
+    exit 1
+}
 /usr/bin/grep -Eq '"identity" : "sparkle"' "$workspace_lock"
 /usr/bin/grep -Eq '"version" : "2.9.4"' "$workspace_lock"
 /usr/bin/grep -Eq '"identity" : "swiftterm"' "$workspace_lock"

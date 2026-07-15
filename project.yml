@@ -6,6 +6,7 @@ options:
   developmentLanguage: en
 settings:
   base:
+    ARCHS: arm64
     DEVELOPMENT_TEAM: 4DUQGD879H
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete

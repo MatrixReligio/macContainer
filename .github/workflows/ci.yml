@@ -39,14 +39,14 @@ jobs:
           xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
           -configuration Debug -derivedDataPath .build/ci-debug
           -clonedSourcePackagesDirPath .build/xcode-packages
-          CODE_SIGNING_ALLOWED=NO build
+          ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
 
       - name: Build unsigned Release application
         run: >-
           xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
           -configuration Release -derivedDataPath .build/ci-release
           -clonedSourcePackagesDirPath .build/xcode-packages
-          CODE_SIGNING_ALLOWED=NO build
+          ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
 
   ui-tests:
     name: Integration and UI tests with ephemeral signing
@@ -67,7 +67,7 @@ jobs:
           xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
           -configuration Debug -derivedDataPath .build/ci-tests
           -clonedSourcePackagesDirPath .build/xcode-packages
-          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+          ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
           build-for-testing
 
       - name: Run integration and UI tests in fake-runtime mode
@@ -79,7 +79,7 @@ jobs:
           -test-timeouts-enabled YES
           -default-test-execution-time-allowance 60
           -maximum-test-execution-time-allowance 120
-          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+          ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
           test-without-building
 
       - name: Export the test summary
