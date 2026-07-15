@@ -39,6 +39,20 @@ struct VolumeAdapterTests {
 
         #expect(await backend.operationIDs.isEmpty)
     }
+
+    @Test func `batch deletion preserves task cancellation`() async {
+        let backend = FakeVolumeBackend(volumes: [])
+        let adapter = VolumeAdapter(client: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.delete(names: ["data"])
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await backend.operationIDs.isEmpty)
+    }
 }
 
 private actor FakeVolumeBackend: VolumeBackend {

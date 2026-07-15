@@ -370,6 +370,7 @@ public struct MachineAdapter: MachineOperations, Sendable {
         var results: [BatchItemResult] = []
         results.reserveCapacity(ids.count)
         for requestedID in ids {
+            try Task.checkCancellation()
             let resolved: String
             do {
                 resolved = try Self.resolve(requestedID, inventory: inventory)
@@ -382,6 +383,8 @@ public struct MachineAdapter: MachineOperations, Sendable {
                     try await operation(resolved, force)
                 }
                 results.append(BatchItemResult(id: requestedID, succeeded: true))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 results.append(Self.failure(id: requestedID, code: failureCode, error: error))
             }

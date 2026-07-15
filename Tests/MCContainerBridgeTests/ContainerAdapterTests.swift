@@ -49,6 +49,34 @@ struct ContainerAdapterTests {
         #expect(await backend.deleteForceValues == [true, true])
     }
 
+    @Test func `batch mutation preserves task cancellation`() async {
+        let backend = FakeContainerBackend(containers: [.fixture(id: "a")])
+        let adapter = ContainerAdapter(client: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.delete(ids: ["a"], force: true)
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await backend.deletedIDs.isEmpty)
+    }
+
+    @Test func `prune preserves task cancellation`() async {
+        let backend = FakeContainerBackend(containers: [.fixture(id: "a", state: .stopped)])
+        let adapter = ContainerAdapter(client: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.prune()
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await backend.deletedIDs.isEmpty)
+    }
+
     @Test func `ambiguous prefix fails before mutation`() async throws {
         let backend = FakeContainerBackend(containers: [
             .fixture(id: "api-one"),

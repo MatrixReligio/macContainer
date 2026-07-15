@@ -43,6 +43,7 @@ public struct VolumeAdapter: VolumeOperations, Sendable {
         var results: [BatchItemResult] = []
         results.reserveCapacity(names.count)
         for name in names {
+            try Task.checkCancellation()
             guard Self.validName(name) else {
                 results.append(Self.failure(name: name, error: VolumeAdapterError.invalidName(name)))
                 continue
@@ -52,6 +53,8 @@ public struct VolumeAdapter: VolumeOperations, Sendable {
                     try await client.delete(name: name)
                 }
                 results.append(BatchItemResult(id: name, succeeded: true))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 results.append(Self.failure(name: name, error: error))
             }

@@ -98,6 +98,47 @@ struct BuildAdapterTests {
         }
         return result
     }
+
+    @Test func `async resource cleanup runs on success failure and cancellation`() async throws {
+        let tracker = CleanupTracker()
+
+        let value = try await withAsyncCleanup(
+            "success",
+            cleanup: { resource in await tracker.record(resource) },
+            operation: { resource in resource.count }
+        )
+        #expect(value == 7)
+
+        await #expect(throws: FakeBuildError.failed) {
+            try await withAsyncCleanup(
+                "failure",
+                cleanup: { resource in await tracker.record(resource) },
+                operation: { _ in throw FakeBuildError.failed }
+            )
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await withAsyncCleanup(
+                "cancellation",
+                cleanup: { resource in await tracker.record(resource) },
+                operation: { _ in throw CancellationError() }
+            )
+        }
+
+        #expect(await tracker.resources == ["success", "failure", "cancellation"])
+    }
+}
+
+private actor CleanupTracker {
+    private(set) var resources: [String] = []
+
+    func record(_ resource: String) {
+        resources.append(resource)
+    }
+}
+
+private enum FakeBuildError: Error {
+    case failed
 }
 
 private final class BuildFixture {

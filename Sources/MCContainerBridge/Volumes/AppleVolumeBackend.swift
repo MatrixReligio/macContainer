@@ -37,11 +37,14 @@ public struct AppleVolumeBackend: VolumeBackend, Sendable {
         var deleted: [String] = []
         var reclaimed: Int64 = 0
         for candidate in candidates {
+            try Task.checkCancellation()
             do {
                 let bytes = try await ClientVolume.volumeDiskUsage(name: candidate.name)
                 try await ClientVolume.delete(name: candidate.name)
                 deleted.append(candidate.name)
                 reclaimed = Self.addClamped(reclaimed, Int64(clamping: bytes))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 continue
             }

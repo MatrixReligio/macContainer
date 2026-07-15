@@ -54,6 +54,19 @@ struct DNSAdapterTests {
         #expect(results.map(\.id) == ["z.test", "missing.test"])
         #expect(results.map(\.succeeded) == [true, false])
     }
+
+    @Test func `batch deletion preserves task cancellation`() async {
+        let backend = FakeDNSBackend()
+        let adapter = DNSAdapter(backend: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.delete(names: ["dev.example"])
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+    }
 }
 
 private actor FakeDNSBackend: DNSBackend {

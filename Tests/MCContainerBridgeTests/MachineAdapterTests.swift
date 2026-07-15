@@ -171,6 +171,20 @@ struct MachineAdapterTests {
         #expect(await backend.deletedIDs == ["alpha", "beta"])
     }
 
+    @Test func `batch mutations preserve task cancellation`() async {
+        let backend = FakeMachineBackend(machines: [.fixture(id: "alpha")])
+        let adapter = MachineAdapter(client: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.delete(ids: ["alpha"], force: true)
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await backend.deletedIDs.isEmpty)
+    }
+
     @Test func `machine process preserves binary IO resize and exit behavior`() async throws {
         let transport = FakeMachineProcessTransport(id: "process", exitCode: 137)
         let backend = FakeMachineBackend(process: transport)

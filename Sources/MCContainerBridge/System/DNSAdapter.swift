@@ -40,12 +40,15 @@ public struct DNSAdapter: DNSOperations, Sendable {
         var results: [BatchItemResult] = []
         results.reserveCapacity(names.count)
         for requestedName in names {
+            try Task.checkCancellation()
             do {
                 let name = try Self.normalizedName(requestedName)
                 try await coordinator.withLock(.systemService) {
                     try await backend.delete(name: name)
                 }
                 results.append(BatchItemResult(id: requestedName, succeeded: true))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 results.append(Self.failure(id: requestedName, error: error))
             }

@@ -354,11 +354,51 @@ public struct SystemServiceController: Sendable {
     }
 }
 
+protocol LaunchServiceRegistering: Sendable {
+    func register(plistPath: String) throws
+    func deregister(fullServiceLabel: String) throws
+    func isRegistered(fullServiceLabel: String) throws -> Bool
+    func enumerate() throws -> [String]
+    func domainString() throws -> String
+}
+
+private struct NativeLaunchServiceBackend: LaunchServiceRegistering {
+    func register(plistPath: String) throws {
+        try ServiceManager.register(plistPath: plistPath)
+    }
+
+    func deregister(fullServiceLabel: String) throws {
+        try ServiceManager.deregister(fullServiceLabel: fullServiceLabel)
+    }
+
+    func isRegistered(fullServiceLabel: String) throws -> Bool {
+        try ServiceManager.isRegistered(fullServiceLabel: fullServiceLabel)
+    }
+
+    func enumerate() throws -> [String] {
+        try ServiceManager.enumerate()
+    }
+
+    func domainString() throws -> String {
+        try ServiceManager.getDomainString()
+    }
+}
+
 public actor AppleServiceManager: ServiceManaging {
     private let managedPlistURLs: [String: URL]
+    private let backend: any LaunchServiceRegistering
 
     public init(managedPlistURLs: [String: URL]) {
         self.managedPlistURLs = managedPlistURLs
+        backend = NativeLaunchServiceBackend()
+    }
+
+    init(
+        managedPlistURLs: [String: URL],
+        backend: any LaunchServiceRegistering
+    ) {
+        self.managedPlistURLs = managedPlistURLs
+        self.backend = backend
     }
 
     public func register(_ definition: ServiceDefinition) async throws {
@@ -380,17 +420,27 @@ public actor AppleServiceManager: ServiceManaging {
             machServices: definition.machServices
         )
 
+        var registrationReturned = false
         do {
             try plist.encode().write(to: definition.plistURL, options: .atomic)
             try fileManager.setAttributes(
                 [.posixPermissions: 0o600],
                 ofItemAtPath: definition.plistURL.path
             )
-            try ServiceManager.register(plistPath: definition.plistURL.path)
+            try backend.register(plistPath: definition.plistURL.path)
+            registrationReturned = true
             guard try isRegisteredSynchronously(label: definition.label) else {
                 throw SystemServiceError.serviceRegistrationFailed
             }
         } catch {
+            if registrationReturned || (try? isRegisteredSynchronously(label: definition.label)) == true {
+                do {
+                    try backend.deregister(fullServiceLabel: fullServiceLabel(definition.label))
+                } catch {
+                    try? fileManager.removeItem(at: definition.plistURL)
+                    throw SystemServiceError.partialStartCleanupFailed
+                }
+            }
             try? fileManager.removeItem(at: definition.plistURL)
             throw error
         }
@@ -399,7 +449,7 @@ public actor AppleServiceManager: ServiceManaging {
     public func deregister(label: String) async throws {
         try validate(label: label)
         let fullLabel = try fullServiceLabel(label)
-        try ServiceManager.deregister(fullServiceLabel: fullLabel)
+        try backend.deregister(fullServiceLabel: fullLabel)
         guard try !isRegisteredSynchronously(label: label) else {
             throw SystemServiceError.serviceDeregistrationFailed
         }
@@ -417,7 +467,7 @@ public actor AppleServiceManager: ServiceManaging {
         guard prefix == SystemServiceController.servicePrefix else {
             throw SystemServiceError.invalidServiceLabel
         }
-        return try ServiceManager.enumerate()
+        return try backend.enumerate()
             .filter { $0.hasPrefix(prefix) }
             .sorted()
     }
@@ -449,11 +499,11 @@ public actor AppleServiceManager: ServiceManaging {
     }
 
     private func fullServiceLabel(_ label: String) throws -> String {
-        try "\(ServiceManager.getDomainString())/\(label)"
+        try "\(backend.domainString())/\(label)"
     }
 
     private func isRegisteredSynchronously(label: String) throws -> Bool {
-        try ServiceManager.isRegistered(fullServiceLabel: fullServiceLabel(label))
+        try backend.isRegistered(fullServiceLabel: fullServiceLabel(label))
     }
 }
 

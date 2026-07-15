@@ -127,11 +127,14 @@ public struct ImageAdapter: ImageOperations, Sendable {
         var results: [BatchItemResult] = []
         results.reserveCapacity(references.count)
         for reference in references {
+            try Task.checkCancellation()
             do {
                 try await coordinator.withLock(.image(reference)) {
                     try await client.delete(reference: reference)
                 }
                 results.append(BatchItemResult(id: reference, succeeded: true))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 results.append(
                     BatchItemResult(

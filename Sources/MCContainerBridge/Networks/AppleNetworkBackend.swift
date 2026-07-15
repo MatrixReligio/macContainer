@@ -58,9 +58,12 @@ public struct AppleNetworkBackend: NetworkBackend, Sendable {
         let candidates = networks.filter { !$0.isBuiltin && !inUse.contains($0.id) }
         var deleted: [String] = []
         for candidate in candidates {
+            try Task.checkCancellation()
             do {
                 try await networkClient.delete(id: candidate.id)
                 deleted.append(candidate.id)
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 continue
             }

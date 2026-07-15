@@ -124,9 +124,12 @@ public struct AppleImageBackend: ImageBackend, Sendable {
         }
         var deletedReferences: [String] = []
         for image in candidates {
+            try Task.checkCancellation()
             do {
                 try await ClientImage.delete(reference: image.reference, garbageCollect: false)
                 deletedReferences.append(image.reference)
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 continue
             }

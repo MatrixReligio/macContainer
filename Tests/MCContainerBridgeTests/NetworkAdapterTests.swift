@@ -43,6 +43,23 @@ struct NetworkAdapterTests {
             "list", "create", "list", "delete", "prune", "list", "list", "inspect"
         ])
     }
+
+    @Test func `batch deletion preserves task cancellation`() async {
+        let network = NetworkDetail(
+            summary: NetworkSummary(id: "frontend", name: "frontend", state: .running)
+        )
+        let backend = FakeNetworkBackend(networks: [network])
+        let adapter = NetworkAdapter(client: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.delete(ids: ["frontend"])
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await backend.deletedIDs.isEmpty)
+    }
 }
 
 private actor FakeNetworkBackend: NetworkBackend {

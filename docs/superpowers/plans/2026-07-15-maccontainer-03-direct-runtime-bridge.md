@@ -646,7 +646,7 @@ git commit -m "test: prove complete direct API coverage"
 - Create: `docs/reviews/stage-3.md`
 - Create: `docs/reviews/stage-5.md`
 
-- [ ] **Step 1: Run all bridge evidence**
+- [x] **Step 1: Run all bridge evidence**
 
 Run:
 
@@ -660,7 +660,7 @@ git diff --check
 
 Expected: PASS.
 
-- [ ] **Step 2: Review API correctness and concurrency**
+- [x] **Step 2: Review API correctness and concurrency**
 
 Inspect every adapter against upstream 1.1.0 signatures; verify no `ContainerCommands`/CLI dependency, exact cancellation cleanup, no detached lifecycle ownership, stable partial results, prefix ambiguity handling, Keychain isolation, archive/path confinement, terminal binary safety, lock conflicts, and service-start cleanup. Fix every finding and rerun focused tests.
 

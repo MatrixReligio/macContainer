@@ -71,6 +71,20 @@ struct ImageAdapterTests {
         }
     }
 
+    @Test func `batch deletion preserves task cancellation`() async {
+        let backend = FakeImageBackend(images: [])
+        let adapter = ImageAdapter(client: backend)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.delete(references: ["example:latest"])
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await backend.operationIDs.isEmpty)
+    }
+
     private func collect<Element: Sendable>(
         _ stream: AsyncThrowingStream<Element, any Error>
     ) async throws -> [Element] {

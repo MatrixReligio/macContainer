@@ -42,6 +42,7 @@ public struct NetworkAdapter: NetworkOperations, Sendable {
         var results: [BatchItemResult] = []
         results.reserveCapacity(ids.count)
         for requestedID in ids {
+            try Task.checkCancellation()
             let network: NetworkDetail
             do {
                 network = try Self.resolve(requestedID, inventory: inventory)
@@ -67,6 +68,8 @@ public struct NetworkAdapter: NetworkOperations, Sendable {
                     try await client.delete(id: network.summary.id)
                 }
                 results.append(BatchItemResult(id: requestedID, succeeded: true))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 results.append(Self.failure(id: requestedID, error: error))
             }

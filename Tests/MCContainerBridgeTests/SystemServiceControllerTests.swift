@@ -206,6 +206,34 @@ struct SystemServiceControllerTests {
         }
     }
 
+    @Test func `native registration verification failure removes the job and plist`() async throws {
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(".mc-service-test-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let plist = root.appendingPathComponent("apiserver.plist")
+        let backend = FakeLaunchServiceBackend(registrationVisible: false)
+        let manager = AppleServiceManager(
+            managedPlistURLs: [SystemServiceController.apiServerLabel: plist],
+            backend: backend
+        )
+        let definition = ServiceDefinition(
+            label: SystemServiceController.apiServerLabel,
+            program: URL(fileURLWithPath: SystemServiceController.apiServerPath),
+            arguments: [SystemServiceController.apiServerPath, "start"],
+            environment: [:],
+            plistURL: plist,
+            limitLoadToSessionType: [.aqua, .background, .system],
+            runAtLoad: true,
+            machServices: [SystemServiceController.apiServerLabel]
+        )
+
+        await #expect(throws: SystemServiceError.serviceRegistrationFailed) {
+            try await manager.register(definition)
+        }
+        #expect(backend.deregisteredLabels == ["gui/test/\(SystemServiceController.apiServerLabel)"])
+        #expect(!FileManager.default.fileExists(atPath: plist.path))
+    }
+
     private func makeController(
         services: FakeServiceManager = FakeServiceManager(),
         health: any HealthChecking = FakeHealthChecker(),
@@ -241,6 +269,33 @@ struct SystemServiceControllerTests {
             await Task.yield()
         }
         Issue.record("condition did not become true")
+    }
+}
+
+private final class FakeLaunchServiceBackend: LaunchServiceRegistering, @unchecked Sendable {
+    private let registrationVisible: Bool
+    private(set) var deregisteredLabels: [String] = []
+
+    init(registrationVisible: Bool) {
+        self.registrationVisible = registrationVisible
+    }
+
+    func register(plistPath _: String) throws {}
+
+    func deregister(fullServiceLabel: String) throws {
+        deregisteredLabels.append(fullServiceLabel)
+    }
+
+    func isRegistered(fullServiceLabel _: String) throws -> Bool {
+        registrationVisible
+    }
+
+    func enumerate() throws -> [String] {
+        []
+    }
+
+    func domainString() throws -> String {
+        "gui/test"
     }
 }
 

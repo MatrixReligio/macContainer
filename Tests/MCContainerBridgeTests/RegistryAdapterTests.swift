@@ -43,6 +43,37 @@ struct RegistryAdapterTests {
             #expect(!String(describing: error).contains("do-not-leak"))
         }
     }
+
+    @Test func `all operations preserve task cancellation`() async {
+        let adapter = RegistryAdapter(
+            verifier: FakeRegistryVerifier(),
+            store: FakeRegistryCredentialStore()
+        )
+
+        let login = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.login(
+                RegistryLoginRequest(
+                    server: "docker.io",
+                    username: "alice",
+                    password: Data("secret".utf8)
+                )
+            )
+        }
+        await #expect(throws: CancellationError.self) { try await login.value }
+
+        let logout = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.logout(server: "docker.io")
+        }
+        await #expect(throws: CancellationError.self) { try await logout.value }
+
+        let list = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await adapter.list()
+        }
+        await #expect(throws: CancellationError.self) { try await list.value }
+    }
 }
 
 private enum FakeRegistryError: Error {

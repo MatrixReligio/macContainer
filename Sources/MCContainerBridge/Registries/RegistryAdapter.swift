@@ -35,6 +35,7 @@ public struct RegistryAdapter: RegistryOperations, Sendable {
     }
 
     public func login(_ request: RegistryLoginRequest) async throws -> RegistrySummary {
+        try Task.checkCancellation()
         var password = request.password
         defer { password.resetBytes(in: password.indices) }
         let canonicalServer: String
@@ -44,6 +45,8 @@ public struct RegistryAdapter: RegistryOperations, Sendable {
                 username: request.username,
                 password: password
             )
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             throw RegistryAdapterError.verificationFailed
         }
@@ -57,24 +60,32 @@ public struct RegistryAdapter: RegistryOperations, Sendable {
                 )
                 return RegistrySummary(server: canonicalServer, username: request.username)
             }
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             throw RegistryAdapterError.credentialStorageFailed
         }
     }
 
     public func logout(server: String) async throws {
+        try Task.checkCancellation()
         do {
             try await coordinator.withLock(.registry(server)) {
                 try await store.delete(server: server)
             }
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             throw RegistryAdapterError.credentialStorageFailed
         }
     }
 
     public func list() async throws -> [RegistrySummary] {
+        try Task.checkCancellation()
         do {
             return try await store.list().sorted { $0.server < $1.server }
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             throw RegistryAdapterError.credentialStorageFailed
         }

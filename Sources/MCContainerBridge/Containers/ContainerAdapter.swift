@@ -64,7 +64,7 @@ public struct ContainerAdapter: ContainerOperations, Sendable {
                 let exit = try await session.wait()
                 var cleanupError: UserFacingError?
                 if request.removeAfterExit {
-                    cleanupError = await removeAfterExit(id: container.summary.id)
+                    cleanupError = try await removeAfterExit(id: container.summary.id)
                 }
                 return ContainerRunResult(
                     container: container.summary,
@@ -210,6 +210,7 @@ public struct ContainerAdapter: ContainerOperations, Sendable {
         var deleted: [String] = []
         var reclaimed: Int64 = 0
         for candidate in candidates {
+            try Task.checkCancellation()
             do {
                 let bytes = try await coordinator.withLock(.container(candidate.summary.id)) {
                     let bytes = try await client.diskUsage(id: candidate.summary.id)
@@ -218,6 +219,8 @@ public struct ContainerAdapter: ContainerOperations, Sendable {
                 }
                 deleted.append(candidate.summary.id)
                 reclaimed = reclaimed.addingClamped(bytes)
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 continue
             }
@@ -234,6 +237,7 @@ public struct ContainerAdapter: ContainerOperations, Sendable {
         var results: [BatchItemResult] = []
         results.reserveCapacity(ids.count)
         for requestedID in ids {
+            try Task.checkCancellation()
             let resolved: String
             switch Self.resolve(requestedID, in: inventory) {
             case let .success(value):
@@ -254,6 +258,8 @@ public struct ContainerAdapter: ContainerOperations, Sendable {
                     try await operation(resolved)
                 }
                 results.append(BatchItemResult(id: requestedID, succeeded: true))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 results.append(
                     BatchItemResult(
@@ -272,10 +278,12 @@ public struct ContainerAdapter: ContainerOperations, Sendable {
         return try Self.resolve(requestedID, in: inventory).get()
     }
 
-    private func removeAfterExit(id: String) async -> UserFacingError? {
+    private func removeAfterExit(id: String) async throws -> UserFacingError? {
         do {
             try await client.delete(id: id, force: false)
             return nil
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             // Native auto-remove can win the race with this explicit cleanup.
             // In that case the requested final state has already been reached.

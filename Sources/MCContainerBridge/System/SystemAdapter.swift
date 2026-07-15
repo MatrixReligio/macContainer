@@ -57,7 +57,7 @@ public struct SystemAdapter: SystemOperations, Sendable {
     }
 
     public func status() async throws -> SystemSummary {
-        guard try await backend.health(timeout: .seconds(2)) != nil else {
+        guard try await backend.health(timeout: .seconds(2))?.healthy == true else {
             return SystemSummary(state: .stopped)
         }
         let inventory = try await backend.inventory()
@@ -176,33 +176,25 @@ public struct AppleUnifiedLogReader: UnifiedLogReading, Sendable {
     public func logs(
         _ options: LogOptions
     ) async throws -> AsyncThrowingStream<LogRecord, any Error> {
+        if let tail = options.tail, tail < 0 {
+            throw AppleUnifiedLogError.invalidTail
+        }
         let start = options.since ?? Date(timeIntervalSinceNow: -defaultLookback)
         let pollInterval = pollInterval
         return AsyncThrowingStream { continuation in
             let task = Task.detached {
                 do {
-                    var cursor = start
-                    var emittedAtCursor = Set<LogIdentity>()
+                    var cursor = UnifiedLogCursor(start: start)
+                    var isInitial = true
                     repeat {
                         try Task.checkCancellation()
-                        var records = try Self.snapshot(since: cursor)
-                        if let tail = options.tail {
-                            guard tail >= 0 else {
-                                throw AppleUnifiedLogError.invalidTail
-                            }
-                            records = Array(records.suffix(tail))
-                        }
-                        for record in records {
-                            let timestamp = record.timestamp ?? cursor
-                            let identity = LogIdentity(record)
-                            if timestamp < cursor || (timestamp == cursor && emittedAtCursor.contains(identity)) {
-                                continue
-                            }
-                            if timestamp > cursor {
-                                cursor = timestamp
-                                emittedAtCursor.removeAll(keepingCapacity: true)
-                            }
-                            emittedAtCursor.insert(identity)
+                        let records = try Self.recordsForPoll(
+                            Self.snapshot(since: cursor.timestamp),
+                            tail: options.tail,
+                            isInitial: isInitial
+                        )
+                        isInitial = false
+                        for record in cursor.freshRecords(records) {
                             continuation.yield(LogRecord(
                                 timestamp: options.timestamps ? record.timestamp : nil,
                                 stream: record.stream,
@@ -221,6 +213,17 @@ public struct AppleUnifiedLogReader: UnifiedLogReading, Sendable {
             }
             continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    static func recordsForPoll(
+        _ records: [LogRecord],
+        tail: Int?,
+        isInitial: Bool
+    ) -> [LogRecord] {
+        guard isInitial, let tail else {
+            return records
+        }
+        return Array(records.suffix(tail))
     }
 
     private static func snapshot(since: Date) throws -> [LogRecord] {
@@ -251,5 +254,43 @@ private struct LogIdentity: Hashable, Sendable {
         timestamp = record.timestamp
         stream = record.stream
         bytes = record.bytes
+    }
+}
+
+struct UnifiedLogCursor: Sendable {
+    private(set) var timestamp: Date
+    private var emittedAtTimestamp: [LogIdentity: Int] = [:]
+
+    init(start: Date) {
+        timestamp = start
+    }
+
+    mutating func freshRecords(_ records: [LogRecord]) -> [LogRecord] {
+        var observedAtTimestamp: [LogIdentity: Int] = [:]
+        var result: [LogRecord] = []
+        result.reserveCapacity(records.count)
+        for record in records {
+            let recordTimestamp = record.timestamp ?? timestamp
+            guard recordTimestamp >= timestamp else {
+                continue
+            }
+            if recordTimestamp > timestamp {
+                timestamp = recordTimestamp
+                emittedAtTimestamp.removeAll(keepingCapacity: true)
+                observedAtTimestamp.removeAll(keepingCapacity: true)
+            }
+
+            let identity = LogIdentity(record)
+            let observedCount = observedAtTimestamp[identity, default: 0] + 1
+            observedAtTimestamp[identity] = observedCount
+            guard observedCount > emittedAtTimestamp[identity, default: 0] else {
+                continue
+            }
+            result.append(record)
+        }
+        if !observedAtTimestamp.isEmpty {
+            emittedAtTimestamp = observedAtTimestamp
+        }
+        return result
     }
 }

@@ -55,10 +55,6 @@ public struct AppleBuildBackend: BuildBackend, Sendable {
         defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
         let output = try Self.output(from: plan.outputs, temporaryDirectory: temporaryDirectory)
-        await progress(BuildProgress(phase: "connect", message: "Connecting to builder", fractionCompleted: 0.1))
-        let connection = try await connect()
-        defer { try? connection.socket.close() }
-
         let tags = try Self.normalizedTags(plan.tags.isEmpty ? [plan.id] : plan.tags)
         let configuration = try Builder.BuildConfig(
             buildID: plan.id,
@@ -82,13 +78,14 @@ public struct AppleBuildBackend: BuildBackend, Sendable {
             containerSystemConfig: systemConfiguration
         )
 
+        await progress(BuildProgress(phase: "connect", message: "Connecting to builder", fractionCompleted: 0.1))
+        let connection = try await connect()
         await progress(BuildProgress(phase: "build", message: "Building image", fractionCompleted: 0.2))
-        do {
-            try await connection.builder.build(configuration)
-        } catch {
-            try? await connection.group.shutdownGracefully()
-            throw error
-        }
+        try await withAsyncCleanup(
+            connection,
+            cleanup: { connection in await connection.shutdown() },
+            operation: { connection in try await connection.builder.build(configuration) }
+        )
         try Task.checkCancellation()
         await progress(BuildProgress(phase: "export", message: "Finalizing build output", fractionCompleted: 0.9))
         try await finalize(output, tags: tags)
@@ -222,6 +219,26 @@ private struct BuilderConnection: Sendable {
     let builder: Builder
     let group: MultiThreadedEventLoopGroup
     let socket: FileHandle
+
+    func shutdown() async {
+        try? await group.shutdownGracefully()
+        try? socket.close()
+    }
+}
+
+func withAsyncCleanup<Resource: Sendable, Result: Sendable>(
+    _ resource: Resource,
+    cleanup: @escaping @Sendable (Resource) async -> Void,
+    operation: @escaping @Sendable (Resource) async throws -> Result
+) async throws -> Result {
+    do {
+        let result = try await operation(resource)
+        await Task.detached { await cleanup(resource) }.value
+        return result
+    } catch {
+        await Task.detached { await cleanup(resource) }.value
+        throw error
+    }
 }
 
 private struct PreparedBuildOutput: Sendable {

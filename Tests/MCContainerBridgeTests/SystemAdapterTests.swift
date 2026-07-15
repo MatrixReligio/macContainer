@@ -46,6 +46,44 @@ struct SystemAdapterTests {
         #expect(try await adapter.status() == .init(state: .stopped))
     }
 
+    @Test func `an explicitly unhealthy service reports stopped`() async throws {
+        let backend = FakeSystemRuntimeBackend(health: .init(healthy: false, version: "1.1.0"))
+        let adapter = SystemAdapter(backend: backend)
+
+        #expect(try await adapter.status() == .init(state: .stopped))
+    }
+
+    @Test func `tail applies only to the initial unified log snapshot`() {
+        let records = (0 ..< 5).map { index in
+            LogRecord(
+                timestamp: Date(timeIntervalSince1970: TimeInterval(index)),
+                stream: "system",
+                bytes: Data("record-\(index)".utf8)
+            )
+        }
+
+        #expect(AppleUnifiedLogReader.recordsForPoll(records, tail: 2, isInitial: true) == Array(records.suffix(2)))
+        #expect(AppleUnifiedLogReader.recordsForPoll(records, tail: 2, isInitial: false) == records)
+    }
+
+    @Test func `unified log cursor preserves duplicate records without replaying old entries`() {
+        let timestamp = Date(timeIntervalSince1970: 10)
+        let duplicate = LogRecord(
+            timestamp: timestamp,
+            stream: "system",
+            bytes: Data("same".utf8)
+        )
+        let distinct = LogRecord(
+            timestamp: timestamp,
+            stream: "system",
+            bytes: Data("different".utf8)
+        )
+        var cursor = UnifiedLogCursor(start: Date(timeIntervalSince1970: 0))
+
+        #expect(cursor.freshRecords([duplicate, duplicate]) == [duplicate, duplicate])
+        #expect(cursor.freshRecords([duplicate, duplicate, duplicate, distinct]) == [duplicate, distinct])
+    }
+
     private func collect(
         _ stream: AsyncThrowingStream<LogRecord, any Error>
     ) async throws -> [LogRecord] {
