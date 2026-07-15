@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "upstreamRepository": "https://github.com/apple/container",
+  "sourceTag": "1.1.0",
+  "sourceCommit": "5973b9cc626a3e7a499bb316a958237ebe14e2ed",
+  "commandReference": "docs/command-reference.md",
+  "expectedOperationCount": 61,
+  "sharedParameterSources": [
+    "Sources/Services/ContainerAPIService/Client/Flags.swift",
+    "Sources/Services/MachineAPIService/Client/Flags.swift"
+  ],
+  "operations": [
+    {
+      "id": "core.run",
+      "sourcePath": "Sources/ContainerCommands/Container/ContainerRun.swift",
+      "parameterIDs": ["image", "arguments", "environment", "environmentFiles", "groupID", "interactive", "tty", "user", "userID", "workingDirectory", "ulimits", "cpus", "memory", "architecture", "capabilitiesToAdd", "capabilitiesToDrop", "containerIDFile", "detach", "dnsServers", "dnsDomain", "dnsOptions", "dnsSearchDomains", "entrypoint", "initProcess", "initImage", "kernel", "labels", "mounts", "name", "networks", "noDNS", "operatingSystem", "publishedPorts", "platform", "publishedSockets", "readOnlyRootFilesystem", "removeAfterStop", "rosetta", "runtimeHandler", "forwardSSHAgent", "sharedMemorySize", "temporaryFilesystems", "nestedVirtualization", "volumes", "registryScheme", "progressStyle", "maxConcurrentDownloads", "debug"]
+    },
+    {
+      "id": "core.build",
+      "sourcePath": "Sources/ContainerCommands/BuildCommand.swift",
+      "parameterIDs": ["architectures", "buildArguments", "cacheImports", "cacheExports", "cpus", "dockerfile", "labels", "memory", "noCache", "outputs", "operatingSystems", "platforms", "progressStyle", "pull", "quiet", "secrets", "tags", "targetStage", "vsockPort", "contextDirectory", "dnsServers", "dnsDomain", "dnsOptions", "dnsSearchDomains", "debug"]
+    },
+    {
+      "id": "containers.create",
+      "sourcePath": "Sources/ContainerCommands/Container/ContainerCreate.swift",
+      "parameterIDs": ["image", "arguments", "environment", "environmentFiles", "groupID", "interactive", "tty", "user", "userID", "workingDirectory", "ulimits", "cpus", "memory", "architecture", "capabilitiesToAdd", "capabilitiesToDrop", "containerIDFile", "detach", "dnsServers", "dnsDomain", "dnsOptions", "dnsSearchDomains", "entrypoint", "initProcess", "initImage", "kernel", "labels", "mounts", "name", "networks", "noDNS", "operatingSystem", "publishedPorts", "platform", "publishedSockets", "readOnlyRootFilesystem", "removeAfterStop", "rosetta", "runtimeHandler", "forwardSSHAgent", "sharedMemorySize", "temporaryFilesystems", "nestedVirtualization", "volumes", "registryScheme", "maxConcurrentDownloads", "debug"]
+    },
+    {"id": "containers.start", "sourcePath": "Sources/ContainerCommands/Container/ContainerStart.swift", "parameterIDs": ["containerID", "attach", "interactive", "debug"]},
+    {"id": "containers.stop", "sourcePath": "Sources/ContainerCommands/Container/ContainerStop.swift", "parameterIDs": ["all", "signal", "timeoutSeconds", "containerIDs", "debug"]},
+    {"id": "containers.kill", "sourcePath": "Sources/ContainerCommands/Container/ContainerKill.swift", "parameterIDs": ["all", "signal", "containerIDs", "debug"]},
+    {"id": "containers.delete", "sourcePath": "Sources/ContainerCommands/Container/ContainerDelete.swift", "parameterIDs": ["all", "force", "containerIDs", "debug"]},
+    {"id": "containers.list", "sourcePath": "Sources/ContainerCommands/Container/ContainerList.swift", "parameterIDs": ["all", "format", "quiet", "debug"]},
+    {"id": "containers.exec", "sourcePath": "Sources/ContainerCommands/Container/ContainerExec.swift", "parameterIDs": ["containerID", "arguments", "detach", "environment", "environmentFiles", "groupID", "interactive", "tty", "user", "userID", "workingDirectory", "ulimits", "debug"]},
+    {"id": "containers.export", "sourcePath": "Sources/ContainerCommands/Container/ContainerExport.swift", "parameterIDs": ["containerID", "output", "debug"]},
+    {"id": "containers.logs", "sourcePath": "Sources/ContainerCommands/Container/ContainerLogs.swift", "parameterIDs": ["containerID", "boot", "follow", "tailLines", "debug"]},
+    {"id": "containers.inspect", "sourcePath": "Sources/ContainerCommands/Container/ContainerInspect.swift", "parameterIDs": ["containerIDs", "debug"]},
+    {"id": "containers.stats", "sourcePath": "Sources/ContainerCommands/Container/ContainerStats.swift", "parameterIDs": ["containerIDs", "format", "noStream", "debug"]},
+    {"id": "containers.copy", "sourcePath": "Sources/ContainerCommands/Container/ContainerCopy.swift", "parameterIDs": ["source", "destination", "debug"]},
+    {"id": "containers.prune", "sourcePath": "Sources/ContainerCommands/Container/ContainerPrune.swift", "parameterIDs": ["debug"]},
+
+    {"id": "images.list", "sourcePath": "Sources/ContainerCommands/Image/ImageList.swift", "parameterIDs": ["format", "quiet", "verbose", "debug"]},
+    {"id": "images.pull", "sourcePath": "Sources/ContainerCommands/Image/ImagePull.swift", "parameterIDs": ["reference", "registryScheme", "progressStyle", "maxConcurrentDownloads", "architecture", "operatingSystem", "platform", "debug"]},
+    {"id": "images.push", "sourcePath": "Sources/ContainerCommands/Image/ImagePush.swift", "parameterIDs": ["reference", "registryScheme", "progressStyle", "architecture", "operatingSystem", "platform", "debug"]},
+    {"id": "images.save", "sourcePath": "Sources/ContainerCommands/Image/ImageSave.swift", "parameterIDs": ["references", "architecture", "operatingSystem", "output", "platform", "debug"]},
+    {"id": "images.load", "sourcePath": "Sources/ContainerCommands/Image/ImageLoad.swift", "parameterIDs": ["input", "force", "debug"]},
+    {"id": "images.tag", "sourcePath": "Sources/ContainerCommands/Image/ImageTag.swift", "parameterIDs": ["source", "target", "debug"]},
+    {"id": "images.delete", "sourcePath": "Sources/ContainerCommands/Image/ImageDelete.swift", "parameterIDs": ["all", "force", "images", "debug"]},
+    {"id": "images.prune", "sourcePath": "Sources/ContainerCommands/Image/ImagePrune.swift", "parameterIDs": ["all", "debug"]},
+    {"id": "images.inspect", "sourcePath": "Sources/ContainerCommands/Image/ImageInspect.swift", "parameterIDs": ["images", "debug"]},
+
+    {"id": "builder.start", "sourcePath": "Sources/ContainerCommands/Builder/BuilderStart.swift", "parameterIDs": ["cpus", "memory", "dnsServers", "dnsDomain", "dnsOptions", "dnsSearchDomains", "debug"]},
+    {"id": "builder.status", "sourcePath": "Sources/ContainerCommands/Builder/BuilderStatus.swift", "parameterIDs": ["format", "quiet", "debug"]},
+    {"id": "builder.stop", "sourcePath": "Sources/ContainerCommands/Builder/BuilderStop.swift", "parameterIDs": ["debug"]},
+    {"id": "builder.delete", "sourcePath": "Sources/ContainerCommands/Builder/BuilderDelete.swift", "parameterIDs": ["force", "debug"]},
+
+    {"id": "networks.create", "sourcePath": "Sources/ContainerCommands/Network/NetworkCreate.swift", "parameterIDs": ["name", "internal", "labels", "options", "plugin", "ipv4Subnet", "ipv6Subnet", "debug"]},
+    {"id": "networks.delete", "sourcePath": "Sources/ContainerCommands/Network/NetworkDelete.swift", "parameterIDs": ["all", "networkNames", "debug"]},
+    {"id": "networks.prune", "sourcePath": "Sources/ContainerCommands/Network/NetworkPrune.swift", "parameterIDs": ["debug"]},
+    {"id": "networks.list", "sourcePath": "Sources/ContainerCommands/Network/NetworkList.swift", "parameterIDs": ["format", "quiet", "debug"]},
+    {"id": "networks.inspect", "sourcePath": "Sources/ContainerCommands/Network/NetworkInspect.swift", "parameterIDs": ["networks", "debug"]},
+
+    {"id": "volumes.create", "sourcePath": "Sources/ContainerCommands/Volume/VolumeCreate.swift", "parameterIDs": ["name", "labels", "driverOptions", "size", "debug"]},
+    {"id": "volumes.delete", "sourcePath": "Sources/ContainerCommands/Volume/VolumeDelete.swift", "parameterIDs": ["all", "names", "debug"]},
+    {"id": "volumes.prune", "sourcePath": "Sources/ContainerCommands/Volume/VolumePrune.swift", "parameterIDs": ["debug"]},
+    {"id": "volumes.list", "sourcePath": "Sources/ContainerCommands/Volume/VolumeList.swift", "parameterIDs": ["format", "quiet", "debug"]},
+    {"id": "volumes.inspect", "sourcePath": "Sources/ContainerCommands/Volume/VolumeInspect.swift", "parameterIDs": ["names", "debug"]},
+
+    {"id": "registries.login", "sourcePath": "Sources/ContainerCommands/Registry/RegistryLogin.swift", "parameterIDs": ["server", "registryScheme", "passwordFromStandardInput", "username", "password", "debug"]},
+    {"id": "registries.logout", "sourcePath": "Sources/ContainerCommands/Registry/RegistryLogout.swift", "parameterIDs": ["server", "debug"]},
+    {"id": "registries.list", "sourcePath": "Sources/ContainerCommands/Registry/RegistryList.swift", "parameterIDs": ["format", "quiet", "debug"]},
+
+    {"id": "machines.create", "sourcePath": "Sources/ContainerCommands/Machine/MachineCreate.swift", "parameterIDs": ["image", "name", "setDefault", "noBoot", "cpus", "memory", "homeMount", "nestedVirtualization", "kernel", "architecture", "operatingSystem", "platform", "registryScheme", "progressStyle", "maxConcurrentDownloads", "debug"]},
+    {"id": "machines.run", "sourcePath": "Sources/ContainerCommands/Machine/MachineRun.swift", "parameterIDs": ["name", "detach", "root", "executable", "arguments", "environment", "environmentFiles", "groupID", "interactive", "tty", "user", "userID", "workingDirectory", "ulimits", "debug"]},
+    {"id": "machines.list", "sourcePath": "Sources/ContainerCommands/Machine/MachineList.swift", "parameterIDs": ["format", "quiet", "debug"]},
+    {"id": "machines.inspect", "sourcePath": "Sources/ContainerCommands/Machine/MachineInspect.swift", "parameterIDs": ["id", "debug"]},
+    {"id": "machines.set", "sourcePath": "Sources/ContainerCommands/Machine/MachineSet.swift", "parameterIDs": ["name", "settings", "debug"]},
+    {"id": "machines.set-default", "sourcePath": "Sources/ContainerCommands/Machine/MachineSetDefault.swift", "parameterIDs": ["id", "debug"]},
+    {"id": "machines.logs", "sourcePath": "Sources/ContainerCommands/Machine/MachineLogs.swift", "parameterIDs": ["id", "boot", "follow", "tailLines", "debug"]},
+    {"id": "machines.stop", "sourcePath": "Sources/ContainerCommands/Machine/MachineStop.swift", "parameterIDs": ["id", "progressStyle", "debug"]},
+    {"id": "machines.delete", "sourcePath": "Sources/ContainerCommands/Machine/MachineDelete.swift", "parameterIDs": ["id", "progressStyle", "debug"]},
+
+    {"id": "system.start", "sourcePath": "Sources/ContainerCommands/System/SystemStart.swift", "parameterIDs": ["applicationRoot", "installRoot", "logRoot", "kernelInstall", "timeout", "debug"]},
+    {"id": "system.stop", "sourcePath": "Sources/ContainerCommands/System/SystemStop.swift", "parameterIDs": ["servicePrefix", "debug"]},
+    {"id": "system.status", "sourcePath": "Sources/ContainerCommands/System/SystemStatus.swift", "parameterIDs": ["servicePrefix", "format", "debug"]},
+    {"id": "system.version", "sourcePath": "Sources/ContainerCommands/System/SystemVersion.swift", "parameterIDs": ["format", "debug"]},
+    {"id": "system.logs", "sourcePath": "Sources/ContainerCommands/System/SystemLogs.swift", "parameterIDs": ["follow", "last", "debug"]},
+    {"id": "system.disk-usage", "sourcePath": "Sources/ContainerCommands/System/SystemDF.swift", "parameterIDs": ["format", "debug"]},
+
+    {"id": "dns.create", "sourcePath": "Sources/ContainerCommands/System/DNS/DNSCreate.swift", "parameterIDs": ["domainName", "localhostAddress", "debug"]},
+    {"id": "dns.delete", "sourcePath": "Sources/ContainerCommands/System/DNS/DNSDelete.swift", "parameterIDs": ["domainName", "debug"]},
+    {"id": "dns.list", "sourcePath": "Sources/ContainerCommands/System/DNS/DNSList.swift", "parameterIDs": ["format", "quiet", "debug"]},
+    {"id": "kernel.set", "sourcePath": "Sources/ContainerCommands/System/Kernel/KernelSet.swift", "parameterIDs": ["architecture", "binary", "force", "recommended", "archive", "debug"]},
+    {"id": "configuration.manage", "sourcePath": "Sources/ContainerCommands/System/Property/PropertyList.swift", "parameterIDs": ["format", "debug"]}
+  ]
+}

@@ -631,7 +631,7 @@ swift scripts/check-bridge-coverage.swift Sources/MCContracts/Resources/apple-co
 scripts/check-no-container-cli.sh .
 ```
 
-Expected: `Bridge coverage PASS: 62 operations, 62 direct mappings, 0 CLI backends`.
+Expected: `Bridge coverage PASS: 61 operations, 61 direct mappings, 0 CLI backends`.
 
 - [ ] **Step 5: Commit**
 

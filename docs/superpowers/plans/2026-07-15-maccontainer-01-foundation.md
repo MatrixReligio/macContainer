@@ -4,7 +4,7 @@
 
 **Goal:** Establish a reproducible public repository, modular Swift/Xcode build, complete reviewed Apple container 1.1.0 contract, open-source baseline, and hosted CI.
 
-**Architecture:** Pure/testable code lives in focused Swift Package targets while XcodeGen composes app-process targets. A committed, versioned JSON contract is decoded by `MCContracts`, checked against a 62-operation acceptance matrix, and used as the single source of truth for later forms, localization, and bridge coverage.
+**Architecture:** Pure/testable code lives in focused Swift Package targets while XcodeGen composes app-process targets. A committed, versioned JSON contract is decoded by `MCContracts`, checked against a 61-operation acceptance matrix, and used as the single source of truth for later forms, localization, and bridge coverage.
 
 **Tech Stack:** Swift Package Manager, Swift 6.3, Swift Testing, XcodeGen 2.45.4, GitHub CLI, GitHub Actions `macos-26`, JSON, shell verification scripts.
 
@@ -422,7 +422,7 @@ git commit -m "feat: define versioned upstream contract schema"
 - Create: `scripts/check-contract-coverage.swift`
 - Modify: `Tests/MCContractsTests/ContractRepositoryTests.swift`
 
-- [ ] **Step 1: Add a failing independent operation coverage test**
+- [x] **Step 1: Add a failing independent operation coverage test**
 
 Add to `ContractRepositoryTests`:
 
@@ -446,15 +446,15 @@ Add to `ContractRepositoryTests`:
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ContractRepositoryTests.includesEveryBuiltinOperation`
 
 Expected: FAIL because the bundled snapshot is absent.
 
-- [ ] **Step 3: Build the reviewed fixture deterministically**
+- [x] **Step 3: Build the reviewed fixture deterministically**
 
-Create the acceptance JSON with `schemaVersion`, runtime/source identity, and the exact 62 IDs above. Create the bundled contract JSON with one entry per ID and every parameter transcribed from the exact `1.1.0` command definitions under the reviewed upstream paths `Sources/ContainerCommands`, `Sources/Services`, and `docs/command-reference.md`. Every entry uses this concrete JSON shape:
+Create the acceptance JSON with `schemaVersion`, runtime/source identity, and the exact 61 IDs above. Create the bundled contract JSON with one entry per ID and every parameter transcribed from the exact `1.1.0` command definitions under the reviewed upstream paths `Sources/ContainerCommands`, `Sources/Services`, and `docs/command-reference.md`. Every entry uses this concrete JSON shape:
 
 ```json
 {
@@ -518,16 +518,16 @@ Create the acceptance JSON with `schemaVersion`, runtime/source identity, and th
 `scripts/check-contract-coverage.swift` decodes both files, rejects duplicate operation or parameter IDs, rejects empty help keys, compares exact operation sets, and exits nonzero with a sorted list of missing/extra IDs. Its terminal success line is exactly:
 
 ```text
-Contract coverage PASS: apple/container 1.1.0, 62 operations, 0 missing, 0 extra
+Contract coverage PASS: apple/container 1.1.0, 61 operations, 0 missing, 0 extra
 ```
 
-- [ ] **Step 4: Verify the snapshot and schema**
+- [x] **Step 4: Verify the snapshot and schema**
 
 Run: `swift test --filter ContractRepositoryTests && swift scripts/check-contract-coverage.swift Config/contracts/apple-container-1.1.0-acceptance.json Sources/MCContracts/Resources/apple-container-1.1.0.json`
 
 Expected: PASS with the exact terminal success line above.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Config/contracts Sources/MCContracts/Resources Tests/MCContractsTests scripts/check-contract-coverage.swift
@@ -922,7 +922,7 @@ swift scripts/check-contract-coverage.swift Config/contracts/apple-container-1.1
 rg -n 'TODO|TBD|implement later|similar to' Config/contracts Sources/MCContracts Tests/MCContractsTests
 ```
 
-Expected: tests PASS, exact 62-operation coverage, and `rg` exits 1 with no matches.
+Expected: tests PASS, exact 61-operation coverage, and `rg` exits 1 with no matches.
 
 - [ ] **Step 2: Review contract evidence against upstream 1.1.0**
 

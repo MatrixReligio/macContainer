@@ -305,7 +305,7 @@ struct ParameterHelpButton: View {
 
 `ParameterField` exhaustively switches all `ParameterValueType` cases to native controls: Toggle, TextField, Stepper, duration/byte format fields, Picker, fileImporter, repeatable tables, port/mount editors, and signal/platform pickers. It displays inline validation and visible warnings for destructive/security-sensitive options. `OperationReview` shows generated values, provenance, diff, affected resources, and explicit Run/Cancel.
 
-`OperationExecutor` maps each of 62 operation IDs to one typed bridge invocation and rejects unknown/disabled capabilities. List-format/quiet contract metadata maps to native sort/export choices, never terminal strings.
+`OperationExecutor` maps each of 61 operation IDs to one typed bridge invocation and rejects unknown/disabled capabilities. List-format/quiet contract metadata maps to native sort/export choices, never terminal strings.
 
 - [ ] **Step 4: Run executor, form parity, keyboard, and help tests**
 
@@ -546,7 +546,7 @@ swift scripts/check-bridge-coverage.swift Sources/MCContracts/Resources/apple-co
 git diff --check
 ```
 
-Expected: PASS and all 62 operations are reachable in the UI registry.
+Expected: PASS and all 61 operations are reachable in the UI registry.
 
 - [ ] **Step 5: Perform and record stage reviews**
 
@@ -559,4 +559,3 @@ git push origin main
 ```
 
 Expected: Stage 5 and Stage 6 both say `Gate: PASS` with no unresolved finding.
-

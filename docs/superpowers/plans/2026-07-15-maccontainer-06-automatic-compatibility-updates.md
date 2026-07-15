@@ -112,7 +112,7 @@ The loader reads only a resource bundled into the signed app/module, rejects dup
 
 Run: `swift test --filter CompatibilityCatalogTests && swift scripts/check-compatibility-catalog.swift Config/compatibility/catalog-v1.json`
 
-Expected: `Compatibility catalog PASS: 1 reviewed runtime, 62 capabilities, 11 baseline probes`.
+Expected: `Compatibility catalog PASS: 1 reviewed runtime, 61 capabilities, 11 baseline probes`.
 
 - [ ] **Step 5: Commit**
 
