@@ -57,6 +57,16 @@ fi
 scan_status=$?
 set -e
 
+# These two exact literals are reviewed payload inventory entries used only for removal.
+# Keep the exception path- and line-shape-specific so executable references still fail.
+if (( scan_status == 0 )); then
+    matches="$(print -r -- "$matches" | /usr/bin/grep --extended-regexp --invert-match \
+        '/Sources/MCSystemLifecycle/Helper/RuntimePayloadInventory\.swift:[0-9]+:[[:space:]]*"bin/(uninstall|update)-container\.sh",?$' || true)"
+    if [[ -z "$matches" ]]; then
+        scan_status=1
+    fi
+fi
+
 case "$scan_status" in
     0)
         print -u2 -- "Forbidden backend scan FAIL: production code references a prohibited container CLI backend"

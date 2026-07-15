@@ -225,7 +225,7 @@ git commit -m "feat: verify official runtime packages"
 - Test: `Tests/MCSystemLifecycleTests/CallerValidatorTests.swift`
 - Test: `Tests/MCSystemLifecycleTests/PathPolicyTests.swift`
 
-- [ ] **Step 1: Write failing spoof/path/injection tests**
+- [x] **Step 1: Write failing spoof/path/injection tests**
 
 ```swift
 @Test(arguments: [
@@ -249,13 +249,13 @@ func rejectsUntrustedRemovalPath(_ path: String) {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'CallerValidatorTests|PathPolicyTests'`
 
 Expected: FAIL because helper protocol/security types are undefined.
 
-- [ ] **Step 3: Define typed requests and mutual verification**
+- [x] **Step 3: Define typed requests and mutual verification**
 
 ```swift
 public enum PrivilegedRequest: Codable, Equatable, Sendable {
@@ -274,13 +274,13 @@ No request contains an executable path, shell text, environment, arbitrary files
 
 `PathPolicy` canonicalizes already-open parent/child descriptors without following links and permits only manifest intersections, `/etc/resolver/containerization.${VALIDATED_NAME}` after strict suffix validation, exact PF anchor `com.apple.container`, and known empty directories. Shared `/usr/local/bin` and `/usr/local/libexec` directories can never be removed.
 
-- [ ] **Step 4: Run all boundary tests**
+- [x] **Step 4: Run all boundary tests**
 
 Run: `swift test --filter 'CallerValidatorTests|PathPolicyTests'`
 
 Expected: PASS for valid signed identities and all spoof, traversal, symlink, hard-link, TOCTOU, injection, and oversized-message cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Helper Tests/MCSystemLifecycleTests/CallerValidatorTests.swift Tests/MCSystemLifecycleTests/PathPolicyTests.swift
