@@ -5,6 +5,7 @@ script_dir="${0:A:h}"
 repo_root="${script_dir:h}"
 ci="$repo_root/.github/workflows/ci.yml"
 upstream="$repo_root/.github/workflows/upstream-monitor.yml"
+approved_upload_artifact_sha="043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
 errors=()
 
 for workflow in "$ci" "$upstream"; do
@@ -32,6 +33,9 @@ for workflow in "$ci" "$upstream"; do
         fi
         if [[ ! "$reference" =~ '^[0-9a-f]{40}$' ]]; then
             errors+=("unpinned action in $relative: $use")
+        fi
+        if [[ "$action" == "actions/upload-artifact" && "$reference" != "$approved_upload_artifact_sha" ]]; then
+            errors+=("unapproved upload-artifact release in $relative: $use")
         fi
     done < <(/usr/bin/sed -En 's/^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*([^#[:space:]]+).*/\1/p' "$workflow")
 
@@ -83,6 +87,9 @@ fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "$ci"; then
     errors+=("ci.yml must grant only read access to repository contents")
 fi
+if ! /usr/bin/grep -Fq "actions/upload-artifact@$approved_upload_artifact_sha" "$ci"; then
+    errors+=("ci.yml must use the reviewed Node 24 upload-artifact release")
+fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*issues:[[:space:]]*write([[:space:]]|$)' "$upstream"; then
     errors+=("upstream-monitor.yml must grant issue write access at job scope")
 fi
@@ -92,4 +99,4 @@ if (( ${#errors} > 0 )); then
     exit 1
 fi
 
-print -r -- "Workflow policy PASS: macos-26, least privilege, full action SHAs, no PR secrets"
+print -r -- "Workflow policy PASS: macos-26, least privilege, reviewed action SHAs, no PR secrets"

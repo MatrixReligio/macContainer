@@ -59,6 +59,23 @@ TDD evidence:
 The official GitHub runner-images matrix identifies `macos-26` as arm64, so the
 restriction matches the hosted environment.
 
+### F-2: Artifact upload action emitted a Node 20 deprecation warning
+
+The first post-review workflow passed but GitHub annotated the artifact upload
+step because `actions/upload-artifact` v5 used the deprecated Node 20 runtime.
+The official v7.0.1 release resolves this by declaring `node24` in its action
+metadata.
+
+TDD evidence:
+
+1. The workflow-policy test was extended to require the reviewed v7.0.1 commit
+   and failed against the existing v5 pin.
+2. The policy scanner was extended to reject any other `upload-artifact`
+   revision, including a full-SHA v5 regression.
+3. CI now pins official commit
+   `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`; the focused policy suite and
+   complete repository gate pass locally.
+
 ## Module dependency review
 
 The dependency graph is acyclic and points from stable models toward
@@ -122,11 +139,12 @@ Info.plist drift.
 All third-party actions use full 40-character SHAs:
 
 - `actions/checkout`: `9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
-- `actions/upload-artifact`: `330a01c490aca151604b8cf639adc76d48f6c5d4`
+- `actions/upload-artifact`: `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`
 - `actions/github-script`: `ed597411d8f924073f98dfc5c65a23a2325f34cd`
 
 CI uses arm64 macOS 26 runners, top-level `contents: read`, no secrets, and a
-secret-free verification job before UI testing. The upstream monitor alone has
+secret-free verification job before UI testing. The artifact action is also
+constrained to the reviewed Node 24 release. The upstream monitor alone has
 job-scoped `issues: write`; it can create a draft review issue but cannot change
 code or compatibility state. Negative workflow tests reject mutable action
 tags, top-level secrets, and unguarded secret-bearing jobs.
