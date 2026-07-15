@@ -813,6 +813,41 @@ git add .swiftformat .swiftlint.yml Config/release-tools.json scripts Tests/Tool
 git commit -m "ci: add pinned deterministic verification"
 ```
 
+### Task 6A: Establish the application icon asset pipeline
+
+**Files:**
+- Create: `Design/AppIcon/MacContainer-master.png`
+- Create: `Design/AppIcon/README.md`
+- Create: `App/MacContainer/Resources/Assets.xcassets/Contents.json`
+- Create: `App/MacContainer/Resources/Assets.xcassets/AppIcon.appiconset/*`
+- Create: `scripts/generate-app-icon.swift`
+- Create: `scripts/check-app-icon.swift`
+- Test: `Tests/ToolingTests/check-app-icon.bats`
+- Test: `Tests/MacContainerIntegrationTests/BuildSmokeTests.swift`
+
+- [x] **Step 1: Add failing asset-pipeline and bundle-wiring tests**
+
+The tool test requires ten macOS icon slots, exact pixel sizes, sRGB PNG data, transparent corners, an opaque center, deterministic regeneration, and cleanup of its temporary output. The integration test requires the built bundle to name `AppIcon`.
+
+- [x] **Step 2: Run and verify RED**
+
+Run the tool test before generator/checker scripts exist and the integration test before the asset catalog is wired. Both must fail for the intended missing behavior.
+
+- [x] **Step 3: Add the reviewed master and deterministic asset generator**
+
+Preserve the generated master and prompt provenance under `Design/AppIcon`. Render a macOS squircle alpha mask and all ten canonical icon files from the master using project-local Swift/CoreGraphics code; do not require Python, a global image utility, or network access.
+
+- [x] **Step 4: Verify assets and signed application wiring**
+
+Run the negative/positive tool tests twice, compare rebuild hashes, regenerate the Xcode project, build the signed Debug application, run integration/UI tests, and inspect the compiled asset catalog and final bundle metadata.
+
+- [x] **Step 5: Commit**
+
+```bash
+git add Design App/MacContainer/Resources project.yml MacContainer.xcodeproj scripts/generate-app-icon.swift scripts/check-app-icon.swift Tests/ToolingTests/check-app-icon.bats Tests/MacContainerIntegrationTests docs/superpowers/plans/2026-07-15-maccontainer-01-foundation.md
+git commit -m "design: add deterministic MacContainer app icon"
+```
+
 ### Task 7: Create the public GitHub repository and hosted CI
 
 **Files:**

@@ -10,6 +10,7 @@
 		0057AB09E8D3299974976223 /* MCCompatibility in Frameworks */ = {isa = PBXBuildFile; productRef = 581B57738A515A8AE83C748C /* MCCompatibility */; };
 		3B388AE0E2A8D4886CAD97EA /* container.matrixreligio.com.helper.plist in Resources */ = {isa = PBXBuildFile; fileRef = DA25E9952093076DC5EEDA7B /* container.matrixreligio.com.helper.plist */; };
 		4F83A4A44A6AFDDDE9637E6B /* MCModel in Frameworks */ = {isa = PBXBuildFile; productRef = B0DB5C691040CB56B1D0CE5E /* MCModel */; };
+		6844CE4B851CC5FEE8D4D03A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DA332DC441801CF87A6FACE /* Assets.xcassets */; };
 		6DE9477615EBC075DD67E492 /* container.matrixreligio.com.update-agent.plist in Resources */ = {isa = PBXBuildFile; fileRef = DB7C909A3A92A98CBBE47950 /* container.matrixreligio.com.update-agent.plist */; };
 		76F884CF5A34580BB7CC7833 /* MCSystemLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = D771D3FE02EFAC1CCF8B877D /* MCSystemLifecycle */; };
 		7BAE4A4EF56BA70C67E7F9F4 /* MCSystemLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = 6FE93D71D0A25B8BED99A730 /* MCSystemLifecycle */; };
@@ -66,6 +67,7 @@
 		22BC5E1EE46F5B4E162DFE9E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3A9C7D7C8D72877A81205DFD /* MacContainerIntegrationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacContainerIntegrationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		70F19761BFC501F3C49C752A /* UpdateAgent.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UpdateAgent.entitlements; sourceTree = "<group>"; };
+		7DA332DC441801CF87A6FACE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		80A212A5864E6C47FBF499A7 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		86F8017A7AF4E5AEFCA21634 /* MacContainerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacContainerApp.swift; sourceTree = "<group>"; };
 		8B63F1C8A341FA1DD67BADF7 /* MacContainerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacContainerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -209,8 +211,17 @@
 				22BC5E1EE46F5B4E162DFE9E /* Info.plist */,
 				D20200AB2227F11B73B20757 /* MacContainer.entitlements */,
 				86F8017A7AF4E5AEFCA21634 /* MacContainerApp.swift */,
+				F2159A1BDD54B3998A355323 /* Resources */,
 			);
 			path = MacContainer;
+			sourceTree = "<group>";
+		};
+		F2159A1BDD54B3998A355323 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7DA332DC441801CF87A6FACE /* Assets.xcassets */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -240,6 +251,7 @@
 			buildPhases = (
 				28AC84545CE90BB3CA912F63 /* Sources */,
 				F9F9C003E7269A2960D77D02 /* Embed helper and update agent */,
+				ACC891774AA93134097CA467 /* Resources */,
 				69E14400F0D09F8A298E4D27 /* Frameworks */,
 			);
 			buildRules = (
@@ -390,6 +402,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				3B388AE0E2A8D4886CAD97EA /* container.matrixreligio.com.helper.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ACC891774AA93134097CA467 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6844CE4B851CC5FEE8D4D03A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

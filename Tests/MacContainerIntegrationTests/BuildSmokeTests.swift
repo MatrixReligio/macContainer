@@ -11,5 +11,6 @@ final class BuildSmokeTests: XCTestCase {
             Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String,
             "Copyright 2026 MatrixReligio LLC. Licensed under Apache-2.0."
         )
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleIconName") as? String, "AppIcon")
     }
 }
