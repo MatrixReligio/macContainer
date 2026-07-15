@@ -916,7 +916,7 @@ git push -u origin main
 - Create: `.github/ISSUE_TEMPLATE/bug.yml`, `.github/ISSUE_TEMPLATE/feature.yml`, `.github/pull_request_template.md`
 - Create: `scripts/check-open-source-baseline.sh`
 
-- [ ] **Step 1: Add a failing document-presence test**
+- [x] **Step 1: Add a failing document-presence test**
 
 The checker requires every file above, verifies the Apache-2.0 SPDX identifier, rejects broken local Markdown links, verifies every support/security contact is `contact@matrixreligio.com`, and checks that SECURITY documents supported branches and a private reporting path.
 
@@ -924,19 +924,19 @@ Run: `scripts/check-open-source-baseline.sh`
 
 Expected: FAIL listing all absent required files in sorted order.
 
-- [ ] **Step 2: Add the Apache-2.0 and governance corpus**
+- [x] **Step 2: Add the Apache-2.0 and governance corpus**
 
 Use the unmodified Apache License 2.0 text. `NOTICE` identifies `MacContainer`, copyright year 2026, MatrixReligio LLC, and contact email. `THIRD_PARTY_NOTICES` initially records Apple container 1.1.0 (Apache-2.0), Sparkle 2.9.4 (MIT), SwiftTerm 1.13.0 (MIT), plus a machine-generated transitive section that plan 07 verifies from resolved dependencies.
 
 `SECURITY.md` states supported versions, `contact@matrixreligio.com`, a 2-business-day acknowledgement target, coordinated disclosure, no public security issue details, and the absence of telemetry. `PRIVACY.md` states local processing, direct user-requested GitHub/registry traffic, Keychain credential storage, diagnostic redaction, and no default telemetry.
 
-- [ ] **Step 3: Verify the corpus**
+- [x] **Step 3: Verify the corpus**
 
 Run: `scripts/check-open-source-baseline.sh`
 
 Expected: PASS with `Open-source baseline PASS: 16 policy documents, 0 broken links`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add LICENSE NOTICE THIRD_PARTY_NOTICES README.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md SUPPORT.md GOVERNANCE.md CHANGELOG.md ARCHITECTURE.md DEVELOPMENT.md CODE_STYLE.md RELEASE.md PRIVACY.md docs/en .github/ISSUE_TEMPLATE .github/pull_request_template.md scripts/check-open-source-baseline.sh

@@ -1,0 +1,26 @@
+MacContainer third-party notices
+================================
+
+The following direct dependencies are distributed under their own licenses.
+Their names and versions do not imply endorsement of MacContainer.
+
+Apple container 1.1.0
+Copyright Apple Inc. and the container project authors
+License: Apache License 2.0
+Source: https://github.com/apple/container/tree/1.1.0
+
+Sparkle 2.9.4
+Copyright Andy Matuschak and the Sparkle project authors
+License: MIT
+Source: https://github.com/sparkle-project/Sparkle/tree/2.9.4
+
+SwiftTerm 1.13.0
+Copyright Miguel de Icaza and the SwiftTerm project authors
+License: MIT
+Source: https://github.com/migueldeicaza/SwiftTerm/tree/1.13.0
+
+--- BEGIN MACHINE-GENERATED TRANSITIVE NOTICES ---
+The release dependency-notice verifier replaces this section from the resolved
+dependency graph. No additional transitive packages are recorded at the
+foundation stage.
+--- END MACHINE-GENERATED TRANSITIVE NOTICES ---

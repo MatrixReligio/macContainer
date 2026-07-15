@@ -41,8 +41,10 @@ done
 zsh Tests/ToolingTests/check-no-container-cli.bats
 zsh Tests/ToolingTests/check-app-icon.bats
 zsh Tests/ToolingTests/check-workflow-policy.bats
+zsh Tests/ToolingTests/check-open-source-baseline.bats
 scripts/check-no-container-cli.sh
 scripts/check-workflow-policy.sh
+scripts/check-open-source-baseline.sh
 swift scripts/check-contract-coverage.swift \
     Config/contracts/apple-container-1.1.0-acceptance.json \
     Sources/MCContracts/Resources/apple-container-1.1.0.json
