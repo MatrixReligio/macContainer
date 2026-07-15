@@ -949,7 +949,7 @@ git commit -m "docs: establish open-source governance baseline"
 - Create: `docs/reviews/stage-0.md`
 - Create: `docs/reviews/stage-1.md`
 
-- [ ] **Step 1: Run Stage 0 contract verification**
+- [x] **Step 1: Run Stage 0 contract verification**
 
 Run:
 
@@ -961,11 +961,11 @@ rg -n 'TODO|TBD|implement later|similar to' Config/contracts Sources/MCContracts
 
 Expected: tests PASS, exact 61-operation coverage, and `rg` exits 1 with no matches.
 
-- [ ] **Step 2: Review contract evidence against upstream 1.1.0**
+- [x] **Step 2: Review contract evidence against upstream 1.1.0**
 
 Inspect every operation source path recorded in the acceptance JSON against the exact `1.1.0` checkout. Record the upstream file SHA-256 values, parameter counts per domain, and any native rendering flags intentionally represented as UI table/export choices. Fix and rerun on every mismatch.
 
-- [ ] **Step 3: Commit Stage 0 PASS report**
+- [x] **Step 3: Commit Stage 0 PASS report**
 
 ```bash
 git add docs/reviews/stage-0.md
