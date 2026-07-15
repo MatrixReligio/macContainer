@@ -26,6 +26,50 @@ struct TemplateStoreTests {
         #expect(await fileSystem.snapshot().isEmpty)
     }
 
+    @Test func `rejects disguised credentials and private key material before write`() async {
+        let fileSystem = InMemoryTemplateFileSystem()
+        let store = TemplateStore(root: URL(fileURLWithPath: "/templates"), fileSystem: fileSystem)
+        let unsafeValues: [(String, FieldValue)] = [
+            ("password", .string("mis-typed credential")),
+            ("environment", .keyValues([KeyValue(key: "API_TOKEN", value: "credential")])),
+            ("notes", .string("-----BEGIN PRIVATE KEY-----\ncredential\n-----END PRIVATE KEY-----")),
+            ("headers", .strings(["Authorization: Bearer credential"])),
+            ("registryConfig", .string(#"{"auth":"Y3JlZGVudGlhbA=="}"#))
+        ]
+
+        for (id, value) in unsafeValues {
+            await #expect(throws: TemplateStoreError.secretField(id)) {
+                try await store.save(.fixture.setting(id, to: value))
+            }
+        }
+        #expect(await fileSystem.snapshot().isEmpty)
+    }
+
+    @Test func `rejects disguised credentials when loading imported bytes`() async throws {
+        let document = TemplateDocument.fixture.setting("password", to: .string("mis-typed credential"))
+        let encoded = try JSONEncoder().encode(document)
+        let fileSystem = InMemoryTemplateFileSystem(initial: ["/templates/id.json": encoded])
+        let store = TemplateStore(root: URL(fileURLWithPath: "/templates"), fileSystem: fileSystem)
+
+        await #expect(throws: TemplateStoreError.secretField("password")) {
+            try await store.load(id: "id")
+        }
+        #expect(await fileSystem.snapshot()["/templates/id.json"] == encoded)
+    }
+
+    @Test func `does not block ordinary words that merely contain a sensitive substring`() async throws {
+        let fileSystem = InMemoryTemplateFileSystem()
+        let store = TemplateStore(root: URL(fileURLWithPath: "/templates"), fileSystem: fileSystem)
+        let document = TemplateDocument.fixture.setting(
+            "image",
+            to: .string("ghcr.io/example/tokenizer-authorization-service:latest")
+        )
+
+        try await store.save(document)
+
+        #expect(try await store.load(id: document.id) == document)
+    }
+
     @Test func `failed replacement preserves previous document`() async throws {
         let old = Data("old".utf8)
         let fileSystem = InMemoryTemplateFileSystem(

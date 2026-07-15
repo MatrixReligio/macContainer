@@ -128,9 +128,7 @@ public actor TemplateStore {
     }
 
     private func validateNoSecrets(_ document: TemplateDocument) throws {
-        if let secretField = document.fields.keys.sorted().first(where: {
-            document.fields[$0]?.value.containsSecret == true
-        }) {
+        if let secretField = TemplateSecretPolicy.firstSensitiveField(in: document) {
             throw TemplateStoreError.secretField(secretField)
         }
     }
