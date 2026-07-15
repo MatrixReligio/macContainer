@@ -18,7 +18,7 @@ public struct DraftField: Codable, Equatable, Sendable {
     }
 }
 
-public enum ValueSource: String, Codable, CaseIterable, Sendable {
+public enum ValueSource: String, Codable, CaseIterable, Hashable, Sendable {
     case upstreamDefault
     case scenarioRule
     case hostRecommendation

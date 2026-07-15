@@ -458,7 +458,7 @@ git commit -m "feat: add safe scenario templates"
 - Create: `Sources/MCTemplates/TemplateRenderer.swift`
 - Test: `Tests/MCTemplatesTests/TemplateRendererTests.swift`
 
-- [ ] **Step 1: Write failing provenance/diff tests**
+- [x] **Step 1: Write failing provenance/diff tests**
 
 ```swift
 @Test func reviewRowsExplainEveryValue() throws {
@@ -470,13 +470,13 @@ git commit -m "feat: add safe scenario templates"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter TemplateRendererTests`
 
 Expected: FAIL because `TemplateRenderer` does not exist.
 
-- [ ] **Step 3: Implement renderer**
+- [x] **Step 3: Implement renderer**
 
 ```swift
 public struct TemplateReview: Equatable, Sendable {
@@ -497,13 +497,13 @@ public struct TemplateReviewRow: Identifiable, Equatable, Sendable {
 
 The renderer locates the operation by exact ID, rejects draft fields absent from the contract, emits rows in contract parameter order, and compares normalized values with upstream defaults. Source keys are `value.source.upstream`, `.scenario`, `.host`, `.image`, and `.user`.
 
-- [ ] **Step 4: Run renderer and validator suites**
+- [x] **Step 4: Run renderer and validator suites**
 
 Run: `swift test --filter TemplateRendererTests && swift test --filter OperationValidatorTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCTemplates/TemplateRenderer.swift Tests/MCTemplatesTests/TemplateRendererTests.swift
