@@ -3,8 +3,11 @@
 **Date:** 2026-07-15  
 **Product:** MacContainer  
 **Repository:** `matrixreligio/macContainer`  
-**Bundle identifier:** `com.matrixreligio.MacContainer`  
-**Document status:** The product direction was approved on 2026-07-15. This written specification is ready for user review before implementation planning.
+**Bundle identifier:** `container.matrixreligio.com`
+
+**Contact:** `contact@matrixreligio.com`
+
+**Document status:** The product direction and written specification were approved on 2026-07-15. Implementation planning is authorized.
 
 ## 1. Executive summary
 
@@ -37,6 +40,7 @@ The initial implementation targets the following verified baseline:
 - Current 1.1.0 installer signer: `Developer ID Installer: Apple Inc. - Containerization (UPBK2H6LZM)`.
 - Current 1.1.0 installer is trusted by Apple notarization.
 - Current 1.1.0 signed installer SHA-256: `0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714`.
+- Reviewed physical upgrade/rollback source: official signed Apple container `1.0.0`, SHA-256 `13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d`. This identity is accepted only as a source for the tested `1.0.0` to `1.1.0` transaction; it does not expand the complete UI contract beyond 1.1.0.
 
 Primary sources:
 
@@ -246,7 +250,12 @@ Files remain focused on one resource, form, transaction, or reusable control. Th
 
 MacContainer implements its own typed `SystemServiceController` based on the upstream service protocol. It uses the installed `/usr/local/bin/container-apiserver`, `LaunchPlist`, `ServiceManager`, `ConfigurationLoader`, and `ClientHealthCheck` directly. Calling `Application.SystemStart` is not acceptable because it resolves helpers relative to `CommandLine.executablePath` and would point at MacContainer rather than the installed Apple runtime.
 
-No production operation launches `/usr/local/bin/container`, `update-container.sh`, or `uninstall-container.sh`. The only allowed external system executable in lifecycle code is the Apple `/usr/sbin/installer` process invoked by the privileged helper for a preverified package; it is system installation plumbing, not the container CLI.
+No production operation launches `/usr/local/bin/container`, `update-container.sh`, or `uninstall-container.sh`. The only external system executables permitted by the production design are:
+
+- `/usr/sbin/installer`, invoked by the privileged helper for an already verified package.
+- `/bin/launchctl`, invoked only through Apple container 1.1.0's public `ContainerPlugin.ServiceManager` with fixed service-management verbs and app-generated launchd labels/plists.
+
+These are bounded system installation/service plumbing, not the `container` operational backend. Runtime process audits validate the executable, caller, arguments, and lifecycle phase for both exceptions and reject every other subprocess.
 
 ### 9.3 Interactive processes
 
@@ -373,6 +382,7 @@ The compatibility catalog is embedded in the signed app. It is not a remotely ed
 - Required macOS and hardware features.
 - Storage migration and rollback-safety classification.
 - Required preflight and postflight probes.
+- Exact allowed upgrade-source package identities, when a physical upgrade path has been reviewed.
 
 A scheduled GitHub workflow detects upstream releases and opens a draft compatibility update. It cannot mark the version compatible. Compatibility is promoted only after contract tests and a signed test attestation from the local physical-host suite or an identically configured physical Apple silicon self-hosted runner.
 
@@ -708,7 +718,7 @@ Test isolation rules:
 - DerivedData is `.artifacts/DerivedData`.
 - SwiftPM state is project-local `.build`.
 - Downloaded tools live in project-local `.tools`.
-- Temporary runtime files live under a `mkdtemp` directory named for `com.matrixreligio.MacContainerTests` and a UUID.
+- Temporary runtime files live under a `mkdtemp` directory named for `container.matrixreligio.com.tests` and a UUID.
 - No local Homebrew or global Python package installation is performed. If a Python helper becomes necessary, it uses a project-local `.venv`.
 - A cleanup ledger records every test-owned artifact before creation.
 - Swift cleanup uses `defer`; the outer runner uses exit and signal traps.
