@@ -15,5 +15,7 @@
     <false/>
     <key>KeepAlive</key>
     <false/>
+    <key>ProcessType</key>
+    <string>Interactive</string>
 </dict>
 </plist>

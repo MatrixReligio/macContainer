@@ -10,6 +10,7 @@
 		0057AB09E8D3299974976223 /* MCCompatibility in Frameworks */ = {isa = PBXBuildFile; productRef = 581B57738A515A8AE83C748C /* MCCompatibility */; };
 		3B388AE0E2A8D4886CAD97EA /* container.matrixreligio.com.helper.plist in Resources */ = {isa = PBXBuildFile; fileRef = DA25E9952093076DC5EEDA7B /* container.matrixreligio.com.helper.plist */; };
 		4F83A4A44A6AFDDDE9637E6B /* MCModel in Frameworks */ = {isa = PBXBuildFile; productRef = B0DB5C691040CB56B1D0CE5E /* MCModel */; };
+		64B071CB9CDD56F3B7739569 /* HelperListenerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C442A8E140A00282D3116F8C /* HelperListenerDelegate.swift */; };
 		6844CE4B851CC5FEE8D4D03A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DA332DC441801CF87A6FACE /* Assets.xcassets */; };
 		6DE9477615EBC075DD67E492 /* container.matrixreligio.com.update-agent.plist in Resources */ = {isa = PBXBuildFile; fileRef = DB7C909A3A92A98CBBE47950 /* container.matrixreligio.com.update-agent.plist */; };
 		76F884CF5A34580BB7CC7833 /* MCSystemLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = D771D3FE02EFAC1CCF8B877D /* MCSystemLifecycle */; };
@@ -22,12 +23,14 @@
 		A1C25EC4040B966615E7B508 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F80C6757CC6CE92F38585F /* main.swift */; };
 		A462F6D719D4CADB86EB0100 /* MCContracts in Frameworks */ = {isa = PBXBuildFile; productRef = AEE8D17F1726ADB6C7662123 /* MCContracts */; };
 		A8DB1D54EDF3E87A025FA56A /* MCModel in Frameworks */ = {isa = PBXBuildFile; productRef = 6671217DADE10F50D2890E64 /* MCModel */; };
+		AFA9DD390821D00030A5F7C4 /* PrivilegedHelperIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0EF5A0E8AC4B0ED5E2D8357 /* PrivilegedHelperIntegrationTests.swift */; };
 		B0B470B75C1635D58D844418 /* MCCompatibility in Frameworks */ = {isa = PBXBuildFile; productRef = D053FED8FCF72BEAAF76792B /* MCCompatibility */; };
 		B3016ACE5251BE685A5BE7F5 /* MCAppCore in Frameworks */ = {isa = PBXBuildFile; productRef = F818854C8319BB06AB72AB6D /* MCAppCore */; };
 		BAFB78940C2DE56A767E319B /* BuildSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0709F38F0C8DDC711FBF84BB /* BuildSmokeTests.swift */; };
 		CD70B5E40860DD16DA29E6BA /* MCContainerBridge in Frameworks */ = {isa = PBXBuildFile; productRef = 3C7815C0E6327FE0D828ED0A /* MCContainerBridge */; };
 		D0A826E790E24F7AE8CBF985 /* MacContainerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F8017A7AF4E5AEFCA21634 /* MacContainerApp.swift */; };
 		D42EE2CA0195E9337814AAE6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = DA76A04587AF0A8A56F57852 /* Sparkle */; };
+		EDB30489E0600D07B1E53381 /* MCSystemLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = C98042CD90EC12CE96C0F5A9 /* MCSystemLifecycle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,13 +55,6 @@
 			remoteGlobalIDString = 3C2FA5B1686873A4890B19D8;
 			remoteInfo = MacContainerUpdateAgent;
 		};
-		AF892ADC77E65A9E29248CD2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 5817788CF074C906EBE5B44B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 0D84BBF26F55F88FD2BDCEC2;
-			remoteInfo = MacContainer;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -72,6 +68,8 @@
 		86F8017A7AF4E5AEFCA21634 /* MacContainerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacContainerApp.swift; sourceTree = "<group>"; };
 		8B63F1C8A341FA1DD67BADF7 /* MacContainerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacContainerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BC1A31552E07923EC3F3B11 /* PrivilegedHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrivilegedHelper.entitlements; sourceTree = "<group>"; };
+		C0EF5A0E8AC4B0ED5E2D8357 /* PrivilegedHelperIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedHelperIntegrationTests.swift; sourceTree = "<group>"; };
+		C442A8E140A00282D3116F8C /* HelperListenerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperListenerDelegate.swift; sourceTree = "<group>"; };
 		D1613C212F2D32D3D72EC1F7 /* MacContainerPrivilegedHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = MacContainerPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		D20200AB2227F11B73B20757 /* MacContainer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacContainer.entitlements; sourceTree = "<group>"; };
 		DA25E9952093076DC5EEDA7B /* container.matrixreligio.com.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = container.matrixreligio.com.helper.plist; sourceTree = "<group>"; };
@@ -117,6 +115,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		98AF1F2A366F75DE228987E5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EDB30489E0600D07B1E53381 /* MCSystemLifecycle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -143,6 +149,7 @@
 			isa = PBXGroup;
 			children = (
 				DA25E9952093076DC5EEDA7B /* container.matrixreligio.com.helper.plist */,
+				C442A8E140A00282D3116F8C /* HelperListenerDelegate.swift */,
 				E7F80C6757CC6CE92F38585F /* main.swift */,
 				9BC1A31552E07923EC3F3B11 /* PrivilegedHelper.entitlements */,
 			);
@@ -173,6 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				0709F38F0C8DDC711FBF84BB /* BuildSmokeTests.swift */,
+				C0EF5A0E8AC4B0ED5E2D8357 /* PrivilegedHelperIntegrationTests.swift */,
 			);
 			path = MacContainerIntegrationTests;
 			sourceTree = "<group>";
@@ -232,14 +240,15 @@
 			buildConfigurationList = D71BBD8B334DA24603D19847 /* Build configuration list for PBXNativeTarget "MacContainerIntegrationTests" */;
 			buildPhases = (
 				19D127C25E27B3901DA8844A /* Sources */,
+				98AF1F2A366F75DE228987E5 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				90CC7E9EE967754CFDAA4A71 /* PBXTargetDependency */,
 			);
 			name = MacContainerIntegrationTests;
 			packageProductDependencies = (
+				C98042CD90EC12CE96C0F5A9 /* MCSystemLifecycle */,
 			);
 			productName = MacContainerIntegrationTests;
 			productReference = 3A9C7D7C8D72877A81205DFD /* MacContainerIntegrationTests.xctest */;
@@ -458,6 +467,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BAFB78940C2DE56A767E319B /* BuildSmokeTests.swift in Sources */,
+				AFA9DD390821D00030A5F7C4 /* PrivilegedHelperIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -473,6 +483,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64B071CB9CDD56F3B7739569 /* HelperListenerDelegate.swift in Sources */,
 				A1C25EC4040B966615E7B508 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -511,11 +522,6 @@
 			target = 3C2FA5B1686873A4890B19D8 /* MacContainerUpdateAgent */;
 			targetProxy = 934F1B614BA2198D147B628E /* PBXContainerItemProxy */;
 		};
-		90CC7E9EE967754CFDAA4A71 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 0D84BBF26F55F88FD2BDCEC2 /* MacContainer */;
-			targetProxy = AF892ADC77E65A9E29248CD2 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -531,7 +537,6 @@
 					"@loader_path/../Frameworks",
 				);
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacContainer.app/Contents/MacOS/MacContainer";
 			};
 			name = Debug;
 		};
@@ -668,7 +673,6 @@
 					"@loader_path/../Frameworks",
 				);
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacContainer.app/Contents/MacOS/MacContainer";
 			};
 			name = Release;
 		};
@@ -933,6 +937,10 @@
 		B0DB5C691040CB56B1D0CE5E /* MCModel */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MCModel;
+		};
+		C98042CD90EC12CE96C0F5A9 /* MCSystemLifecycle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MCSystemLifecycle;
 		};
 		D053FED8FCF72BEAAF76792B /* MCCompatibility */ = {
 			isa = XCSwiftPackageProductDependency;

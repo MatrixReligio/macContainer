@@ -139,7 +139,8 @@ targets:
     sources:
       - Tests/MacContainerIntegrationTests
     dependencies:
-      - target: MacContainer
+      - package: MacContainerCore
+        product: MCSystemLifecycle
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

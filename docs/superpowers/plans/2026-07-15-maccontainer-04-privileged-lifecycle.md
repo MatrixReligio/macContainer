@@ -297,23 +297,23 @@ git commit -m "feat: secure privileged helper boundary"
 - Modify: `App/PrivilegedHelper/PrivilegedHelper.entitlements`
 - Test: `Tests/MacContainerIntegrationTests/PrivilegedHelperIntegrationTests.swift`
 
-- [ ] **Step 1: Write failing integration tests against an unprivileged fixture listener**
+- [x] **Step 1: Write failing integration tests against an unprivileged fixture listener**
 
 The tests connect with valid/invalid audit identity fixtures, submit every request case, assert exactly one allowlisted system adapter call, verify oversized/unknown requests are rejected, and prove the helper cannot open a network socket through entitlement/static inspection.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerIntegrationTests/PrivilegedHelperIntegrationTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because listener/service files do not exist.
 
-- [ ] **Step 3: Implement the service**
+- [x] **Step 3: Implement the service**
 
 The launch daemon listens on Mach service `container.matrixreligio.com.helper`, authenticates before exporting any object, decodes versioned data through `NSSecureCoding`, applies a 1 MiB message cap, and dispatches only the eight enum cases. It runs `/usr/sbin/installer -pkg /dev/fd/${PACKAGE_FD} -target /` with an exact empty environment and fixed working directory only after re-verifying the inherited descriptor/report. It never runs a shell.
 
 Entitlements contain no App Sandbox and no network client/server entitlement. The plist uses `MachServices`, `ProcessType=Interactive`, `RunAtLoad=false`, `KeepAlive=false`, and a fixed bundle-contained executable path installed by `SMAppService.daemon(plistName:)`.
 
-- [ ] **Step 4: Build, inspect, and run integration tests**
+- [x] **Step 4: Build, inspect, and run integration tests**
 
 Run:
 
@@ -325,7 +325,7 @@ scripts/check-no-container-cli.sh .
 
 Expected: tests PASS, entitlement output has no network entitlement, scanner permits only the exact `/usr/sbin/installer` use.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/PrivilegedHelper Tests/MacContainerIntegrationTests/PrivilegedHelperIntegrationTests.swift project.yml MacContainer.xcodeproj

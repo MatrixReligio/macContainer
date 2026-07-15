@@ -1,16 +1,25 @@
 import XCTest
 
 final class BuildSmokeTests: XCTestCase {
-    func testReleaseIdentityIsEmbedded() {
-        XCTAssertEqual(Bundle.main.bundleIdentifier, "container.matrixreligio.com")
+    func testReleaseIdentityIsEmbedded() throws {
+        let applicationBundle = try XCTUnwrap(builtApplicationBundle())
+        XCTAssertEqual(applicationBundle.bundleIdentifier, "container.matrixreligio.com")
         XCTAssertEqual(
-            Bundle.main.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String,
+            applicationBundle.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String,
             "public.app-category.developer-tools"
         )
         XCTAssertEqual(
-            Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String,
+            applicationBundle.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String,
             "Copyright 2026 MatrixReligio LLC. Licensed under Apache-2.0."
         )
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleIconName") as? String, "AppIcon")
+        XCTAssertEqual(
+            applicationBundle.object(forInfoDictionaryKey: "CFBundleIconName") as? String,
+            "AppIcon"
+        )
+    }
+
+    private func builtApplicationBundle() -> Bundle? {
+        let testBundle = Bundle(for: Self.self).bundleURL
+        return Bundle(url: testBundle.deletingLastPathComponent().appendingPathComponent("MacContainer.app"))
     }
 }

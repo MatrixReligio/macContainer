@@ -83,7 +83,19 @@ public final class OpenRuntimePackageFile: @unchecked Sendable {
             throw PackageTrustError.unsafePackageFile
         }
         do {
-            initialIdentity = try Self.readAndValidateIdentity(fileDescriptor)
+            initialIdentity = try Self.readAndValidateIdentity(fileDescriptor, allowedOwner: geteuid())
+        } catch {
+            Darwin.close(fileDescriptor)
+            throw error
+        }
+    }
+
+    public init(duplicating descriptor: Int32, allowedOwner: uid_t = getuid()) throws {
+        fileDescriptor = Darwin.fcntl(descriptor, F_DUPFD_CLOEXEC, 0)
+        guard fileDescriptor >= 0 else { throw PackageTrustError.unsafePackageFile }
+        sourceURL = URL(fileURLWithPath: "/dev/fd/\(fileDescriptor)")
+        do {
+            initialIdentity = try Self.readAndValidateIdentity(fileDescriptor, allowedOwner: allowedOwner)
         } catch {
             Darwin.close(fileDescriptor)
             throw error
@@ -102,21 +114,24 @@ public final class OpenRuntimePackageFile: @unchecked Sendable {
         return duplicate
     }
 
-    fileprivate func validateUnchanged() throws {
-        let current = try Self.readAndValidateIdentity(fileDescriptor)
+    public func revalidateIdentity() throws {
+        let current = try Self.readAndValidateIdentity(fileDescriptor, allowedOwner: initialIdentity.owner)
         guard current == initialIdentity else {
             throw PackageTrustError.packageChangedDuringVerification
         }
     }
 
-    private static func readAndValidateIdentity(_ descriptor: Int32) throws -> RuntimePackageFileIdentity {
+    private static func readAndValidateIdentity(
+        _ descriptor: Int32,
+        allowedOwner: uid_t
+    ) throws -> RuntimePackageFileIdentity {
         var status = stat()
         guard Darwin.fstat(descriptor, &status) == 0 else {
             throw PackageTrustError.unsafePackageFile
         }
         guard
             status.st_mode & S_IFMT == S_IFREG,
-            status.st_uid == geteuid(),
+            status.st_uid == allowedOwner,
             status.st_nlink == 1,
             status.st_mode & 0o022 == 0,
             status.st_size > 0
@@ -126,6 +141,7 @@ public final class OpenRuntimePackageFile: @unchecked Sendable {
         return RuntimePackageFileIdentity(
             device: status.st_dev,
             inode: status.st_ino,
+            owner: status.st_uid,
             size: status.st_size,
             modifiedSeconds: status.st_mtimespec.tv_sec,
             modifiedNanoseconds: status.st_mtimespec.tv_nsec
@@ -176,13 +192,20 @@ public struct RuntimePackageVerifier: Sendable {
         packageAt url: URL,
         against manifest: RuntimePackageManifest
     ) async throws -> VerifiedRuntimePackage {
+        let file = try OpenRuntimePackageFile(packageAt: url)
+        return try await verify(openFile: file, against: manifest)
+    }
+
+    public func verify(
+        openFile file: OpenRuntimePackageFile,
+        against manifest: RuntimePackageManifest
+    ) async throws -> VerifiedRuntimePackage {
         do {
             try manifest.validate()
         } catch {
             throw PackageTrustError.invalidManifest
         }
 
-        let file = try OpenRuntimePackageFile(packageAt: url)
         let digest = try await digester.sha256(of: file)
         guard digest == manifest.sha256 else { throw PackageTrustError.digestMismatch }
 
@@ -215,7 +238,7 @@ public struct RuntimePackageVerifier: Sendable {
                 firstDifference: firstDifference
             )
         }
-        try file.validateUnchanged()
+        try file.revalidateIdentity()
 
         return VerifiedRuntimePackage(
             runtimeVersion: inspection.runtimeVersion,
@@ -233,6 +256,7 @@ public struct RuntimePackageVerifier: Sendable {
 private struct RuntimePackageFileIdentity: Equatable {
     let device: dev_t
     let inode: ino_t
+    let owner: uid_t
     let size: off_t
     let modifiedSeconds: Int
     let modifiedNanoseconds: Int

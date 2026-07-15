@@ -1,6 +1,20 @@
 import Darwin
 import Foundation
 
+@objc public protocol MCPrivilegedHelperXPCProtocol {
+    func perform(
+        _ requestData: Data,
+        packageFile: FileHandle?,
+        withReply reply: @escaping (Data?, NSError?) -> Void
+    )
+}
+
+public enum PrivilegedHelperXPC {
+    public static func interface() -> NSXPCInterface {
+        NSXPCInterface(with: MCPrivilegedHelperXPCProtocol.self)
+    }
+}
+
 public enum PrivilegedRequest: Codable, Equatable, Sendable {
     case installVerifiedPackage(PackageInstallToken)
     case removePayload(RemovePayloadRequest)
@@ -181,6 +195,41 @@ public enum PrivilegedRequestCodec {
         guard envelope.version == schemaVersion else { throw PrivilegedRequestError.unsupportedVersion }
         try envelope.request.validate(policy: .runtime110)
         return envelope.request
+    }
+}
+
+public struct PrivilegedResponse: Codable, Equatable, Sendable {
+    public let version: Int
+    public let success: Bool
+
+    public init(version: Int = 1, success: Bool = true) {
+        self.version = version
+        self.success = success
+    }
+}
+
+public enum PrivilegedResponseCodec {
+    public static func encodeSuccess() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return try encoder.encode(PrivilegedResponse())
+    }
+
+    public static func decode(_ data: Data) throws -> PrivilegedResponse {
+        guard data.count <= PrivilegedRequestCodec.maximumMessageBytes else {
+            throw PrivilegedRequestError.messageTooLarge
+        }
+        do {
+            let response = try JSONDecoder().decode(PrivilegedResponse.self, from: data)
+            guard response.version == 1, response.success else {
+                throw PrivilegedRequestError.unsupportedVersion
+            }
+            return response
+        } catch let error as PrivilegedRequestError {
+            throw error
+        } catch {
+            throw PrivilegedRequestError.invalidEncoding
+        }
     }
 }
 
