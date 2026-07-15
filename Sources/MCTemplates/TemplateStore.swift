@@ -6,6 +6,7 @@ public protocol TemplateFileSystem: Sendable {
     func writeAtomically(_ data: Data, to url: URL) async throws
     func list(_ root: URL) async throws -> [URL]
     func remove(_ url: URL) async throws
+    func quarantine(_ url: URL) async throws -> URL
 }
 
 public enum TemplateStoreError: Error, Equatable, Sendable {
@@ -13,15 +14,22 @@ public enum TemplateStoreError: Error, Equatable, Sendable {
     case secretField(String)
     case unsupportedSchemaVersion(Int)
     case fileOutsideRoot(String)
+    case disabledTemplate(String)
 }
 
 public actor TemplateStore {
     private let root: URL
     private let fileSystem: any TemplateFileSystem
+    private let migrator: TemplateMigrator
 
-    public init(root: URL, fileSystem: any TemplateFileSystem) {
+    public init(
+        root: URL,
+        fileSystem: any TemplateFileSystem,
+        migrator: TemplateMigrator = .current
+    ) {
         self.root = root.standardizedFileURL
         self.fileSystem = fileSystem
+        self.migrator = migrator
     }
 
     public func save(_ document: TemplateDocument) async throws {
@@ -29,11 +37,7 @@ public actor TemplateStore {
         guard document.schemaVersion == TemplateDocument.currentSchemaVersion else {
             throw TemplateStoreError.unsupportedSchemaVersion(document.schemaVersion)
         }
-        if let secretField = document.fields.keys.sorted().first(where: {
-            document.fields[$0]?.value.containsSecret == true
-        }) {
-            throw TemplateStoreError.secretField(secretField)
-        }
+        try validateNoSecrets(document)
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
@@ -42,30 +46,61 @@ public actor TemplateStore {
     }
 
     public func load(id: String) async throws -> TemplateDocument {
-        let data = try await fileSystem.read(documentURL(id: id))
-        let document = try JSONDecoder().decode(TemplateDocument.self, from: data)
-        guard document.id == id else {
-            throw TemplateStoreError.invalidDocumentID(document.id)
+        switch try await loadRecord(id: id) {
+        case let .enabled(document):
+            return document
+        case let .disabled(document):
+            throw TemplateStoreError.disabledTemplate(document.reasonKey)
         }
-        guard document.schemaVersion == TemplateDocument.currentSchemaVersion else {
-            throw TemplateStoreError.unsupportedSchemaVersion(document.schemaVersion)
+    }
+
+    public func loadRecord(id: String) async throws -> TemplateMigrationResult {
+        let url = try documentURL(id: id)
+        let data = try await fileSystem.read(url)
+        let result: TemplateMigrationResult
+        do {
+            result = try migrator.decodeAndMigrate(data)
+        } catch let error as TemplateMigrationError {
+            _ = try await fileSystem.quarantine(url)
+            throw error
         }
-        return document
+
+        switch result {
+        case let .enabled(document):
+            guard document.id == id else {
+                throw TemplateStoreError.invalidDocumentID(document.id)
+            }
+            try validateNoSecrets(document)
+        case let .disabled(document):
+            if let documentID = document.id, documentID != id {
+                throw TemplateStoreError.invalidDocumentID(documentID)
+            }
+        }
+        return result
     }
 
     public func list() async throws -> [TemplateDocument] {
+        try await listRecords().compactMap { result in
+            guard case let .enabled(document) = result else {
+                return nil
+            }
+            return document
+        }
+    }
+
+    public func listRecords() async throws -> [TemplateMigrationResult] {
         let rootPath = root.path
         let urls = try await fileSystem.list(root)
             .filter { $0.pathExtension == "json" }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
-        var documents: [TemplateDocument] = []
+        var documents: [TemplateMigrationResult] = []
         for url in urls {
             let standardized = url.standardizedFileURL
             guard standardized.deletingLastPathComponent().path == rootPath else {
                 throw TemplateStoreError.fileOutsideRoot(standardized.path)
             }
             let id = standardized.deletingPathExtension().lastPathComponent
-            let document = try await load(id: id)
+            let document = try await loadRecord(id: id)
             documents.append(document)
         }
         return documents
@@ -89,6 +124,14 @@ public actor TemplateStore {
             bytes.allSatisfy({ $0.isASCIILowercaseOrDigit || $0 == 45 })
         else {
             throw TemplateStoreError.invalidDocumentID(id)
+        }
+    }
+
+    private func validateNoSecrets(_ document: TemplateDocument) throws {
+        if let secretField = document.fields.keys.sorted().first(where: {
+            document.fields[$0]?.value.containsSecret == true
+        }) {
+            throw TemplateStoreError.secretField(secretField)
         }
     }
 }
@@ -157,6 +200,31 @@ public struct LocalTemplateFileSystem: TemplateFileSystem {
         }
         try fileManager.removeItem(at: url)
         try synchronizeDirectory(url.deletingLastPathComponent())
+    }
+
+    public func quarantine(_ url: URL) async throws -> URL {
+        let fileManager = FileManager.default
+        let root = url.deletingLastPathComponent()
+        let quarantineRoot = root.appendingPathComponent(".quarantine", isDirectory: true)
+        try fileManager.createDirectory(
+            at: quarantineRoot,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: quarantineRoot.path)
+
+        let baseName = "\(url.lastPathComponent).corrupt"
+        var destination = quarantineRoot.appendingPathComponent(baseName, isDirectory: false)
+        var suffix = 1
+        while fileManager.fileExists(atPath: destination.path) {
+            destination = quarantineRoot.appendingPathComponent("\(baseName).\(suffix)", isDirectory: false)
+            suffix += 1
+        }
+        try fileManager.moveItem(at: url, to: destination)
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+        try synchronizeDirectory(quarantineRoot)
+        try synchronizeDirectory(root)
+        return destination
     }
 
     private func synchronizeDirectory(_ url: URL) throws {

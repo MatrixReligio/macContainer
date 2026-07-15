@@ -173,6 +173,13 @@ private actor InMemoryTemplateFileSystem: TemplateFileSystem {
         files.removeValue(forKey: url.path)
     }
 
+    func quarantine(_ url: URL) -> URL {
+        let destination = url.deletingLastPathComponent()
+            .appendingPathComponent(".quarantine/\(url.lastPathComponent).corrupt")
+        files[destination.path] = files.removeValue(forKey: url.path)
+        return destination
+    }
+
     func snapshot() -> [String: Data] {
         files
     }

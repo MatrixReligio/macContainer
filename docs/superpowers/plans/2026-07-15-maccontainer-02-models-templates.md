@@ -610,7 +610,7 @@ git commit -m "feat: persist custom templates safely"
 - Create: `Sources/MCTemplates/TemplateMigration.swift`
 - Test: `Tests/MCTemplatesTests/TemplateMigrationTests.swift`
 
-- [ ] **Step 1: Write failing migration tests**
+- [x] **Step 1: Write failing migration tests**
 
 ```swift
 @Test func migratesVersionOneMemoryMiBWithoutLoss() throws {
@@ -622,29 +622,29 @@ git commit -m "feat: persist custom templates safely"
 
 @Test func disablesUnknownFutureSchema() {
     let future = Data(#"{"schemaVersion":99,"id":"future"}"#.utf8)
-    #expect(throws: TemplateMigrationError.unsupportedFutureVersion(99)) {
-        try TemplateMigrator.current.decodeAndMigrate(future)
-    }
+    let result = try TemplateMigrator.current.decodeAndMigrate(future)
+    #expect(result.disabled?.reasonKey == "template.disabled.future-schema")
+    #expect(result.disabled?.originalBytes == future)
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter TemplateMigrationTests`
 
 Expected: FAIL because the migrator is undefined.
 
-- [ ] **Step 3: Implement explicit migrations**
+- [x] **Step 3: Implement explicit migrations**
 
 `TemplateMigrator.currentVersion` is `2`. Version 1 decodes through a private `TemplateDocumentV1`, converts `memoryMiB` using checked multiplication by 1,048,576, maps all other known fields exactly, and returns version 2. Unknown future versions return a disabled record containing original bytes and a localized reason key; corrupt documents are quarantined by rename, never overwritten.
 
-- [ ] **Step 4: Run migration and store suites**
+- [x] **Step 4: Run migration and store suites**
 
 Run: `swift test --filter TemplateMigrationTests && swift test --filter TemplateStoreTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCTemplates/TemplateMigration.swift Tests/MCTemplatesTests/TemplateMigrationTests.swift
