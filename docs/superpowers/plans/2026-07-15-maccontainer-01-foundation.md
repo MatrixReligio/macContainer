@@ -972,7 +972,7 @@ git add docs/reviews/stage-0.md
 git commit -m "docs: close upstream contract review"
 ```
 
-- [ ] **Step 4: Run Stage 1 architecture and supply-chain verification**
+- [x] **Step 4: Run Stage 1 architecture and supply-chain verification**
 
 Run:
 
@@ -987,7 +987,7 @@ git status --short
 
 Expected: all commands PASS and final status is empty.
 
-- [ ] **Step 5: Review and close Stage 1**
+- [x] **Step 5: Review and close Stage 1**
 
 Review module dependency direction, bundle identities, absence of App Sandbox, helper/update-agent containment, exact pins, action SHAs, secret permissions, generated-project drift, OSS policy links, and public repository settings. Resolve all findings, write `Gate: PASS`, commit, push, and verify the current GitHub Actions run succeeds.
 
