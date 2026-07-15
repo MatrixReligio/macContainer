@@ -44,7 +44,7 @@
 - Create: `Sources/MCModel/ProjectIdentity.swift`
 - Test: `Tests/MCModelTests/ProjectIdentityTests.swift`
 
-- [ ] **Step 1: Write the failing identity test**
+- [x] **Step 1: Write the failing identity test**
 
 ```swift
 import Testing
@@ -62,13 +62,13 @@ struct ProjectIdentityTests {
 }
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `swift test --filter ProjectIdentityTests`
 
 Expected: FAIL because `Package.swift` and `ProjectIdentity` do not exist.
 
-- [ ] **Step 3: Add the minimum identity implementation**
+- [x] **Step 3: Add the minimum identity implementation**
 
 ```swift
 public enum ProjectIdentity: Sendable {
@@ -128,13 +128,13 @@ let package = Package(
 )
 ```
 
-- [ ] **Step 4: Run the focused test and hygiene checks**
+- [x] **Step 4: Run the focused test and hygiene checks**
 
 Run: `swift test --filter ProjectIdentityTests && git check-ignore .build/example .tools/example secrets/example.p12`
 
 Expected: PASS and all three sample paths are printed as ignored.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .gitignore .swift-version Package.swift Sources/MCModel Tests/MCModelTests
@@ -148,7 +148,7 @@ git commit -m "build: establish MacContainer project identity"
 - Create: empty source anchors under `Sources/MCContracts`, `Sources/MCTemplates`, `Sources/MCContainerBridge`, `Sources/MCCompatibility`, `Sources/MCSystemLifecycle`, `Sources/MCAppCore`
 - Create: corresponding test anchors under `Tests/` and `Tests/TestSupport/TestSupport.swift`
 
-- [ ] **Step 1: Define the failing package-graph assertion**
+- [x] **Step 1: Define the failing package-graph assertion**
 
 Run this assertion against the Task 1 manifest:
 
@@ -156,13 +156,13 @@ Run this assertion against the Task 1 manifest:
 swift package describe --type json | rg '"name"\s*:\s*"MCContracts"'
 ```
 
-- [ ] **Step 2: Run package inspection and verify RED**
+- [x] **Step 2: Run package inspection and verify RED**
 
 Run: `swift package describe --type json | rg '"name"\s*:\s*"MCContracts"'`
 
 Expected: FAIL because the minimum manifest does not yet define `MCContracts`.
 
-- [ ] **Step 3: Add the package manifest**
+- [x] **Step 3: Add the package manifest**
 
 ```swift
 // swift-tools-version: 6.2
@@ -235,13 +235,13 @@ public enum MCContractsModule: Sendable {}
 public enum TestSupportModule: Sendable {}
 ```
 
-- [ ] **Step 4: Resolve and test the exact graph**
+- [x] **Step 4: Resolve and test the exact graph**
 
 Run: `swift package resolve && swift package describe --type json | rg '"name"\s*:\s*"MCContracts"' && swift package show-dependencies --format text && swift test --parallel`
 
 Expected: PASS; output identifies `container<https://github.com/apple/container.git@1.1.0>` and no floating branch dependency.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Package.swift Package.resolved Sources Tests
@@ -255,44 +255,44 @@ git commit -m "build: define modular core package"
 - Create: `Sources/MCContracts/ContractRepository.swift`
 - Test: `Tests/MCContractsTests/ContractRepositoryTests.swift`
 
-- [ ] **Step 1: Write failing decode and invariants tests**
+- [x] **Step 1: Write failing decode and stable-encoding tests**
 
 ```swift
+import Foundation
 import Testing
 @testable import MCContracts
 
-@Suite("Upstream contract")
+@Suite("Upstream contract schema")
 struct ContractRepositoryTests {
-    @Test func loadsExact110Contract() throws {
-        let contract = try ContractRepository.bundled(version: RuntimeVersion(major: 1, minor: 1, patch: 0))
-        #expect(contract.runtimeVersion.description == "1.1.0")
-        #expect(contract.operations.count == 62)
-        #expect(Set(contract.operations.map(\.id)).count == 62)
+    @Test func semanticRuntimeVersionOrdersNumerically() {
+        let older = RuntimeVersion(major: 1, minor: 0, patch: 9)
+        let newer = RuntimeVersion(major: 1, minor: 1, patch: 0)
+        #expect(older < newer)
+        #expect(newer.description == "1.1.0")
     }
 
-    @Test func everyParameterHasCompleteMetadata() throws {
-        let contract = try ContractRepository.bundled(version: .init(major: 1, minor: 1, patch: 0))
-        for operation in contract.operations {
-            for parameter in operation.parameters {
-                #expect(parameter.labelKey.isEmpty == false)
-                #expect(parameter.conciseHelpKey.isEmpty == false)
-                #expect(parameter.detailedHelpKey.isEmpty == false)
-                #expect(parameter.validationErrorKey.isEmpty == false)
-                #expect(parameter.recoveryKey.isEmpty == false)
-                #expect(parameter.acceptedValues.isEmpty == false || parameter.valueType == .boolean)
-            }
-        }
+    @Test func decodesMinimalReviewedContract() throws {
+        let data = Data(#"{"schemaVersion":1,"runtimeVersion":{"major":1,"minor":1,"patch":0},"sourceCommit":"608902412d61761ebd1efc285a9d0a1727e6e2c1","operations":[]}"#.utf8)
+        let contract = try ContractRepository.decode(data)
+        #expect(contract.runtimeVersion.description == "1.1.0")
+        #expect(contract.operations.isEmpty)
+    }
+
+    @Test func parameterValueUsesStableSingleKeyJSON() throws {
+        let data = Data(#"{"integer":10}"#.utf8)
+        let value = try JSONDecoder().decode(ParameterValue.self, from: data)
+        #expect(value == .integer(10))
     }
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ContractRepositoryTests`
 
 Expected: FAIL because the contract types and repository are undefined.
 
-- [ ] **Step 3: Add the complete contract types**
+- [x] **Step 3: Add the complete contract types**
 
 ```swift
 import Foundation
@@ -375,6 +375,8 @@ public struct AvailabilityContract: Codable, Equatable, Sendable {
 }
 ```
 
+`ParameterValue` implements custom `Codable` so its stable external representation is exactly one key such as `{"integer":10}` rather than Swift's synthesized associated-value shape. `ContractRepository.decode(_:)` supports in-memory schema tests; `bundled(version:)` adds the resource lookup used by Task 4.
+
 Add the repository:
 
 ```swift
@@ -399,13 +401,13 @@ public enum ContractRepository {
 }
 ```
 
-- [ ] **Step 4: Run tests and verify type behavior**
+- [x] **Step 4: Run tests and verify type behavior**
 
 Run: `swift test --filter ContractRepositoryTests`
 
-Expected: compilation reaches fixture loading and FAILS only with `missingBundledResource("apple-container-1.1.0.json")`, proving model code compiles before the snapshot task.
+Expected: PASS for semantic version ordering, minimal in-memory contract decoding, and stable single-key `ParameterValue` JSON. Bundled snapshot coverage remains the next task's RED.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContracts Tests/MCContractsTests
