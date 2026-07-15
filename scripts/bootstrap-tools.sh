@@ -8,6 +8,7 @@ tools_root="$repo_root/.tools"
 download_root="$tools_root/downloads"
 bin_root="$tools_root/bin"
 share_root="$tools_root/share"
+trap 'rm -f "$download_root"/*.partial(N)' EXIT
 
 read_manifest() {
     /usr/bin/plutil -extract "$1" raw -o - "$manifest"
@@ -24,6 +25,26 @@ verify_sha256() {
     fi
 }
 
+validate_manifest_entry() {
+    local label="$1"
+    local version="$2"
+    local archive="$3"
+    local sha256="$4"
+
+    if [[ "$version" != <->.<->.<-> ]]; then
+        print -u2 -- "Invalid $label version: $version"
+        return 1
+    fi
+    if [[ -z "$archive" || "$archive" == */* || "$archive" == *\\* || "$archive" == "." || "$archive" == ".." ]]; then
+        print -u2 -- "Invalid $label archive filename: $archive"
+        return 1
+    fi
+    if (( ${#sha256} != 64 )) || [[ "$sha256" == *[^0-9a-f]* ]]; then
+        print -u2 -- "Invalid $label SHA-256: $sha256"
+        return 1
+    fi
+}
+
 download_verified() {
     local url="$1"
     local destination="$2"
@@ -35,7 +56,7 @@ download_verified() {
     fi
 
     rm -f "$destination" "$partial"
-    /usr/bin/curl \
+    if ! /usr/bin/curl \
         --fail \
         --location \
         --proto '=https' \
@@ -43,8 +64,14 @@ download_verified() {
         --silent \
         --tlsv1.2 \
         --output "$partial" \
-        "$url"
-    verify_sha256 "$partial" "$expected_sha"
+        "$url"; then
+        rm -f "$partial"
+        return 1
+    fi
+    if ! verify_sha256 "$partial" "$expected_sha"; then
+        rm -f "$partial"
+        return 1
+    fi
     /bin/mv "$partial" "$destination"
 }
 
@@ -80,6 +107,11 @@ swiftlint_sha="$(read_manifest swiftLint.sha256)"
 swiftlint_download="$download_root/$swiftlint_archive"
 swiftlint_url="https://github.com/realm/SwiftLint/releases/download/$swiftlint_version/$swiftlint_archive"
 
+validate_manifest_entry xcodegen "$xcodegen_version" "$xcodegen_archive" "$xcodegen_sha"
+validate_manifest_entry sparkle "$sparkle_version" "$sparkle_archive" "$sparkle_sha"
+validate_manifest_entry swiftFormat "$swiftformat_version" "$swiftformat_archive" "$swiftformat_sha"
+validate_manifest_entry swiftLint "$swiftlint_version" "$swiftlint_archive" "$swiftlint_sha"
+
 download_verified "$xcodegen_url" "$xcodegen_download" "$xcodegen_sha"
 download_verified "$sparkle_url" "$sparkle_download" "$sparkle_sha"
 download_verified "$swiftformat_url" "$swiftformat_download" "$swiftformat_sha"
@@ -99,8 +131,11 @@ swiftlint_root="$tools_root/swiftlint-$swiftlint_version"
 xcodegen_binary="$(find "$xcodegen_root" -type f -name xcodegen -perm -111 -print -quit)"
 swiftformat_binary="$(find "$swiftformat_root" -type f -name swiftformat -perm -111 -print -quit)"
 swiftlint_binary="$(find "$swiftlint_root" -type f -name swiftlint -perm -111 -print -quit)"
+generate_appcast_binary="$(find "$sparkle_root" -type f -name generate_appcast -perm -111 -print -quit)"
+sign_update_binary="$(find "$sparkle_root" -type f -name sign_update -perm -111 -print -quit)"
 xcodegen_share="${xcodegen_binary:h:h}/share/xcodegen"
 if [[ -z "$xcodegen_binary" || -z "$swiftformat_binary" || -z "$swiftlint_binary" || \
+      -z "$generate_appcast_binary" || -z "$sign_update_binary" || \
       ! -d "$xcodegen_share/SettingPresets" ]]; then
     print -u2 -- "A pinned tool archive did not contain its expected executable"
     exit 1
@@ -110,6 +145,8 @@ fi
 /bin/ln -sfn "$xcodegen_share" "$share_root/xcodegen"
 /bin/ln -sfn "$swiftformat_binary" "$bin_root/swiftformat"
 /bin/ln -sfn "$swiftlint_binary" "$bin_root/swiftlint"
+/bin/ln -sfn "$generate_appcast_binary" "$bin_root/generate_appcast"
+/bin/ln -sfn "$sign_update_binary" "$bin_root/sign_update"
 
 actual_xcodegen="$($bin_root/xcodegen --version | /usr/bin/sed -E 's/[^0-9]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
 actual_swiftformat="$($bin_root/swiftformat --version)"

@@ -5,6 +5,7 @@ script_dir="${0:A:h}"
 repo_root="${script_dir:h}"
 manifest="$repo_root/Config/release-tools.json"
 committed_project="$repo_root/MacContainer.xcodeproj"
+/bin/mkdir -p "$repo_root/.build"
 temporary_root="$(mktemp -d "$repo_root/.build/xcodegen-check.XXXXXX")"
 trap 'rm -rf "$temporary_root"' EXIT
 temporary_repo="$temporary_root/implementation"
