@@ -33,7 +33,7 @@
 - Create: `Sources/MCSystemLifecycle/LifecycleTransaction.swift`
 - Test: `Tests/MCSystemLifecycleTests/LifecycleJournalTests.swift`
 
-- [ ] **Step 1: Write failing durability and redaction tests**
+- [x] **Step 1: Write failing durability and redaction tests**
 
 ```swift
 import Testing
@@ -62,13 +62,13 @@ struct LifecycleJournalTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter LifecycleJournalTests`
 
 Expected: FAIL because journal types are undefined.
 
-- [ ] **Step 3: Implement append-only transaction records**
+- [x] **Step 3: Implement append-only transaction records**
 
 ```swift
 public enum LifecycleKind: String, Codable, Sendable { case install, upgrade, downgrade, rollback, uninstall }
@@ -97,13 +97,13 @@ public enum LifecycleAction: Codable, Equatable, Sendable {
 
 The concrete storage appends one canonical JSON line at a time to `~/Library/Application Support/container.matrixreligio.com/Lifecycle/journal.jsonl`, mode `0600`; it calls `synchronize()` before returning. The next sequence number is verified against the last valid line. A truncated final line is quarantined and recovery fails closed rather than guessing which side effect ran.
 
-- [ ] **Step 4: Run crash/truncation tests**
+- [x] **Step 4: Run crash/truncation tests**
 
 Run: `swift test --filter LifecycleJournalTests`
 
 Expected: PASS for normal append, crash after intent, crash after side effect, truncated record, duplicate sequence, and redaction cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/LifecycleModels.swift Sources/MCSystemLifecycle/LifecycleJournal.swift Sources/MCSystemLifecycle/LifecycleTransaction.swift Tests/MCSystemLifecycleTests/LifecycleJournalTests.swift
