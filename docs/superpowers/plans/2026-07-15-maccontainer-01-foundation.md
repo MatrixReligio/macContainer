@@ -856,13 +856,13 @@ git commit -m "design: add deterministic MacContainer app icon"
 - Create: `.github/dependabot.yml`
 - Create: `.github/CODEOWNERS`
 
-- [ ] **Step 1: Verify repository absence and authentication**
+- [x] **Step 1: Verify repository absence and authentication**
 
 Run: `gh auth status && ! gh repo view matrixreligio/macContainer --json nameWithOwner,isPrivate`
 
 Expected: authenticated GitHub access and exit status proving the repository is not yet present. If it now exists, verify it is public and owned by `matrixreligio`; never replace an unrelated repository.
 
-- [ ] **Step 2: Add failing workflow policy checks**
+- [x] **Step 2: Add failing workflow policy checks**
 
 Add `scripts/check-workflow-policy.sh` to reject unpinned third-party actions, non-`macos-26` test runners, secret-bearing PR jobs, and workflows that omit `scripts/check-repository.sh`. Run it before workflows exist.
 
@@ -870,7 +870,7 @@ Run: `scripts/check-workflow-policy.sh`
 
 Expected: FAIL with `missing workflow: .github/workflows/ci.yml`.
 
-- [ ] **Step 3: Add workflows and repository policy**
+- [x] **Step 3: Add workflows and repository policy**
 
 `ci.yml` uses least-privilege `contents: read`, cancels stale branch runs, installs checksum-pinned tools, runs package tests with coverage, generates the Xcode project, builds Debug and Release unsigned, runs integration/UI fake-runtime tests, runs formatting/lint/localization/license/security checks, uploads test summaries only, and checks a clean worktree. Every `uses:` entry is pinned to a full commit SHA.
 

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Secret-free verification on macOS 26
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Check out the reviewed revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Bootstrap checksum-pinned tools
+        run: scripts/bootstrap-tools.sh
+
+      - name: Install the Xcode Metal toolchain component
+        run: xcodebuild -downloadComponent MetalToolchain
+
+      - name: Run the deterministic repository gate
+        run: MC_REQUIRE_CLEAN_WORKTREE=1 scripts/check-repository.sh
+
+      - name: Run package tests with coverage
+        run: swift test --enable-code-coverage --parallel
+
+      - name: Build unsigned Debug application
+        run: >-
+          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
+          -configuration Debug -derivedDataPath .build/ci-debug
+          -clonedSourcePackagesDirPath .build/xcode-packages
+          CODE_SIGNING_ALLOWED=NO build
+
+      - name: Build unsigned Release application
+        run: >-
+          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
+          -configuration Release -derivedDataPath .build/ci-release
+          -clonedSourcePackagesDirPath .build/xcode-packages
+          CODE_SIGNING_ALLOWED=NO build
+
+  ui-tests:
+    name: Integration and UI tests with ephemeral signing
+    needs: verify
+    runs-on: macos-26
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the verified revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Install the Xcode Metal toolchain component
+        run: xcodebuild -downloadComponent MetalToolchain
+
+      - name: Build integration and UI tests with ephemeral ad hoc signing
+        run: >-
+          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
+          -configuration Debug -derivedDataPath .build/ci-tests
+          -clonedSourcePackagesDirPath .build/xcode-packages
+          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+          build-for-testing
+
+      - name: Run integration and UI tests in fake-runtime mode
+        run: >-
+          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
+          -configuration Debug -derivedDataPath .build/ci-tests
+          -clonedSourcePackagesDirPath .build/xcode-packages
+          -resultBundlePath .build/TestResults.xcresult
+          -test-timeouts-enabled YES
+          -default-test-execution-time-allowance 60
+          -maximum-test-execution-time-allowance 120
+          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+          test-without-building
+
+      - name: Export the test summary
+        if: always()
+        run: |
+          if [[ -d .build/TestResults.xcresult ]]; then
+            xcrun xcresulttool get test-results summary \
+              --path .build/TestResults.xcresult > .build/test-summary.json
+          else
+            printf '%s\n' '{"result":"Tests did not produce an xcresult bundle"}' \
+              > .build/test-summary.json
+          fi
+
+      - name: Upload the test summary only
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: maccontainer-test-summary
+          path: .build/test-summary.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove test process state
+        if: always()
+        run: rm -rf "${TMPDIR%/}/container.matrixreligio.com.savedState"

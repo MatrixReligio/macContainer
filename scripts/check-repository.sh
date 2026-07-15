@@ -40,7 +40,9 @@ for script in scripts/*.sh Tests/ToolingTests/*.bats; do
 done
 zsh Tests/ToolingTests/check-no-container-cli.bats
 zsh Tests/ToolingTests/check-app-icon.bats
+zsh Tests/ToolingTests/check-workflow-policy.bats
 scripts/check-no-container-cli.sh
+scripts/check-workflow-policy.sh
 swift scripts/check-contract-coverage.swift \
     Config/contracts/apple-container-1.1.0-acceptance.json \
     Sources/MCContracts/Resources/apple-container-1.1.0.json
