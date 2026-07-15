@@ -247,7 +247,7 @@ git commit -m "feat: validate typed operation drafts"
 - Create: `Sources/MCTemplates/ResourceRecommendation.swift`
 - Test: `Tests/MCTemplatesTests/ResourceRecommendationTests.swift`
 
-- [ ] **Step 1: Write the complete recommendation table tests**
+- [x] **Step 1: Write the complete recommendation table tests**
 
 ```swift
 import Testing
@@ -277,13 +277,13 @@ private extension Int {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ResourceRecommendationTests`
 
 Expected: FAIL because host and recommendation types do not exist.
 
-- [ ] **Step 3: Implement the pure algorithm**
+- [x] **Step 3: Implement the pure algorithm**
 
 ```swift
 public enum HostChip: String, Codable, Sendable { case appleSilicon }
@@ -325,7 +325,7 @@ public enum ResourceRecommendationEngine {
 }
 ```
 
-- [ ] **Step 4: Run table tests and randomized invariants**
+- [x] **Step 4: Run table tests and randomized invariants**
 
 Add a deterministic seeded loop covering CPUs 1...32 and memory 4...128 GiB, asserting CPU reserve, nonnegative allocation, the full memory reserve, and the half-memory cap. Profiles that cannot supply at least 512 MiB return `isRunnable == false`; all profiles with enough allocatable memory return `isRunnable == true`.
 
@@ -333,7 +333,7 @@ Run: `swift test --filter ResourceRecommendationTests`
 
 Expected: PASS for the table and all generated profiles.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel/HostProfile.swift Sources/MCTemplates/ResourceRecommendation.swift Tests/MCTemplatesTests/ResourceRecommendationTests.swift
