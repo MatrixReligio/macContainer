@@ -169,7 +169,7 @@ git commit -m "feat: model typed operation values"
 - Create: `Sources/MCContracts/OperationValidator.swift`
 - Test: `Tests/MCContractsTests/OperationValidatorTests.swift`
 
-- [ ] **Step 1: Write failing dependency, conflict, required, and range tests**
+- [x] **Step 1: Write failing dependency, conflict, required, and range tests**
 
 ```swift
 import Testing
@@ -195,13 +195,13 @@ struct OperationValidatorTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter OperationValidatorTests`
 
 Expected: FAIL because draft and validator types are undefined.
 
-- [ ] **Step 3: Add draft/provenance types and validator**
+- [x] **Step 3: Add draft/provenance types and validator**
 
 ```swift
 public struct OperationDraft: Codable, Equatable, Sendable {
@@ -227,13 +227,13 @@ public enum ValueSource: String, Codable, Sendable {
 
 `OperationValidator.validate` performs these deterministic passes in order: operation ID match; required presence; value-type match; integer/bytes/duration nonnegative bounds; regex grammar using whole-string matching; dependency presence; pairwise conflicts; availability capability checks. It returns sorted issues and never mutates the draft. The Rosetta rule is encoded in the 1.1.0 contract as dependency `platform=linux/amd64` plus capability `rosetta`.
 
-- [ ] **Step 4: Run focused and contract suites**
+- [x] **Step 4: Run focused and contract suites**
 
 Run: `swift test --filter OperationValidatorTests && swift test --filter MCContractsTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel/OperationDraft.swift Sources/MCContracts/OperationValidator.swift Tests/MCContractsTests/OperationValidatorTests.swift
