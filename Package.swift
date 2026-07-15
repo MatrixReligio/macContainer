@@ -37,6 +37,7 @@ let package = Package(
                 .product(name: "ContainerResource", package: "container"),
                 .product(name: "ContainerXPC", package: "container"),
                 .product(name: "MachineAPIClient", package: "container"),
+                .product(name: "TerminalProgress", package: "container"),
             ]
         ),
         .target(

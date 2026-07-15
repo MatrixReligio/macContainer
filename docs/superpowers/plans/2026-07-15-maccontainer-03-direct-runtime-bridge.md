@@ -444,7 +444,7 @@ git commit -m "feat: bridge all container operations directly"
 - Create: `Sources/MCContainerBridge/Builds/BuilderAdapter.swift`
 - Test: matching adapter tests
 
-- [ ] **Step 1: Write failing coverage tests**
+- [x] **Step 1: Write failing coverage tests**
 
 ```swift
 @Test func imageAdapterRecordsAllNineActions() async throws {
@@ -463,23 +463,23 @@ git commit -m "feat: bridge all container operations directly"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'ImageAdapterTests|BuildAdapterTests|BuilderAdapterTests'`
 
 Expected: FAIL because the adapters are absent.
 
-- [ ] **Step 3: Implement direct adapters**
+- [x] **Step 3: Implement direct adapters**
 
 `ImageAdapter` wraps `ClientImage` list/get/pull/push/save/load/tag/delete/unpack calls, canonicalizes references without losing digests, and maps transfer progress to monotonic byte/layer records. `BuildAdapter` uses `ContainerBuild` with a security-scoped local context URL, Dockerfile path confined beneath that context after symlink resolution, typed build arguments/secrets/SSH consent, platform/output/cache options, and an async progress stream. `BuilderAdapter` directly performs start/status/stop/delete and reports its resource state.
 
-- [ ] **Step 4: Test path confinement, progress, cancellation, and operation coverage**
+- [x] **Step 4: Test path confinement, progress, cancellation, and operation coverage**
 
 Run: `swift test --filter 'ImageAdapterTests|BuildAdapterTests|BuilderAdapterTests'`
 
 Expected: PASS. Archive traversal, Dockerfile escape, regressing progress, secret logging, and cancelled build cases are rejected.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/Images Sources/MCContainerBridge/Builds Tests/MCContainerBridgeTests
