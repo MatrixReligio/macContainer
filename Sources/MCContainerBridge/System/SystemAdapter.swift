@@ -1,0 +1,255 @@
+import ContainerAPIClient
+import Foundation
+import MCModel
+import OSLog
+
+public protocol SystemRuntimeBackend: Sendable {
+    func start(timeout: Duration) async throws
+    func stop(stopActiveWorkloads: Bool, timeout: Duration) async throws
+    func health(timeout: Duration) async throws -> RuntimeHealth?
+    func inventory() async throws -> WorkloadInventory
+    func version() async throws -> RuntimeVersionSummary
+    func logs(_ options: LogOptions) async throws -> AsyncThrowingStream<LogRecord, any Error>
+    func diskUsage() async throws -> DiskUsageSummary
+}
+
+public protocol UnifiedLogReading: Sendable {
+    func logs(_ options: LogOptions) async throws -> AsyncThrowingStream<LogRecord, any Error>
+}
+
+public enum SystemAdapterError: Error, Equatable, Sendable {
+    case invalidTimeout
+}
+
+public struct SystemAdapter: SystemOperations, Sendable {
+    private let backend: any SystemRuntimeBackend
+    private let coordinator: OperationCoordinator
+
+    public init(
+        backend: any SystemRuntimeBackend = AppleSystemRuntimeBackend(),
+        coordinator: OperationCoordinator = OperationCoordinator()
+    ) {
+        self.backend = backend
+        self.coordinator = coordinator
+    }
+
+    public func start(_ request: SystemStartRequest) async throws -> SystemSummary {
+        guard request.healthTimeoutSeconds > 0 else {
+            throw SystemAdapterError.invalidTimeout
+        }
+        return try await coordinator.withLock(.systemService) {
+            try await backend.start(timeout: .seconds(request.healthTimeoutSeconds))
+            return SystemSummary(state: .running)
+        }
+    }
+
+    public func stop(_ request: SystemStopRequest) async throws -> SystemSummary {
+        guard request.timeoutSeconds > 0 else {
+            throw SystemAdapterError.invalidTimeout
+        }
+        return try await coordinator.withLock(.systemService) {
+            try await backend.stop(
+                stopActiveWorkloads: request.stopActiveWorkloads,
+                timeout: .seconds(request.timeoutSeconds)
+            )
+            return SystemSummary(state: .stopped)
+        }
+    }
+
+    public func status() async throws -> SystemSummary {
+        guard try await backend.health(timeout: .seconds(2)) != nil else {
+            return SystemSummary(state: .stopped)
+        }
+        let inventory = try await backend.inventory()
+        return SystemSummary(
+            state: .running,
+            activeContainers: inventory.activeContainerIDs.count,
+            activeMachines: inventory.activeMachineIDs.count
+        )
+    }
+
+    public func version() async throws -> RuntimeVersionSummary {
+        try await backend.version()
+    }
+
+    public func logs(
+        _ options: LogOptions
+    ) async throws -> AsyncThrowingStream<LogRecord, any Error> {
+        try await backend.logs(options)
+    }
+
+    public func diskUsage() async throws -> DiskUsageSummary {
+        try await backend.diskUsage()
+    }
+}
+
+public struct AppleSystemRuntimeBackend: SystemRuntimeBackend, Sendable {
+    private let controller: SystemServiceController
+    private let workloads: any WorkloadManaging
+    private let logReader: any UnifiedLogReading
+
+    public init(
+        controller: SystemServiceController = .production(),
+        workloads: any WorkloadManaging = AppleWorkloadManager(),
+        logReader: any UnifiedLogReading = AppleUnifiedLogReader()
+    ) {
+        self.controller = controller
+        self.workloads = workloads
+        self.logReader = logReader
+    }
+
+    public func start(timeout: Duration) async throws {
+        _ = try await controller.start(timeout: timeout)
+    }
+
+    public func stop(stopActiveWorkloads: Bool, timeout: Duration) async throws {
+        try await controller.stop(stopActiveWorkloads: stopActiveWorkloads, timeout: timeout)
+    }
+
+    public func health(timeout: Duration) async throws -> RuntimeHealth? {
+        do {
+            let health = try await ClientHealthCheck.ping(timeout: timeout)
+            return RuntimeHealth(healthy: true, version: health.apiServerVersion)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return nil
+        }
+    }
+
+    public func inventory() async throws -> WorkloadInventory {
+        try await workloads.inventory()
+    }
+
+    public func version() async throws -> RuntimeVersionSummary {
+        let health = try await ClientHealthCheck.ping(timeout: .seconds(2))
+        return RuntimeVersionSummary(
+            version: health.apiServerVersion,
+            apiVersion: health.apiServerVersion
+        )
+    }
+
+    public func logs(
+        _ options: LogOptions
+    ) async throws -> AsyncThrowingStream<LogRecord, any Error> {
+        try await logReader.logs(options)
+    }
+
+    public func diskUsage() async throws -> DiskUsageSummary {
+        let usage = try await ClientDiskUsage.get()
+        let reclaimable = saturatingSum([
+            usage.containers.reclaimable,
+            usage.images.reclaimable,
+            usage.volumes.reclaimable
+        ])
+        return DiskUsageSummary(
+            containersBytes: clampedInt64(usage.containers.sizeInBytes),
+            imagesBytes: clampedInt64(usage.images.sizeInBytes),
+            volumesBytes: clampedInt64(usage.volumes.sizeInBytes),
+            reclaimableBytes: clampedInt64(reclaimable)
+        )
+    }
+
+    private func saturatingSum(_ values: [UInt64]) -> UInt64 {
+        values.reduce(0) { partial, value in
+            let (result, overflow) = partial.addingReportingOverflow(value)
+            return overflow ? .max : result
+        }
+    }
+
+    private func clampedInt64(_ value: UInt64) -> Int64 {
+        value > UInt64(Int64.max) ? Int64.max : Int64(value)
+    }
+}
+
+public struct AppleUnifiedLogReader: UnifiedLogReading, Sendable {
+    public static let subsystem = "com.apple.container"
+
+    private let defaultLookback: TimeInterval
+    private let pollInterval: Duration
+
+    public init(defaultLookback: TimeInterval = 300, pollInterval: Duration = .milliseconds(500)) {
+        self.defaultLookback = defaultLookback
+        self.pollInterval = pollInterval
+    }
+
+    public func logs(
+        _ options: LogOptions
+    ) async throws -> AsyncThrowingStream<LogRecord, any Error> {
+        let start = options.since ?? Date(timeIntervalSinceNow: -defaultLookback)
+        let pollInterval = pollInterval
+        return AsyncThrowingStream { continuation in
+            let task = Task.detached {
+                do {
+                    var cursor = start
+                    var emittedAtCursor = Set<LogIdentity>()
+                    repeat {
+                        try Task.checkCancellation()
+                        var records = try Self.snapshot(since: cursor)
+                        if let tail = options.tail {
+                            guard tail >= 0 else {
+                                throw AppleUnifiedLogError.invalidTail
+                            }
+                            records = Array(records.suffix(tail))
+                        }
+                        for record in records {
+                            let timestamp = record.timestamp ?? cursor
+                            let identity = LogIdentity(record)
+                            if timestamp < cursor || (timestamp == cursor && emittedAtCursor.contains(identity)) {
+                                continue
+                            }
+                            if timestamp > cursor {
+                                cursor = timestamp
+                                emittedAtCursor.removeAll(keepingCapacity: true)
+                            }
+                            emittedAtCursor.insert(identity)
+                            continuation.yield(LogRecord(
+                                timestamp: options.timestamps ? record.timestamp : nil,
+                                stream: record.stream,
+                                bytes: record.bytes
+                            ))
+                        }
+                        guard options.follow else { break }
+                        try await Task.sleep(for: pollInterval)
+                    } while !Task.isCancelled
+                    continuation.finish()
+                } catch is CancellationError {
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private static func snapshot(since: Date) throws -> [LogRecord] {
+        let store = try OSLogStore(scope: .system)
+        let position = store.position(date: since)
+        let predicate = NSPredicate(format: "subsystem == %@", subsystem)
+        return try store.getEntries(at: position, matching: predicate).compactMap { entry in
+            guard let entry = entry as? OSLogEntryLog else { return nil }
+            return LogRecord(
+                timestamp: entry.date,
+                stream: entry.category.isEmpty ? entry.subsystem : entry.category,
+                bytes: Data(entry.composedMessage.utf8)
+            )
+        }
+    }
+}
+
+public enum AppleUnifiedLogError: Error, Equatable, Sendable {
+    case invalidTail
+}
+
+private struct LogIdentity: Hashable, Sendable {
+    let timestamp: Date?
+    let stream: String
+    let bytes: Data
+
+    init(_ record: LogRecord) {
+        timestamp = record.timestamp
+        stream = record.stream
+        bytes = record.bytes
+    }
+}

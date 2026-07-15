@@ -565,27 +565,27 @@ git commit -m "feat: bridge all machine operations"
 - Create: `Sources/MCContainerBridge/System/ConfigurationAdapter.swift`
 - Test: four matching test files
 
-- [ ] **Step 1: Write failing operation tests**
+- [x] **Step 1: Write failing operation tests**
 
 Tests cover system start/stop/status/version/logs/disk usage; DNS create/delete/list; kernel set from recommended release, local binary, local archive, and verified remote archive; configuration load/validate/preview/atomic-save/apply/export. A remote archive without an expected digest must fail before network access.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'SystemAdapterTests|DNSAdapterTests|KernelAdapterTests|ConfigurationAdapterTests'`
 
 Expected: FAIL because adapters are absent.
 
-- [ ] **Step 3: Implement direct system-domain adapters**
+- [x] **Step 3: Implement direct system-domain adapters**
 
 `SystemAdapter` composes `SystemServiceController`, `ClientHealthCheck`, `ClientDiskUsage`, and unified-log streaming APIs. `DNSAdapter` uses typed upstream DNS calls and restricts resolver names to `containerization.${VALIDATED_SUFFIX}` after strict suffix validation. `KernelAdapter` wraps `ClientKernel.getDefaultKernel`, `installKernel`, and `installKernelFromTar`, downloads only through an injected downloader after digest/allowlist input is present, and blocks archive traversal. `ConfigurationAdapter` uses `ConfigurationLoader`/`ContainerPersistence`, writes a `0600` atomic file, preserves one last-known-good copy, produces a TOML preview, and requires an idle confirmation token before controlled restart.
 
-- [ ] **Step 4: Run focused suites and failure injection**
+- [x] **Step 4: Run focused suites and failure injection**
 
 Run: `swift test --filter 'SystemAdapterTests|DNSAdapterTests|KernelAdapterTests|ConfigurationAdapterTests' && scripts/check-no-container-cli.sh .`
 
 Expected: PASS. Atomic-write failure retains the old config, restart failure restores last-known-good, and temporary download/archive files are absent after each test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/System Tests/MCContainerBridgeTests

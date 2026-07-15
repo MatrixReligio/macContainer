@@ -15,6 +15,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/container.git", exact: "1.1.0"),
+        .package(url: "https://github.com/apple/containerization.git", exact: "0.35.0"),
+        .package(url: "https://github.com/mattt/swift-toml.git", exact: "2.0.0"),
     ],
     targets: [
         .target(name: "MCModel"),
@@ -38,6 +40,9 @@ let package = Package(
                 .product(name: "ContainerXPC", package: "container"),
                 .product(name: "MachineAPIClient", package: "container"),
                 .product(name: "TerminalProgress", package: "container"),
+                .product(name: "Containerization", package: "containerization"),
+                .product(name: "ContainerizationArchive", package: "containerization"),
+                .product(name: "TOML", package: "swift-toml"),
             ]
         ),
         .target(
