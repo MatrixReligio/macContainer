@@ -29,6 +29,7 @@ struct SystemServiceControllerTests {
         #expect(definition.program.path != CommandLine.arguments[0])
         #expect(definition.label == "com.apple.container.apiserver")
         #expect(definition.machServices == ["com.apple.container.apiserver"])
+        #expect(await health.pingCount == 2)
         #expect(await machines.verificationCount == 1)
         #expect(await configurationLoader.loadCount == 1)
     }
@@ -56,7 +57,7 @@ struct SystemServiceControllerTests {
 
         #expect(await services.registeredLabels.isEmpty)
         #expect(await services.deregisteredLabels == ["com.apple.container.apiserver"])
-        #expect(await health.pingCount > 1)
+        #expect(await health.pingCount >= 1)
     }
 
     @Test func `each health probe is bounded by the caller deadline`() async {

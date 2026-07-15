@@ -495,27 +495,27 @@ git commit -m "feat: bridge images builds and builder"
 - Create: `Sources/MCContainerBridge/Registries/RegistryCredentialStore.swift`
 - Test: matching adapter/security tests
 
-- [ ] **Step 1: Write failing domain tests**
+- [x] **Step 1: Write failing domain tests**
 
 Test five network actions, five volume actions, and login/list/logout. Include rejection of deleting the built-in network, duplicate volume name conflict, Keychain item accessibility, secret redaction, and logout idempotence.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'NetworkAdapterTests|VolumeAdapterTests|RegistryAdapterTests|RegistryCredentialStoreTests'`
 
 Expected: FAIL because adapters are absent.
 
-- [ ] **Step 3: Implement direct adapters and Keychain storage**
+- [x] **Step 3: Implement direct adapters and Keychain storage**
 
-`NetworkAdapter` delegates to `NetworkClient`, preserving subnet/gateway/DNS/plugin/status fields and protecting built-ins. `VolumeAdapter` delegates to `ClientVolume` and validates volume names before lookup/create. `RegistryCredentialStore` uses `kSecClassInternetPassword`, `kSecAttrService = "com.apple.container.registry"`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, returns metadata without password data for list, and zeroizes transient `Data` buffers after login.
+`NetworkAdapter` delegates to `NetworkClient`, preserving supported subnet/plugin/status fields and protecting built-ins. Apple container 1.1.0 does not expose custom network gateway or DNS creation fields, so the direct backend rejects those values explicitly instead of silently discarding them. `VolumeAdapter` delegates to `ClientVolume` and validates volume names before lookup/create. `RegistryCredentialStore` uses `kSecClassInternetPassword`, Apple's interoperable `kSecAttrSecurityDomain = "com.apple.container.registry"`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, returns metadata without password data for list, and zeroizes transient `Data` buffers after login.
 
-- [ ] **Step 4: Run tests with an isolated temporary Keychain**
+- [x] **Step 4: Run tests with an isolated temporary Keychain**
 
 Run a test-created keychain under `.artifacts/test-keychains/${RUN_UUID}.keychain-db`, select it only for the test process, delete it in `defer`, and verify the user's default keychain list before/after is identical.
 
 Expected: all focused tests PASS and the temporary keychain no longer exists.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/Networks Sources/MCContainerBridge/Volumes Sources/MCContainerBridge/Registries Tests/MCContainerBridgeTests
