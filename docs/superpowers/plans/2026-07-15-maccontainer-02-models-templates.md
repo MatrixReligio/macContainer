@@ -35,7 +35,7 @@
 - Create: `Sources/MCModel/Validation.swift`
 - Test: `Tests/MCModelTests/FieldValueTests.swift`
 
-- [ ] **Step 1: Write failing value and redaction tests**
+- [x] **Step 1: Write failing value and redaction tests**
 
 ```swift
 import Testing
@@ -59,13 +59,13 @@ struct FieldValueTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter FieldValueTests`
 
 Expected: FAIL because `FieldValue` and `ValidationIssue` are undefined.
 
-- [ ] **Step 3: Implement values and issues**
+- [x] **Step 3: Implement values and issues**
 
 ```swift
 import Foundation
@@ -149,13 +149,13 @@ public struct ValidationIssue: Codable, Equatable, Comparable, Sendable {
 }
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run: `swift test --filter FieldValueTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel Tests/MCModelTests/FieldValueTests.swift
