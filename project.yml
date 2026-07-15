@@ -1,0 +1,164 @@
+name: MacContainer
+options:
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    DEVELOPMENT_TEAM: 4DUQGD879H
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "Developer ID Application"
+packages:
+  MacContainerCore:
+    path: .
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: "2.9.4"
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    exactVersion: "1.13.0"
+targets:
+  MacContainer:
+    type: application
+    platform: macOS
+    sources:
+      - App/MacContainer
+    dependencies:
+      - package: MacContainerCore
+        product: MCModel
+      - package: MacContainerCore
+        product: MCContracts
+      - package: MacContainerCore
+        product: MCContainerBridge
+      - package: MacContainerCore
+        product: MCCompatibility
+      - package: MacContainerCore
+        product: MCSystemLifecycle
+      - package: MacContainerCore
+        product: MCAppCore
+      - package: Sparkle
+        product: Sparkle
+      - package: SwiftTerm
+        product: SwiftTerm
+      - target: MacContainerPrivilegedHelper
+        embed: false
+      - target: MacContainerUpdateAgent
+        embed: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: container.matrixreligio.com
+        PRODUCT_NAME: MacContainer
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_ENTITLEMENTS: App/MacContainer/MacContainer.entitlements
+    info:
+      path: App/MacContainer/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: "26.0"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSHumanReadableCopyright: Copyright 2026 MatrixReligio LLC. Licensed under Apache-2.0.
+        CFBundleLocalizations:
+          - en
+          - zh-Hans
+          - zh-Hant
+          - ja
+          - ko
+        SUFeedURL: https://github.com/matrixreligio/macContainer/releases/latest/download/appcast.xml
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        SMPrivilegedExecutables:
+          container.matrixreligio.com.helper: anchor apple generic and identifier "container.matrixreligio.com.helper" and certificate leaf[subject.OU] = "4DUQGD879H"
+    postCompileScripts:
+      - name: Embed helper and update agent
+        inputFiles:
+          - $(BUILT_PRODUCTS_DIR)/MacContainerPrivilegedHelper
+          - $(BUILT_PRODUCTS_DIR)/MacContainerUpdateAgent
+          - $(SRCROOT)/App/PrivilegedHelper/container.matrixreligio.com.helper.plist
+          - $(SRCROOT)/App/UpdateAgent/container.matrixreligio.com.update-agent.plist
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/PrivilegedHelperTools/container.matrixreligio.com.helper
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LoginItems/container.matrixreligio.com.update-agent
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons/container.matrixreligio.com.helper.plist
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/container.matrixreligio.com.update-agent.plist
+        script: |
+          set -euo pipefail
+          helper_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/PrivilegedHelperTools"
+          agent_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LoginItems"
+          daemon_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
+          launch_agent_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchAgents"
+          mkdir -p "$helper_dir" "$agent_dir" "$daemon_dir" "$launch_agent_dir"
+          ditto "$BUILT_PRODUCTS_DIR/MacContainerPrivilegedHelper" "$helper_dir/container.matrixreligio.com.helper"
+          ditto "$BUILT_PRODUCTS_DIR/MacContainerUpdateAgent" "$agent_dir/container.matrixreligio.com.update-agent"
+          ditto "$SRCROOT/App/PrivilegedHelper/container.matrixreligio.com.helper.plist" "$daemon_dir/container.matrixreligio.com.helper.plist"
+          ditto "$SRCROOT/App/UpdateAgent/container.matrixreligio.com.update-agent.plist" "$launch_agent_dir/container.matrixreligio.com.update-agent.plist"
+  MacContainerPrivilegedHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - App/PrivilegedHelper
+    dependencies:
+      - package: MacContainerCore
+        product: MCModel
+      - package: MacContainerCore
+        product: MCSystemLifecycle
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: container.matrixreligio.com.helper
+        PRODUCT_NAME: MacContainerPrivilegedHelper
+        CODE_SIGN_ENTITLEMENTS: App/PrivilegedHelper/PrivilegedHelper.entitlements
+  MacContainerUpdateAgent:
+    type: tool
+    platform: macOS
+    sources:
+      - App/UpdateAgent
+    dependencies:
+      - package: MacContainerCore
+        product: MCModel
+      - package: MacContainerCore
+        product: MCSystemLifecycle
+      - package: MacContainerCore
+        product: MCCompatibility
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: container.matrixreligio.com.update-agent
+        PRODUCT_NAME: MacContainerUpdateAgent
+        CODE_SIGN_ENTITLEMENTS: App/UpdateAgent/UpdateAgent.entitlements
+  MacContainerIntegrationTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/MacContainerIntegrationTests
+    dependencies:
+      - target: MacContainer
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+  MacContainerUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - Tests/MacContainerUITests
+    dependencies:
+      - target: MacContainer
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: container.matrixreligio.com.ui-tests
+schemes:
+  MacContainer:
+    build:
+      targets:
+        MacContainer: all
+        MacContainerPrivilegedHelper: all
+        MacContainerUpdateAgent: all
+    test:
+      targets:
+        - MacContainerIntegrationTests
+        - MacContainerUITests

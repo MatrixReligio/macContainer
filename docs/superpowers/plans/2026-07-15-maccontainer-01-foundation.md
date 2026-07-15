@@ -549,7 +549,7 @@ git commit -m "feat: inventory Apple container 1.1.0 contract"
 - Create: `Tests/MacContainerIntegrationTests/BuildSmokeTests.swift`
 - Create: `Tests/MacContainerUITests/LaunchTests.swift`
 
-- [ ] **Step 1: Write failing target smoke tests**
+- [x] **Step 1: Write failing target smoke tests**
 
 ```swift
 import XCTest
@@ -574,13 +574,13 @@ final class LaunchTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodegen generate --spec project.yml`
 
 Expected: FAIL because `project.yml` does not exist.
 
-- [ ] **Step 3: Create the project graph and minimal launch surface**
+- [x] **Step 3: Create the project graph and minimal launch surface**
 
 `project.yml` must set:
 
@@ -735,13 +735,13 @@ The app entry creates a `WindowGroup("MacContainer", id: "main-window")` with an
 
 The helper plist uses `Label` and `MachServices` equal to `container.matrixreligio.com.helper`, plus `BundleProgram` equal to `Contents/Library/PrivilegedHelperTools/container.matrixreligio.com.helper`, with `RunAtLoad=false` and `KeepAlive=false`. The update-agent plist uses label `container.matrixreligio.com.update-agent`, `BundleProgram` equal to `Contents/Library/LoginItems/container.matrixreligio.com.update-agent`, and `StartInterval=86400`; neither plist contains a caller-controlled path or environment.
 
-- [ ] **Step 4: Generate and build without signing**
+- [x] **Step 4: Generate and build without signing**
 
 Run: `xcodegen generate --spec project.yml && xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -configuration Debug CODE_SIGNING_ALLOWED=NO build`
 
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 5: Commit generated project and sources**
+- [x] **Step 5: Commit generated project and sources**
 
 ```bash
 git add project.yml MacContainer.xcodeproj App Tests/MacContainerIntegrationTests Tests/MacContainerUITests
