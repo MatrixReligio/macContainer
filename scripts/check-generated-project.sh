@@ -67,9 +67,9 @@ if ! /usr/bin/diff -u \
 fi
 
 workspace_lock="$committed_project/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
-rg -q '"identity" : "sparkle"' "$workspace_lock"
-rg -q '"version" : "2.9.4"' "$workspace_lock"
-rg -q '"identity" : "swiftterm"' "$workspace_lock"
-rg -q '"version" : "1.13.0"' "$workspace_lock"
+/usr/bin/grep -Eq '"identity" : "sparkle"' "$workspace_lock"
+/usr/bin/grep -Eq '"version" : "2.9.4"' "$workspace_lock"
+/usr/bin/grep -Eq '"identity" : "swiftterm"' "$workspace_lock"
+/usr/bin/grep -Eq '"version" : "1.13.0"' "$workspace_lock"
 
 print -r -- "Generated project check PASS: XcodeGen $actual_version"

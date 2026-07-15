@@ -25,18 +25,35 @@ fi
 forbidden_pattern='(/usr/local/bin/container([[:space:]"'"'"'\\)]|$)|update-container\.sh|uninstall-container\.sh)'
 typeset matches
 typeset scan_status
+typeset search_tool
 
 set +e
-matches="$(rg \
-    --line-number \
-    --no-heading \
-    --color never \
-    --glob '*.swift' \
-    --glob '*.sh' \
-    --glob '*.zsh' \
-    --glob '!check-no-container-cli.sh' \
-    --regexp "$forbidden_pattern" \
-    "${production_roots[@]}" 2>&1)"
+if (( $+commands[rg] )); then
+    search_tool="rg"
+    matches="$(rg \
+        --line-number \
+        --no-heading \
+        --color never \
+        --glob '*.swift' \
+        --glob '*.sh' \
+        --glob '*.zsh' \
+        --glob '!check-no-container-cli.sh' \
+        --regexp "$forbidden_pattern" \
+        "${production_roots[@]}" 2>&1)"
+else
+    search_tool="grep"
+    matches="$(LC_ALL=C /usr/bin/grep \
+        --extended-regexp \
+        --recursive \
+        --line-number \
+        --with-filename \
+        --include='*.swift' \
+        --include='*.sh' \
+        --include='*.zsh' \
+        --exclude='check-no-container-cli.sh' \
+        "$forbidden_pattern" \
+        "${production_roots[@]}" 2>&1)"
+fi
 scan_status=$?
 set -e
 
@@ -47,10 +64,10 @@ case "$scan_status" in
         exit 1
         ;;
     1)
-        print -r -- "Forbidden backend scan PASS: ${#production_roots} production roots"
+        print -r -- "Forbidden backend scan PASS: ${#production_roots} production roots ($search_tool)"
         ;;
     *)
-        print -u2 -- "Forbidden backend scan ERROR: rg exited $scan_status"
+        print -u2 -- "Forbidden backend scan ERROR: $search_tool exited $scan_status"
         print -u2 -- "$matches"
         exit "$scan_status"
         ;;

@@ -887,7 +887,7 @@ Expected: FAIL with `missing workflow: .github/workflows/ci.yml`.
 /scripts/release* @hejundev
 ```
 
-- [ ] **Step 4: Verify policy, create repository, and push**
+- [x] **Step 4: Verify policy, create repository, and push**
 
 Run:
 
@@ -900,7 +900,7 @@ gh repo view matrixreligio/macContainer --json nameWithOwner,isPrivate,defaultBr
 
 Expected: JSON reports `matrixreligio/macContainer`, `isPrivate: false`, and default branch `main`.
 
-- [ ] **Step 5: Commit workflow policy before or immediately after initial push**
+- [x] **Step 5: Commit workflow policy before or immediately after initial push**
 
 ```bash
 git add .github scripts/check-workflow-policy.sh

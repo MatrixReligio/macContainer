@@ -41,6 +41,7 @@ print -r -- 'Process.run(URL(fileURLWithPath: "/usr/local/bin/container"))' > "$
 print -r -- '`/usr/local/bin/container list` is prohibited.' > "$fixture/docs/security.md"
 
 "$repo_root/scripts/check-no-container-cli.sh" "$fixture"
+PATH=/usr/bin:/bin "$repo_root/scripts/check-no-container-cli.sh" "$fixture"
 
 if [[ -e "$fixture/Sources/BadContainerCLI.swift" || \
       -e "$fixture/scripts/BadUpdater.zsh" || \
