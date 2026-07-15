@@ -18,6 +18,15 @@ public struct DisabledTemplateDocument: Equatable, Sendable {
 public enum TemplateMigrationResult: Equatable, Sendable {
     case enabled(TemplateDocument)
     case disabled(DisabledTemplateDocument)
+
+    public var id: String? {
+        switch self {
+        case let .enabled(document):
+            document.id
+        case let .disabled(document):
+            document.id
+        }
+    }
 }
 
 public enum TemplateMigrationError: Error, Equatable, Sendable {

@@ -79,8 +79,8 @@ public actor TemplateStore {
         return result
     }
 
-    public func list() async throws -> [TemplateDocument] {
-        try await listRecords().compactMap { result in
+    public func listEnabled() async throws -> [TemplateDocument] {
+        try await list().compactMap { result in
             guard case let .enabled(document) = result else {
                 return nil
             }
@@ -88,7 +88,7 @@ public actor TemplateStore {
         }
     }
 
-    public func listRecords() async throws -> [TemplateMigrationResult] {
+    public func list() async throws -> [TemplateMigrationResult] {
         let rootPath = root.path
         let urls = try await fileSystem.list(root)
             .filter { $0.pathExtension == "json" }

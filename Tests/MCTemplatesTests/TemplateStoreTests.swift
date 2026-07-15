@@ -117,6 +117,27 @@ struct TemplateStoreTests {
         #expect(try await store.list().map(\.id) == ["beta"])
     }
 
+    @Test func `default listing surfaces future templates as disabled records`() async throws {
+        let current = try JSONEncoder().encode(TemplateDocument.fixture.withID("current"))
+        let future = Data(#"{"schemaVersion":99,"id":"future"}"#.utf8)
+        let fileSystem = InMemoryTemplateFileSystem(initial: [
+            "/templates/current.json": current,
+            "/templates/future.json": future
+        ])
+        let store = TemplateStore(root: URL(fileURLWithPath: "/templates"), fileSystem: fileSystem)
+
+        let records: [TemplateMigrationResult] = try await store.list()
+
+        #expect(records.map(\.id) == ["current", "future"])
+        #expect(records.contains { record in
+            guard case let .disabled(document) = record else {
+                return false
+            }
+            return document.reasonKey == "template.disabled.future-schema" && document.originalBytes == future
+        })
+        #expect(try await store.listEnabled().map(\.id) == ["current"])
+    }
+
     @Test func `local file system uses private atomic files and cleans temporary state`() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MacContainerTemplateStoreTests-\(UUID().uuidString)", isDirectory: true)
