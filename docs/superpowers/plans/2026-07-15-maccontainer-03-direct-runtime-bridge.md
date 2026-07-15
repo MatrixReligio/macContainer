@@ -664,7 +664,7 @@ Expected: PASS.
 
 Inspect every adapter against upstream 1.1.0 signatures; verify no `ContainerCommands`/CLI dependency, exact cancellation cleanup, no detached lifecycle ownership, stable partial results, prefix ambiguity handling, Keychain isolation, archive/path confinement, terminal binary safety, lock conflicts, and service-start cleanup. Fix every finding and rerun focused tests.
 
-- [ ] **Step 3: Commit Stage 3 and the backend section of Stage 5**
+- [x] **Step 3: Commit Stage 3 and the backend section of Stage 5**
 
 ```bash
 git add docs/reviews/stage-3.md docs/reviews/stage-5.md
