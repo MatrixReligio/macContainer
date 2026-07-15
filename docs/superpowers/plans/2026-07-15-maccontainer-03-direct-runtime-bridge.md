@@ -599,7 +599,7 @@ git commit -m "feat: bridge all system operations"
 - Create: `scripts/check-bridge-coverage.swift`
 - Test: `Tests/MCContainerBridgeTests/BridgeCoverageTests.swift`
 
-- [ ] **Step 1: Write the failing parity test**
+- [x] **Step 1: Write the failing parity test**
 
 ```swift
 @Test func everyContractOperationHasExactlyOneBridgeAction() throws {
@@ -611,17 +611,17 @@ git commit -m "feat: bridge all system operations"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter BridgeCoverageTests`
 
 Expected: FAIL because the bridge map is absent.
 
-- [ ] **Step 3: Add one direct mapping per operation**
+- [x] **Step 3: Add one direct mapping per operation**
 
 Each JSON entry contains `operationID`, app protocol method, production adapter type, upstream type/method, focused test name, cancellation behavior, lock key, and backend fixed to `directSwiftAPI`, `directXPC`, `Security.framework`, or `nativeServiceManagement`. The checker rejects any `Process`, `shell`, `commandLine`, missing test, duplicate operation, or operation not present in the contract.
 
-- [ ] **Step 4: Run parity and source/runtime execution audits**
+- [x] **Step 4: Run parity and source/runtime execution audits**
 
 Run:
 
@@ -633,7 +633,7 @@ scripts/check-no-container-cli.sh .
 
 Expected: `Bridge coverage PASS: 61 operations, 61 direct mappings, 0 CLI backends`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Config/contracts/apple-container-1.1.0-bridge-map.json scripts/check-bridge-coverage.swift Tests/MCContainerBridgeTests/BridgeCoverageTests.swift

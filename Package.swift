@@ -72,7 +72,10 @@ let package = Package(
         .testTarget(name: "MCModelTests", dependencies: ["MCModel", "TestSupport"]),
         .testTarget(name: "MCContractsTests", dependencies: ["MCContracts", "TestSupport"]),
         .testTarget(name: "MCTemplatesTests", dependencies: ["MCTemplates", "TestSupport"]),
-        .testTarget(name: "MCContainerBridgeTests", dependencies: ["MCContainerBridge", "MCModel", "TestSupport"]),
+        .testTarget(
+            name: "MCContainerBridgeTests",
+            dependencies: ["MCContainerBridge", "MCContracts", "MCModel", "TestSupport"]
+        ),
         .testTarget(name: "MCCompatibilityTests", dependencies: ["MCCompatibility", "TestSupport"]),
         .testTarget(name: "MCSystemLifecycleTests", dependencies: ["MCSystemLifecycle", "TestSupport"]),
         .testTarget(name: "MCAppCoreTests", dependencies: ["MCAppCore", "TestSupport"]),
