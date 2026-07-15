@@ -38,7 +38,7 @@
 - Create: `Sources/MCContainerBridge/RuntimeBridge.swift`
 - Test: `Tests/MCContainerBridgeTests/RuntimeBridgeContractTests.swift`
 
-- [ ] **Step 1: Write failing protocol conformance tests**
+- [x] **Step 1: Write failing protocol conformance tests**
 
 ```swift
 import Testing
@@ -58,13 +58,13 @@ import MCModel
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter RuntimeBridgeContractTests`
 
 Expected: FAIL because the protocol family is undefined.
 
-- [ ] **Step 3: Define the protocol family**
+- [x] **Step 3: Define the protocol family**
 
 ```swift
 public protocol RuntimeBridge: Sendable {
@@ -189,7 +189,7 @@ public protocol ConfigurationOperations: Sendable {
 
 App-owned request/summary types are `Codable`, `Equatable`, `Sendable`, use stable string IDs, retain raw diagnostic JSON only after secret redaction, and never expose upstream protobuf objects across module boundaries.
 
-- [ ] **Step 4: Implement actor-backed fakes and run contract tests**
+- [x] **Step 4: Implement actor-backed fakes and run contract tests**
 
 `FakeRuntimeBridge` records `RecordedInvocation(operationID: String, resourceIDs: [String], redactedArguments: [String: String])` in an actor and returns configurable result queues. It rejects secret values in recorded arguments.
 
@@ -197,7 +197,7 @@ Run: `swift test --filter RuntimeBridgeContractTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel Sources/MCContainerBridge/RuntimeBridge.swift Tests/TestSupport Tests/MCContainerBridgeTests/RuntimeBridgeContractTests.swift
