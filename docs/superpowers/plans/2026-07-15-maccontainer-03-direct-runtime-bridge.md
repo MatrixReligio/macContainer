@@ -529,27 +529,27 @@ git commit -m "feat: bridge networks volumes and registries"
 - Create: `Sources/MCContainerBridge/Machines/MachineProcessAdapter.swift`
 - Test: `Tests/MCContainerBridgeTests/MachineAdapterTests.swift`
 
-- [ ] **Step 1: Write failing nine-operation and capability tests**
+- [x] **Step 1: Write failing nine-operation and capability tests**
 
-The test invokes create, run, list, inspect, set, set-default, logs, stop, and delete; verifies CPU/memory/disk/home sharing/network/kernel mapping; rejects nested virtualization without capability; and verifies machine process output/resize/exit behavior.
+The test invokes create, run, list, inspect, set, set-default, logs, stop, and delete; verifies CPU/memory/home sharing/default-network/kernel mapping; explicitly rejects custom disk and network values absent from Apple container 1.1.0's machine API instead of silently discarding them; rejects nested virtualization without capability; and verifies machine process output/resize/exit behavior.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter MachineAdapterTests`
 
 Expected: FAIL because adapters are absent.
 
-- [ ] **Step 3: Implement direct `MachineClient` mapping**
+- [x] **Step 3: Implement direct `MachineClient` mapping**
 
 Use `MachineClient` list/create/start/stop/update/delete/default APIs and upstream machine configuration types. `run` composes create/start plus a direct process through `ContainerClient().createProcess` for the machine's container identity; it does not invoke a command. Home sharing remains absent unless the request contains an explicit consent token, which is consumed and not persisted. Kernel identifiers are validated against the kernel adapter.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run: `swift test --filter MachineAdapterTests`
 
 Expected: PASS with all nine stable operation IDs recorded.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCContainerBridge/Machines Tests/MCContainerBridgeTests/MachineAdapterTests.swift

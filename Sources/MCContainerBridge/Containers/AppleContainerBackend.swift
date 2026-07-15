@@ -440,7 +440,7 @@ public actor AppleContainerProcessTransport: ContainerProcessTransport {
     private let process: any ClientProcess
     private var detached = false
 
-    fileprivate init(process: any ClientProcess, io: DirectProcessIO) {
+    init(process: any ClientProcess, io: DirectProcessIO) {
         id = process.id
         self.process = process
         terminal = io.terminal
@@ -493,7 +493,7 @@ public actor AppleContainerProcessTransport: ContainerProcessTransport {
     }
 }
 
-private final class DirectProcessIO: Sendable {
+final class DirectProcessIO: Sendable {
     let terminal: Bool
     let childHandles: [FileHandle?]
     let inputWriter: FileHandle?
