@@ -1,6 +1,6 @@
 import MCAppCore
 import Testing
 
-@Test func appCoreModuleLoads() {
+@Test func `app core module loads`() {
     _ = MCAppCoreModule.self
 }

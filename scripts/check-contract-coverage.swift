@@ -8,7 +8,9 @@ struct RuntimeVersion: Decodable, Equatable, CustomStringConvertible {
     let minor: Int
     let patch: Int
 
-    var description: String { "\(major).\(minor).\(patch)" }
+    var description: String {
+        "\(major).\(minor).\(patch)"
+    }
 }
 
 struct Acceptance: Decodable {
@@ -104,24 +106,31 @@ let expectedVersion = RuntimeVersion(major: 1, minor: 1, patch: 0)
 if acceptance.schemaVersion != 1 || contract.schemaVersion != 1 {
     errors.append("schema version must be 1 in both inputs")
 }
+
 if acceptance.upstreamRepository != "https://github.com/apple/container" {
     errors.append("unexpected upstream repository \(acceptance.upstreamRepository)")
 }
+
 if acceptance.sourceTag != expectedVersion.description || contract.runtimeVersion != expectedVersion {
     errors.append("runtime identity must be apple/container \(expectedVersion)")
 }
+
 if acceptance.sourceCommit != contract.sourceCommit {
     errors.append("source commit differs between acceptance matrix and bundled contract")
 }
+
 if acceptance.sourceCommit != "5973b9cc626a3e7a499bb316a958237ebe14e2ed" {
     errors.append("source commit is not the reviewed 1.1.0 tag commit")
 }
+
 if acceptance.commandReference != "docs/command-reference.md" {
     errors.append("unexpected command reference \(acceptance.commandReference)")
 }
+
 if acceptance.expectedOperationCount != 61 {
     errors.append("acceptance matrix must declare the reviewed 61-operation count")
 }
+
 if acceptance.sharedParameterSources.isEmpty {
     errors.append("shared parameter source list is empty")
 }
@@ -133,14 +142,23 @@ let duplicateContractIDs = duplicates(contractIDs)
 if !duplicateAcceptedIDs.isEmpty {
     errors.append("duplicate acceptance operation IDs: \(duplicateAcceptedIDs.joined(separator: ", "))")
 }
+
 if !duplicateContractIDs.isEmpty {
     errors.append("duplicate contract operation IDs: \(duplicateContractIDs.joined(separator: ", "))")
 }
+
 if acceptance.operations.count != acceptance.expectedOperationCount {
-    errors.append("acceptance operation count is \(acceptance.operations.count), expected \(acceptance.expectedOperationCount)")
+    errors.append(
+        "acceptance operation count is \(acceptance.operations.count), " +
+            "expected \(acceptance.expectedOperationCount)"
+    )
 }
+
 if contract.operations.count != acceptance.expectedOperationCount {
-    errors.append("contract operation count is \(contract.operations.count), expected \(acceptance.expectedOperationCount)")
+    errors.append(
+        "contract operation count is \(contract.operations.count), " +
+            "expected \(acceptance.expectedOperationCount)"
+    )
 }
 
 let acceptedSet = Set(acceptedIDs)
@@ -150,6 +168,7 @@ let extraOperations = difference(contractSet, acceptedSet)
 if !missingOperations.isEmpty {
     errors.append("missing operation IDs: \(missingOperations.joined(separator: ", "))")
 }
+
 if !extraOperations.isEmpty {
     errors.append("extra operation IDs: \(extraOperations.joined(separator: ", "))")
 }
@@ -170,7 +189,7 @@ let metadataFields: [(ContractParameter) -> String] = [
     { $0.conciseHelpKey },
     { $0.detailedHelpKey },
     { $0.validationErrorKey },
-    { $0.recoveryKey },
+    { $0.recoveryKey }
 ]
 
 for operation in contract.operations {
@@ -207,11 +226,11 @@ for operation in contract.operations {
         if parameter.valueType != "boolean" && parameter.acceptedValues.isEmpty && parameter.grammar == nil {
             errors.append("\(operation.id).\(parameter.id) has neither accepted values nor grammar")
         }
-        if parameter.availability.minimumRuntime != expectedVersion
+        let hasInconsistentAvailability = parameter.availability.minimumRuntime != expectedVersion
             || parameter.availability.minimumMacOSMajor != 26
             || !parameter.availability.requiresAppleSilicon
             || !parameter.availability.requiredCapabilities.contains(operation.id)
-        {
+        if hasInconsistentAvailability {
             errors.append("\(operation.id).\(parameter.id) has inconsistent availability metadata")
         }
     }

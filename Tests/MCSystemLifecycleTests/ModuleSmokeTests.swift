@@ -1,6 +1,6 @@
 import MCSystemLifecycle
 import Testing
 
-@Test func systemLifecycleModuleLoads() {
+@Test func `system lifecycle module loads`() {
     _ = MCSystemLifecycleModule.self
 }

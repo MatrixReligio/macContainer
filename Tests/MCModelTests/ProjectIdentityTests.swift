@@ -1,9 +1,9 @@
-import Testing
 @testable import MCModel
+import Testing
 
 @Suite("Project identity")
 struct ProjectIdentityTests {
-    @Test func immutableReleaseIdentity() {
+    @Test func `immutable release identity`() {
         #expect(ProjectIdentity.appBundleIdentifier == "container.matrixreligio.com")
         #expect(ProjectIdentity.helperBundleIdentifier == "container.matrixreligio.com.helper")
         #expect(ProjectIdentity.updateAgentBundleIdentifier == "container.matrixreligio.com.update-agent")

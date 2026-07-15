@@ -57,7 +57,7 @@ private struct Parameter {
         self.cardinality = cardinality
         self.required = required
         self.defaultValue = defaultValue
-        self.acceptedValues = type == "boolean" ? [] : accepted
+        acceptedValues = type == "boolean" ? [] : accepted
         self.grammar = grammar
         self.dependencies = dependencies
         self.conflicts = conflicts
@@ -139,19 +139,19 @@ private let processParameters: [Parameter] = [
     string("user", ["--user", "-u"], accepted: ["user name", "numeric uid", "name or uid followed by :gid"], grammar: "^[^:[:space:]]+(:[^:[:space:]]+)?$"),
     integer("userID", ["--uid"]),
     path("workingDirectory", ["--workdir", "--cwd", "-w"]),
-    repeated("ulimits", ["--ulimit"], accepted: ["type=soft", "type=soft:hard"], grammar: "^[A-Za-z0-9_-]+=[0-9]+(:[0-9]+)?$"),
+    repeated("ulimits", ["--ulimit"], accepted: ["type=soft", "type=soft:hard"], grammar: "^[A-Za-z0-9_-]+=[0-9]+(:[0-9]+)?$")
 ]
 
 private let resourceParameters: [Parameter] = [
     integer("cpus", ["--cpus", "-c"], accepted: ["positive integer"], grammar: "^[1-9][0-9]*$"),
-    Parameter("memory", ["--memory", "-m"], type: "bytes", cardinality: "optional", required: false, defaultValue: .none, acceptedValues: ["positive byte count with optional K, M, G, T, or P suffix"], grammar: "^[1-9][0-9]*(\\.[0-9]+)?[KkMmGgTtPp]?[Bb]?$", dependencies: [], conflicts: [], securityImpact: nil, capabilities: []),
+    Parameter("memory", ["--memory", "-m"], type: "bytes", cardinality: "optional", required: false, defaultValue: .none, acceptedValues: ["positive byte count with optional K, M, G, T, or P suffix"], grammar: "^[1-9][0-9]*(\\.[0-9]+)?[KkMmGgTtPp]?[Bb]?$", dependencies: [], conflicts: [], securityImpact: nil, capabilities: [])
 ]
 
 private let dnsParameters: [Parameter] = [
     repeated("dnsServers", ["--dns"], accepted: ["IPv4 or IPv6 address"], grammar: "^[0-9A-Fa-f:.]+$", conflicts: ["noDNS"]),
     string("dnsDomain", ["--dns-domain"], accepted: ["DNS domain name"], grammar: "^[A-Za-z0-9.-]+$", conflicts: ["noDNS"]),
     repeated("dnsOptions", ["--dns-option"], conflicts: ["noDNS"]),
-    repeated("dnsSearchDomains", ["--dns-search"], accepted: ["DNS search domain"], grammar: "^[A-Za-z0-9.-]+$", conflicts: ["noDNS"]),
+    repeated("dnsSearchDomains", ["--dns-search"], accepted: ["DNS search domain"], grammar: "^[A-Za-z0-9.-]+$", conflicts: ["noDNS"])
 ]
 
 private let managementParameters: [Parameter] = [
@@ -159,7 +159,7 @@ private let managementParameters: [Parameter] = [
     repeated("capabilitiesToAdd", ["--cap-add"], accepted: ["Linux capability name", "ALL"], grammar: "^(ALL|CAP_[A-Z0-9_]+|[A-Z0-9_]+)$"),
     repeated("capabilitiesToDrop", ["--cap-drop"], accepted: ["Linux capability name", "ALL"], grammar: "^(ALL|CAP_[A-Z0-9_]+|[A-Z0-9_]+)$"),
     path("containerIDFile", ["--cidfile"]),
-    flag("detach", ["--detach", "-d"]),
+    flag("detach", ["--detach", "-d"])
 ] + dnsParameters + [
     string("entrypoint", ["--entrypoint"]),
     flag("initProcess", ["--init"]),
@@ -182,17 +182,17 @@ private let managementParameters: [Parameter] = [
     Parameter("sharedMemorySize", ["--shm-size"], type: "bytes", cardinality: "optional", required: false, defaultValue: .none, acceptedValues: ["positive byte count with optional K, M, G, T, or P suffix"], grammar: "^[1-9][0-9]*(\\.[0-9]+)?[KkMmGgTtPp]?[Bb]?$", dependencies: [], conflicts: [], securityImpact: nil, capabilities: []),
     repeated("temporaryFilesystems", ["--tmpfs"], type: "path", accepted: ["absolute container path"], grammar: "^/.*"),
     flag("nestedVirtualization", ["--virtualization"], capabilities: ["nestedVirtualization"]),
-    repeated("volumes", ["--volume", "-v"], type: "mount", accepted: ["source:target", "source:target:ro", "anonymous target path"], grammar: ".+"),
+    repeated("volumes", ["--volume", "-v"], type: "mount", accepted: ["source:target", "source:target:ro", "anonymous target path"], grammar: ".+")
 ]
 
 private let registryParameters = [
-    enumeration("registryScheme", ["--scheme"], default: .string("auto"), values: ["auto", "http", "https"]),
+    enumeration("registryScheme", ["--scheme"], default: .string("auto"), values: ["auto", "http", "https"])
 ]
 private let progressParameters = [
-    enumeration("progressStyle", ["--progress"], default: .string("auto"), values: ["auto", "none", "ansi", "plain", "color"]),
+    enumeration("progressStyle", ["--progress"], default: .string("auto"), values: ["auto", "none", "ansi", "plain", "color"])
 ]
 private let imageFetchParameters = [
-    integer("maxConcurrentDownloads", ["--max-concurrent-downloads"], default: .integer(3), accepted: ["positive integer"], grammar: "^[1-9][0-9]*$"),
+    integer("maxConcurrentDownloads", ["--max-concurrent-downloads"], default: .integer(3), accepted: ["positive integer"], grammar: "^[1-9][0-9]*$")
 ]
 
 private func operation(_ id: String, action: String, risk: String, _ parameters: [Parameter]) -> Operation {
@@ -209,7 +209,7 @@ private func identifier(_ id: String, _ name: String, required: Bool = true, rep
 private let operations: [Operation] = [
     operation("core.run", action: "ContainerClient.create/bootstrap", risk: "mutating", [
         string("image", ["IMAGE"], required: true, accepted: ["OCI image reference"]),
-        repeated("arguments", ["ARGUMENT"], accepted: ["container init process argument"]),
+        repeated("arguments", ["ARGUMENT"], accepted: ["container init process argument"])
     ] + processParameters + resourceParameters + managementParameters + registryParameters + progressParameters + imageFetchParameters),
     operation("core.build", action: "ContainerBuild.Builder.build", risk: "mutating", [
         repeated("architectures", ["--arch", "-a"], default: .strings(["host architecture"]), accepted: ["arm64", "amd64", "comma-separated architecture list"], grammar: ".+"),
@@ -231,7 +231,7 @@ private let operations: [Operation] = [
         repeated("tags", ["--tag", "-t"], default: .strings(["generated UUID"]), accepted: ["OCI image reference"]),
         string("targetStage", ["--target"]),
         integer("vsockPort", ["--vsock-port"], default: .integer(8088), accepted: ["port number 1 through 4294967295"], grammar: "^[1-9][0-9]{0,9}$"),
-        path("contextDirectory", ["CONTEXT-DIR"], default: .string(".")),
+        path("contextDirectory", ["CONTEXT-DIR"], default: .string("."))
     ] + dnsParameters),
 
     operation("containers.create", action: "ContainerClient.create", risk: "mutating", [string("image", ["IMAGE"], required: true, accepted: ["OCI image reference"]), repeated("arguments", ["ARGUMENT"], accepted: ["container init process argument"])] + processParameters + resourceParameters + managementParameters + registryParameters + imageFetchParameters),
@@ -242,7 +242,7 @@ private let operations: [Operation] = [
     operation("containers.list", action: "ContainerClient.list", risk: "readOnly", [flag("all", ["--all", "-a"]), outputFormat, quiet]),
     operation("containers.exec", action: "ContainerClient.exec", risk: "mutating", [identifier("containerID", "CONTAINER"), repeated("arguments", ["ARGUMENT"], required: true, accepted: ["process executable and arguments"]), flag("detach", ["--detach", "-d"])] + processParameters),
     operation("containers.export", action: "ContainerClient.export", risk: "readOnly", [identifier("containerID", "CONTAINER"), path("output", ["--output", "-o"])]),
-    operation("containers.logs", action: "ContainerClient.logs", risk: "readOnly", [identifier("containerID", "CONTAINER"), flag("boot", ["--boot"]), flag("follow", ["--follow", "-f"]), integer("tailLines", ["-n"]) ]),
+    operation("containers.logs", action: "ContainerClient.logs", risk: "readOnly", [identifier("containerID", "CONTAINER"), flag("boot", ["--boot"]), flag("follow", ["--follow", "-f"]), integer("tailLines", ["-n"])]),
     operation("containers.inspect", action: "ContainerClient.get", risk: "readOnly", [identifier("containerIDs", "CONTAINER", repeated: true)]),
     operation("containers.stats", action: "ContainerClient.stats", risk: "readOnly", [identifier("containerIDs", "CONTAINER", required: false, repeated: true), outputFormat, flag("noStream", ["--no-stream"])]),
     operation("containers.copy", action: "ContainerClient.copy", risk: "mutating", [path("source", ["SOURCE"], required: true), path("destination", ["DESTINATION"], required: true)]),
@@ -300,7 +300,7 @@ private let operations: [Operation] = [
     operation("dns.delete", action: "DNSService.delete", risk: "privileged", [string("domainName", ["DOMAIN"], required: true, accepted: ["configured local DNS domain"], grammar: "^[A-Za-z0-9.-]+$")]),
     operation("dns.list", action: "DNSService.list", risk: "readOnly", [outputFormat, quiet]),
     operation("kernel.set", action: "ClientKernel.installKernel", risk: "privileged", [enumeration("architecture", ["--arch"], default: .string("host architecture"), values: ["amd64", "arm64"]), path("binary", ["--binary"], dependencies: ["recommended=false"]), flag("force", ["--force"]), flag("recommended", ["--recommended"], conflicts: ["architecture", "binary", "archive"]), string("archive", ["--tar"], accepted: ["local tar archive path", "remote tar archive URL"], dependencies: ["binary"], conflicts: ["recommended"])]),
-    operation("configuration.manage", action: "ConfigurationLoader.load", risk: "readOnly", [enumeration("format", ["--format"], default: .string("toml"), values: ["json", "toml"])]),
+    operation("configuration.manage", action: "ConfigurationLoader.load", risk: "readOnly", [enumeration("format", ["--format"], default: .string("toml"), values: ["json", "toml"])])
 ]
 
 private func parameterJSON(_ parameter: Parameter, operation: Operation) -> [String: Any] {
@@ -320,14 +320,14 @@ private func parameterJSON(_ parameter: Parameter, operation: Operation) -> [Str
             "minimumRuntime": runtime,
             "minimumMacOSMajor": 26,
             "requiresAppleSilicon": true,
-            "requiredCapabilities": [operation.id] + parameter.capabilities,
+            "requiredCapabilities": [operation.id] + parameter.capabilities
         ],
         "securityImpact": parameter.securityImpact ?? operation.risk,
         "labelKey": "\(key).label",
         "conciseHelpKey": "\(key).concise",
         "detailedHelpKey": "\(key).detail",
         "validationErrorKey": "\(key).validation",
-        "recoveryKey": "\(key).recovery",
+        "recoveryKey": "\(key).recovery"
     ]
 }
 
@@ -337,7 +337,7 @@ let operationJSON: [[String: Any]] = operations.map { operation in
         "domain": operation.domain,
         "nativeAction": operation.nativeAction,
         "risk": operation.risk,
-        "parameters": operation.parameters.map { parameterJSON($0, operation: operation) },
+        "parameters": operation.parameters.map { parameterJSON($0, operation: operation) }
     ]
 }
 
@@ -345,7 +345,7 @@ let root: [String: Any] = [
     "schemaVersion": 1,
     "runtimeVersion": runtime,
     "sourceCommit": sourceCommit,
-    "operations": operationJSON,
+    "operations": operationJSON
 ]
 
 guard operations.count == 61 else {

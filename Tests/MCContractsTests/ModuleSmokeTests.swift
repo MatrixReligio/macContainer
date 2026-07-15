@@ -1,6 +1,6 @@
 import MCContracts
 import Testing
 
-@Test func contractsModuleLoads() {
+@Test func `contracts module loads`() {
     _ = MCContractsModule.self
 }

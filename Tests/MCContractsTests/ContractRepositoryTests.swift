@@ -1,24 +1,28 @@
 import Foundation
-import Testing
 @testable import MCContracts
+import Testing
 
 @Suite("Upstream contract schema")
 struct ContractRepositoryTests {
     private static let expectedOperationIDs = Set([
         "core.run", "core.build",
-        "containers.create", "containers.start", "containers.stop", "containers.kill", "containers.delete", "containers.list", "containers.exec", "containers.export", "containers.logs", "containers.inspect", "containers.stats", "containers.copy", "containers.prune",
-        "images.list", "images.pull", "images.push", "images.save", "images.load", "images.tag", "images.delete", "images.prune", "images.inspect",
+        "containers.create", "containers.start", "containers.stop", "containers.kill", "containers.delete",
+        "containers.list", "containers.exec", "containers.export", "containers.logs", "containers.inspect",
+        "containers.stats", "containers.copy", "containers.prune",
+        "images.list", "images.pull", "images.push", "images.save", "images.load",
+        "images.tag", "images.delete", "images.prune", "images.inspect",
         "builder.start", "builder.status", "builder.stop", "builder.delete",
         "networks.create", "networks.delete", "networks.prune", "networks.list", "networks.inspect",
         "volumes.create", "volumes.delete", "volumes.prune", "volumes.list", "volumes.inspect",
         "registries.login", "registries.logout", "registries.list",
-        "machines.create", "machines.run", "machines.list", "machines.inspect", "machines.set", "machines.set-default", "machines.logs", "machines.stop", "machines.delete",
+        "machines.create", "machines.run", "machines.list", "machines.inspect", "machines.set",
+        "machines.set-default", "machines.logs", "machines.stop", "machines.delete",
         "system.start", "system.stop", "system.status", "system.version", "system.logs", "system.disk-usage",
         "dns.create", "dns.delete", "dns.list",
-        "kernel.set", "configuration.manage",
+        "kernel.set", "configuration.manage"
     ])
 
-    @Test func semanticRuntimeVersionOrdersNumerically() {
+    @Test func `semantic runtime version orders numerically`() {
         let older = RuntimeVersion(major: 1, minor: 0, patch: 9)
         let newer = RuntimeVersion(major: 1, minor: 1, patch: 0)
 
@@ -26,8 +30,17 @@ struct ContractRepositoryTests {
         #expect(newer.description == "1.1.0")
     }
 
-    @Test func decodesMinimalReviewedContract() throws {
-        let data = Data(#"{"schemaVersion":1,"runtimeVersion":{"major":1,"minor":1,"patch":0},"sourceCommit":"608902412d61761ebd1efc285a9d0a1727e6e2c1","operations":[]}"#.utf8)
+    @Test func `decodes minimal reviewed contract`() throws {
+        let data = Data(
+            #"""
+            {
+              "schemaVersion": 1,
+              "runtimeVersion": {"major": 1, "minor": 1, "patch": 0},
+              "sourceCommit": "608902412d61761ebd1efc285a9d0a1727e6e2c1",
+              "operations": []
+            }
+            """#.utf8
+        )
 
         let contract = try ContractRepository.decode(data)
 
@@ -37,7 +50,7 @@ struct ContractRepositoryTests {
         #expect(contract.operations.isEmpty)
     }
 
-    @Test func parameterValueUsesStableSingleKeyJSON() throws {
+    @Test func `parameter value uses stable single key JSON`() throws {
         let data = Data(#"{"integer":10}"#.utf8)
 
         let value = try JSONDecoder().decode(ParameterValue.self, from: data)
@@ -48,7 +61,7 @@ struct ContractRepositoryTests {
         #expect(object == ["integer": 10])
     }
 
-    @Test func bundledContractContainsEveryBuiltinOperationExactlyOnce() throws {
+    @Test func `bundled contract contains every builtin operation exactly once`() throws {
         let contract = try ContractRepository.bundled(
             version: RuntimeVersion(major: 1, minor: 1, patch: 0)
         )
@@ -57,7 +70,7 @@ struct ContractRepositoryTests {
         #expect(Set(contract.operations.map(\.id)) == Self.expectedOperationIDs)
     }
 
-    @Test func everyParameterHasCompleteMetadataAndUniqueOperationScope() throws {
+    @Test func `every parameter has complete metadata and unique operation scope`() throws {
         let contract = try ContractRepository.bundled(
             version: RuntimeVersion(major: 1, minor: 1, patch: 0)
         )

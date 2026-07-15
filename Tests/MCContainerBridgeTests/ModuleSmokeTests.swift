@@ -1,6 +1,6 @@
 import MCContainerBridge
 import Testing
 
-@Test func containerBridgeModuleLoads() {
+@Test func `container bridge module loads`() {
     _ = MCContainerBridgeModule.self
 }

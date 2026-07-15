@@ -16,8 +16,12 @@ public struct RuntimeVersion: Codable, Hashable, Comparable, Sendable, CustomStr
     }
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
-        if lhs.major != rhs.major { return lhs.major < rhs.major }
-        if lhs.minor != rhs.minor { return lhs.minor < rhs.minor }
+        if lhs.major != rhs.major {
+            return lhs.major < rhs.major
+        }
+        if lhs.minor != rhs.minor {
+            return lhs.minor < rhs.minor
+        }
         return lhs.patch < rhs.patch
     }
 }
@@ -189,19 +193,22 @@ extension ParameterValue: Codable {
         let presentKeys = CodingKeys.allCases.filter(container.contains)
         guard presentKeys.count == 1, let key = presentKeys.first else {
             throw DecodingError.dataCorrupted(
-                .init(codingPath: decoder.codingPath, debugDescription: "ParameterValue requires exactly one supported key")
+                .init(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "ParameterValue requires exactly one supported key"
+                )
             )
         }
 
         switch key {
         case .boolean:
-            self = .boolean(try container.decode(Bool.self, forKey: key))
+            self = try .boolean(container.decode(Bool.self, forKey: key))
         case .integer:
-            self = .integer(try container.decode(Int64.self, forKey: key))
+            self = try .integer(container.decode(Int64.self, forKey: key))
         case .string:
-            self = .string(try container.decode(String.self, forKey: key))
+            self = try .string(container.decode(String.self, forKey: key))
         case .strings:
-            self = .strings(try container.decode([String].self, forKey: key))
+            self = try .strings(container.decode([String].self, forKey: key))
         }
     }
 

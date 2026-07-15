@@ -1,6 +1,6 @@
 import MCCompatibility
 import Testing
 
-@Test func compatibilityModuleLoads() {
+@Test func `compatibility module loads`() {
     _ = MCCompatibilityModule.self
 }
