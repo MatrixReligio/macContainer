@@ -57,6 +57,35 @@ struct FieldValueTests {
         #expect(try JSONDecoder().decode([FieldValue].self, from: encoded) == values)
     }
 
+    @Test func `external JSON uses one stable key per value`() throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let fixtures: [(FieldValue, String)] = [
+            (.bool(true), #"{"bool":true}"#),
+            (.integer(42), #"{"integer":42}"#),
+            (.bytes(4096), #"{"bytes":4096}"#),
+            (.duration(.seconds(30)), #"{"duration":{"seconds":30}}"#),
+            (.string("value"), #"{"string":"value"}"#),
+            (.strings(["a", "b"]), #"{"strings":["a","b"]}"#),
+            (.path("/tmp"), #"{"path":"/tmp"}"#),
+            (.none, #"{"none":true}"#)
+        ]
+
+        for (value, expectedJSON) in fixtures {
+            let data = try encoder.encode(value)
+            #expect(String(data: data, encoding: .utf8) == expectedJSON)
+            #expect(try JSONDecoder().decode(FieldValue.self, from: Data(expectedJSON.utf8)) == value)
+        }
+    }
+
+    @Test func `external JSON rejects ambiguous multiple value keys`() {
+        let ambiguous = Data(#"{"bool":true,"integer":1}"#.utf8)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(FieldValue.self, from: ambiguous)
+        }
+    }
+
     @Test func `errors sort before warnings and information`() {
         let issues = [
             ValidationIssue(parameterID: "memory", severity: .warning, messageKey: "warning"),

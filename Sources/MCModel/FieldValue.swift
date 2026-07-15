@@ -14,6 +14,102 @@ public enum FieldValue: Codable, Equatable, Sendable {
     case mounts([Mount])
     case none
 
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case bool
+        case integer
+        case bytes
+        case duration
+        case string
+        case strings
+        case keyValues
+        case path
+        case secret
+        case portMappings
+        case mounts
+        case none
+    }
+
+    // The exhaustive switch keeps the persisted representation explicit and reviewable.
+    // swiftlint:disable:next cyclomatic_complexity
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let presentKeys = CodingKeys.allCases.filter(container.contains)
+        guard presentKeys.count == 1, let key = presentKeys.first else {
+            throw DecodingError.dataCorrupted(
+                .init(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "FieldValue requires exactly one supported key"
+                )
+            )
+        }
+
+        switch key {
+        case .bool:
+            self = try .bool(container.decode(Bool.self, forKey: key))
+        case .integer:
+            self = try .integer(container.decode(Int64.self, forKey: key))
+        case .bytes:
+            self = try .bytes(container.decode(Int64.self, forKey: key))
+        case .duration:
+            self = try .duration(container.decode(DurationValue.self, forKey: key))
+        case .string:
+            self = try .string(container.decode(String.self, forKey: key))
+        case .strings:
+            self = try .strings(container.decode([String].self, forKey: key))
+        case .keyValues:
+            self = try .keyValues(container.decode([KeyValue].self, forKey: key))
+        case .path:
+            self = try .path(container.decode(String.self, forKey: key))
+        case .secret:
+            self = try .secret(container.decode(String.self, forKey: key))
+        case .portMappings:
+            self = try .portMappings(container.decode([PortMapping].self, forKey: key))
+        case .mounts:
+            self = try .mounts(container.decode([Mount].self, forKey: key))
+        case .none:
+            guard try container.decode(Bool.self, forKey: key) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: key,
+                    in: container,
+                    debugDescription: "FieldValue.none must be true"
+                )
+            }
+            self = .none
+        }
+    }
+
+    // The exhaustive switch keeps every schema key paired with its associated type.
+    // swiftlint:disable:next cyclomatic_complexity
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .bool(value):
+            try container.encode(value, forKey: .bool)
+        case let .integer(value):
+            try container.encode(value, forKey: .integer)
+        case let .bytes(value):
+            try container.encode(value, forKey: .bytes)
+        case let .duration(value):
+            try container.encode(value, forKey: .duration)
+        case let .string(value):
+            try container.encode(value, forKey: .string)
+        case let .strings(value):
+            try container.encode(value, forKey: .strings)
+        case let .keyValues(value):
+            try container.encode(value, forKey: .keyValues)
+        case let .path(value):
+            try container.encode(value, forKey: .path)
+        case let .secret(value):
+            try container.encode(value, forKey: .secret)
+        case let .portMappings(value):
+            try container.encode(value, forKey: .portMappings)
+        case let .mounts(value):
+            try container.encode(value, forKey: .mounts)
+        case .none:
+            try container.encode(true, forKey: .none)
+        }
+    }
+
     public var displayValue: String {
         switch self {
         case let .bool(value):
