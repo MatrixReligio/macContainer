@@ -656,7 +656,7 @@ git commit -m "feat: migrate template documents losslessly"
 **Files:**
 - Create: `docs/reviews/stage-2.md`
 
-- [ ] **Step 1: Run the full pure-logic gate**
+- [x] **Step 1: Run the full pure-logic gate**
 
 Run:
 
@@ -670,15 +670,15 @@ git diff --check
 
 Expected: PASS.
 
-- [ ] **Step 2: Run deterministic repeatability and secret scans**
+- [x] **Step 2: Run deterministic repeatability and secret scans**
 
 Render every built-in template 1,000 times for a fixed context and assert byte-identical encoded output. Search saved fixtures for `password`, `token`, `secret`, private-key headers, and registry authorization values; the test must fail unless the occurrence is an explicit rejection test.
 
-- [ ] **Step 3: Review against specification Sections 6, 8, and 14**
+- [x] **Step 3: Review against specification Sections 6, 8, and 14**
 
 Verify all eight templates, provenance, upstream diff, host resource caps, Rosetta gating, nested virtualization gating, no implicit writable mount in the secure template, editable draft behavior, secret exclusion, atomic replacement, and future-schema safe disable behavior. Fix each finding and rerun its focused test.
 
-- [ ] **Step 4: Commit the green review**
+- [x] **Step 4: Commit the green review**
 
 ```bash
 git add docs/reviews/stage-2.md
