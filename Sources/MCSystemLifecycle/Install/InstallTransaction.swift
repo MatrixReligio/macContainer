@@ -192,7 +192,7 @@ public protocol PartialInstallResidueAuditing: Sendable {
 }
 
 public protocol InstallTemporaryDirectoryProviding: Sendable {
-    func create() throws -> InstallTemporaryDirectory
+    func create(transactionID: UUID) throws -> InstallTemporaryDirectory
 }
 
 public final class InstallTemporaryDirectory: @unchecked Sendable {
@@ -222,27 +222,27 @@ public final class InstallTemporaryDirectory: @unchecked Sendable {
 public struct LocalInstallTemporaryDirectoryProvider: InstallTemporaryDirectoryProviding {
     private let baseDirectory: URL
 
-    public init(baseDirectory: URL = FileManager.default.temporaryDirectory) {
+    public init(baseDirectory: URL = Self.defaultBaseDirectory) {
         self.baseDirectory = baseDirectory.standardizedFileURL
     }
 
-    public func create() throws -> InstallTemporaryDirectory {
-        var template = Array(
-            baseDirectory
-                .appendingPathComponent("MacContainerInstall.XXXXXX", isDirectory: true)
-                .path.utf8CString
+    public func create(transactionID: UUID) throws -> InstallTemporaryDirectory {
+        try FileManager.default.createDirectory(
+            at: baseDirectory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
         )
-        guard let result = Darwin.mkdtemp(&template) else { throw posixError() }
-        let url = URL(fileURLWithPath: String(cString: result), isDirectory: true)
-        guard Darwin.chmod(url.path, 0o700) == 0 else {
-            try? FileManager.default.removeItem(at: url)
-            throw posixError()
-        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: baseDirectory.path)
         var status = stat()
-        guard Darwin.lstat(url.path, &status) == 0 else {
-            try? FileManager.default.removeItem(at: url)
-            throw posixError()
-        }
+        guard
+            Darwin.lstat(baseDirectory.path, &status) == 0,
+            status.st_mode & S_IFMT == S_IFDIR,
+            status.st_uid == geteuid(),
+            status.st_mode & 0o077 == 0
+        else { throw InstallError.unsafeTemporaryDirectory }
+        let url = baseDirectory.appendingPathComponent(transactionID.uuidString, isDirectory: true)
+        guard Darwin.mkdir(url.path, 0o700) == 0 else { throw posixError() }
+        guard Darwin.lstat(url.path, &status) == 0 else { throw posixError() }
         let identity = TemporaryDirectoryIdentity(status)
         return InstallTemporaryDirectory(url: url) {
             var current = stat()
@@ -270,6 +270,13 @@ public struct LocalInstallTemporaryDirectoryProvider: InstallTemporaryDirectoryP
 
     private func posixError() -> NSError {
         NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+    }
+
+    public static var defaultBaseDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("container.matrixreligio.com", isDirectory: true)
+            .appendingPathComponent("Lifecycle", isDirectory: true)
+            .appendingPathComponent("Staging", isDirectory: true)
     }
 }
 
@@ -357,12 +364,8 @@ public struct InstallTransaction: Sendable {
     }
 
     public func install(_ target: RuntimeInstallTarget) async throws -> InstallReport {
-        let temporary: InstallTemporaryDirectory
-        do {
-            temporary = try temporaryDirectories.create()
-        } catch {
-            throw InstallError.temporaryDirectoryUnavailable
-        }
+        let transactionID = try await beginTransaction(for: target)
+        let temporary = try await createTemporaryDirectory(transactionID: transactionID)
         var needsFallbackCleanup = true
         defer {
             if needsFallbackCleanup {
@@ -370,13 +373,10 @@ public struct InstallTransaction: Sendable {
             }
         }
 
-        var transactionID: UUID?
         var currentStage = InstallStage.journalIntent
         var installAttempted = false
         let report: InstallReport
         do {
-            transactionID = try await journal.begin(targetVersion: target.manifest.runtimeVersion)
-
             currentStage = .platformPreflight
             try Self.validate(target)
             let platformReport = try await platform.preflight(for: target)
@@ -407,7 +407,6 @@ public struct InstallTransaction: Sendable {
             ))
             guard approved else { throw InstallError.consentDenied }
 
-            guard let transactionID else { throw InstallError.journalUnavailable }
             currentStage = .journalIntent
             try await journal.recordInstallIntent(
                 transactionID: transactionID,
@@ -469,6 +468,26 @@ public struct InstallTransaction: Sendable {
         try Self.cleanupAfterSuccess(temporary)
         needsFallbackCleanup = false
         return report
+    }
+
+    private func beginTransaction(for target: RuntimeInstallTarget) async throws -> UUID {
+        do {
+            return try await journal.begin(targetVersion: target.manifest.runtimeVersion)
+        } catch {
+            throw InstallError.journalUnavailable
+        }
+    }
+
+    private func createTemporaryDirectory(transactionID: UUID) async throws -> InstallTemporaryDirectory {
+        do {
+            return try temporaryDirectories.create(transactionID: transactionID)
+        } catch {
+            try? await journal.fail(
+                transactionID: transactionID,
+                failure: .init(code: "install.staging.create", redactedDetail: "stage-failed")
+            )
+            throw InstallError.temporaryDirectoryUnavailable
+        }
     }
 
     private static func cleanupAfterSuccess(_ temporary: InstallTemporaryDirectory) throws {

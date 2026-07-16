@@ -76,7 +76,9 @@ public struct RedactedLifecycleFailure: Codable, Equatable, Sendable {
 }
 
 public enum LifecycleAction: Codable, Equatable, Sendable {
+    case cleanStaging
     case installPackage(digest: String)
+    case retainRollbackPoint(identifier: UUID)
     case stopServices(labels: [String])
     case removePayload(manifestID: String)
     case removeReceipt(identifier: String)

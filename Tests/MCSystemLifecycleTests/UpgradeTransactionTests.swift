@@ -16,6 +16,10 @@ struct UpgradeTransactionTests {
         #expect(fixture.probes.runs == [RuntimeUpgradeTarget.upgradeFixture.requiredProbes])
         #expect(fixture.rollback.discardCount == 1)
         #expect(fixture.preparer.cleanupCount == 1)
+        #expect(fixture.journal.retainedPointIDs == [fixture.rollback.pointID])
+        let checkpoint = try #require(fixture.actions.values.firstIndex(of: "journal.rollback-point.retained"))
+        let finalIdleCheck = try #require(fixture.actions.values.firstIndex(of: UpgradeStage.finalIdleCheck.rawValue))
+        #expect(checkpoint < finalIdleCheck)
     }
 
     @Test func `refuses upgrade when work appears at final idle check`() async throws {
@@ -106,6 +110,7 @@ private final class UpgradeFixture {
     let blocker: RecordingUpgradeBlocker
     let diagnostics: RecordingUpgradeDiagnostics
     let consent: RecordingDowngradeConsent
+    let journal: RecordingUpgradeJournal
     let transaction: UpgradeTransaction
 
     init(
@@ -142,6 +147,7 @@ private final class UpgradeFixture {
         blocker = RecordingUpgradeBlocker(actions: actions, failingRollbackAt: failingRollbackAt)
         diagnostics = RecordingUpgradeDiagnostics(actions: actions, failingRollbackAt: failingRollbackAt)
         consent = RecordingDowngradeConsent(approved: downgradeApproved)
+        journal = RecordingUpgradeJournal(actions: actions)
         transaction = UpgradeTransaction(
             packagePreparer: preparer,
             baselineCapture: RecordingUpgradeBaselineCapture(
@@ -163,7 +169,7 @@ private final class UpgradeFixture {
             helper: helper,
             installedRuntimeVerifier: RecordingInstalledRuntimeVerifier(actions: actions),
             probes: probes,
-            journal: RecordingUpgradeJournal(actions: actions),
+            journal: journal,
             blocker: blocker,
             diagnostics: diagnostics,
             downgradeConsent: consent
@@ -247,6 +253,7 @@ private final class RecordingUpgradeRollbackManager: UpgradeRollbackManaging, @u
     private(set) var createCount = 0
     private(set) var restoreCount = 0
     private(set) var discardCount = 0
+    let pointID = UUID()
 
     init(
         actions: LockedUpgradeActions,
@@ -268,7 +275,7 @@ private final class RecordingUpgradeRollbackManager: UpgradeRollbackManaging, @u
         _ = requiresFullData
         createCount += 1
         try actions.stage(.rollbackPointCreation)
-        return .init(id: UUID(), previousProbes: baseline.previousTarget.requiredProbes)
+        return .init(id: pointID, previousProbes: baseline.previousTarget.requiredProbes)
     }
 
     func previousPackage(in point: UpgradeRollbackPoint) async throws -> VerifiedRuntimePackage {
@@ -403,8 +410,13 @@ private final class RecordingUpgradeProbes: UpgradeProbeRunning, @unchecked Send
     }
 }
 
-private struct RecordingUpgradeJournal: UpgradeJournalWriting {
+private final class RecordingUpgradeJournal: UpgradeJournalWriting, @unchecked Sendable {
     let actions: LockedUpgradeActions
+    private(set) var retainedPointIDs: [UUID] = []
+
+    init(actions: LockedUpgradeActions) {
+        self.actions = actions
+    }
 
     func begin(kind: LifecycleKind, targetVersion: String) async throws -> UUID {
         _ = kind
@@ -420,6 +432,12 @@ private struct RecordingUpgradeJournal: UpgradeJournalWriting {
     func recordInstallApplied(transactionID: UUID, digest: String) async throws {
         _ = transactionID
         _ = digest
+    }
+
+    func recordRollbackPoint(transactionID: UUID, pointID: UUID) async throws {
+        _ = transactionID
+        retainedPointIDs.append(pointID)
+        actions.append("journal.rollback-point.retained")
     }
 
     func commit(transactionID: UUID) async throws {

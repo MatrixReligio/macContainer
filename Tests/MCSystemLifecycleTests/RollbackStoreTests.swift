@@ -139,6 +139,70 @@ struct RollbackStoreTests {
         }
         #expect(!FileManager.default.fileExists(atPath: fixture.rollbackRoot.path))
     }
+
+    @Test func `new store instance securely reopens a completed rollback point`() async throws {
+        let fixture = try LocalRollbackFixture()
+        defer { fixture.cleanup() }
+        let first = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier()
+        )
+        let point = try await first.createPoint(
+            fixture.request,
+            verifiedPrevious: .fixture(
+                manifest: fixture.request.previousManifest,
+                sourceURL: fixture.package
+            )
+        )
+        let reopenedStore = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier()
+        )
+
+        let reopened = try await reopenedStore.loadPoint(id: point.id)
+        let package = try await reopenedStore.openPreviousPackage(in: reopened)
+
+        #expect(reopened.manifest == point.manifest)
+        #expect(package.runtimeVersion == fixture.request.previousManifest.runtimeVersion)
+    }
+
+    @Test func `reopen rejects a rollback point with incomplete manifest items`() async throws {
+        let fixture = try LocalRollbackFixture()
+        defer { fixture.cleanup() }
+        let store = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier()
+        )
+        let point = try await store.createPoint(
+            fixture.request,
+            verifiedPrevious: .fixture(
+                manifest: fixture.request.previousManifest,
+                sourceURL: fixture.package
+            )
+        )
+        var items = point.manifest.items
+        items[0].state = .planned
+        let incomplete = RollbackPointManifest(
+            pointID: point.id,
+            previousManifest: point.manifest.previousManifest,
+            requiresFullData: point.manifest.requiresFullData,
+            items: items
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        try LocalRollbackStoreFileSystem().replaceManifest(
+            encoder.encode(incomplete),
+            at: point.manifestURL
+        )
+        let reopenedStore = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier()
+        )
+
+        await #expect(throws: RollbackStoreError.unsafePoint) {
+            _ = try await reopenedStore.loadPoint(id: point.id)
+        }
+    }
 }
 
 private final class RecordingRollbackFileSystem: RollbackStoreFileSystem, @unchecked Sendable {
@@ -176,6 +240,10 @@ private final class RecordingRollbackFileSystem: RollbackStoreFileSystem, @unche
     func replaceManifest(_ data: Data, at _: URL) throws {
         _ = data
         events.append("manifest.replace")
+    }
+
+    func readManifest(at _: URL) throws -> Data {
+        throw RollbackFixtureError.injected
     }
 
     func clonePackage(from _: OpenRuntimePackageFile, to _: URL) throws {

@@ -85,8 +85,10 @@ struct InstallTransactionTests {
         try FileManager.default.createDirectory(at: base, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: base) }
         let provider = LocalInstallTemporaryDirectoryProvider(baseDirectory: base)
+        let normalID = UUID()
 
-        let normal = try provider.create()
+        let normal = try provider.create(transactionID: normalID)
+        #expect(normal.url.lastPathComponent == normalID.uuidString)
         var status = stat()
         #expect(Darwin.lstat(normal.url.path, &status) == 0)
         #expect(status.st_mode & 0o777 == 0o700)
@@ -94,7 +96,7 @@ struct InstallTransactionTests {
         try normal.cleanup()
         #expect(Darwin.lstat(normal.url.path, &status) != 0 && errno == ENOENT)
 
-        let replaced = try provider.create()
+        let replaced = try provider.create(transactionID: UUID())
         let protected = base.appendingPathComponent("protected")
         try Data("keep".utf8).write(to: protected)
         try FileManager.default.removeItem(at: replaced.url)
@@ -199,8 +201,8 @@ private final class RecordingTemporaryDirectoryProvider: InstallTemporaryDirecto
         lock.withLock { paths }
     }
 
-    func create() throws -> InstallTemporaryDirectory {
-        let url = base.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    func create(transactionID: UUID) throws -> InstallTemporaryDirectory {
+        let url = base.appendingPathComponent(transactionID.uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
         lock.withLock { _ = paths.insert(url) }
         return InstallTemporaryDirectory(url: url) { [weak self] in

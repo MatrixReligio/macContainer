@@ -522,17 +522,17 @@ git commit -m "feat: completely uninstall runtime without residue"
 - Create: `Sources/MCSystemLifecycle/Recovery/LifecycleRecovery.swift`
 - Test: `Tests/MCSystemLifecycleTests/LifecycleRecoveryTests.swift`
 
-- [ ] **Step 1: Write failing recovery decision tests**
+- [x] **Step 1: Write failing recovery decision tests**
 
 Table-test the last durable event for each lifecycle kind/phase. Before side effect: clean staged data and abort. After target install but before probes: inspect actual receipt/payload and roll back. During uninstall: resume only recorded allowlisted artifact removals and rerun independent audit. Ambiguous/corrupt journal: perform read-only inventory and require recovery UI; never guess/delete.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter LifecycleRecoveryTests`
 
 Expected: FAIL because recovery is undefined.
 
-- [ ] **Step 3: Implement evidence-driven recovery**
+- [x] **Step 3: Implement evidence-driven recovery**
 
 ```swift
 public enum RecoveryDecision: Equatable, Sendable {
@@ -546,13 +546,13 @@ public enum RecoveryDecision: Equatable, Sendable {
 
 Decision input combines the journal with a fresh read-only receipt/payload/service/residue inventory. Recovery acquires the global lifecycle lock and records new intent before action.
 
-- [ ] **Step 4: Run recovery and lifecycle suites**
+- [x] **Step 4: Run recovery and lifecycle suites**
 
 Run: `swift test --filter LifecycleRecoveryTests && swift test --filter MCSystemLifecycleTests`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Recovery Tests/MCSystemLifecycleTests/LifecycleRecoveryTests.swift

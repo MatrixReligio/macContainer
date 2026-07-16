@@ -121,6 +121,7 @@ public protocol RollbackStoreFileSystem: Sendable {
     func createPrivateDirectory(at url: URL) throws
     func createManifest(_ data: Data, at url: URL) throws
     func replaceManifest(_ data: Data, at url: URL) throws
+    func readManifest(at url: URL) throws -> Data
     func clonePackage(from package: OpenRuntimePackageFile, to destination: URL) throws
     func cloneItem(from source: URL, to destination: URL) throws
     func restoreItem(from source: URL, to destination: URL) throws
@@ -222,6 +223,35 @@ public actor RollbackStore {
         )
     }
 
+    public func loadPoint(id: UUID) throws -> RollbackPoint {
+        do {
+            _ = try fileSystem.directoryIdentity(at: rootDirectory)
+            let pointRoot = rootDirectory.appendingPathComponent(id.uuidString, isDirectory: true)
+            let identity = try fileSystem.directoryIdentity(at: pointRoot)
+            let manifestURL = pointRoot.appendingPathComponent("manifest.json")
+            let manifest = try JSONDecoder().decode(
+                RollbackPointManifest.self,
+                from: fileSystem.readManifest(at: manifestURL)
+            )
+            try validateReopenedManifest(manifest, expectedID: id, pointRoot: pointRoot)
+            guard let packageItem = manifest.items.first(where: { $0.kind == .previousPackage }) else {
+                throw RollbackStoreError.unsafePoint
+            }
+            let point = RollbackPoint(
+                id: id,
+                rootURL: pointRoot,
+                manifestURL: manifestURL,
+                previousPackageURL: pointRoot.appendingPathComponent(packageItem.backupName),
+                manifest: manifest,
+                identity: identity
+            )
+            upgradePoints[id] = point
+            return point
+        } catch {
+            throw RollbackStoreError.unsafePoint
+        }
+    }
+
     public func restore(_ point: RollbackPoint) throws {
         for item in point.manifest.items where item.kind != .previousPackage {
             guard item.state == .created else { throw RollbackStoreError.unsafePoint }
@@ -265,6 +295,37 @@ public actor RollbackStore {
             (request.requiresFullData ? request.fullData : [])
         guard sources.allSatisfy(\.isFileURL), Set(sources.map(\.path)).count == sources.count else {
             throw RollbackStoreError.duplicateSource
+        }
+    }
+
+    private func validateReopenedManifest(
+        _ manifest: RollbackPointManifest,
+        expectedID: UUID,
+        pointRoot: URL
+    ) throws {
+        try manifest.previousManifest.validate()
+        guard
+            manifest.schemaVersion == 1,
+            manifest.pointID == expectedID,
+            !manifest.items.isEmpty,
+            manifest.items.allSatisfy({ $0.state == .created }),
+            manifest.items.filter({ $0.kind == .previousPackage }).count == 1,
+            !manifest.requiresFullData || manifest.items.contains(where: { $0.kind == .fullData }),
+            Set(manifest.items.map(\.backupName)).count == manifest.items.count,
+            Set(manifest.items.map(\.sourcePath)).count == manifest.items.count
+        else {
+            throw RollbackStoreError.unsafePoint
+        }
+        for item in manifest.items {
+            guard
+                Self.isSafeBackupName(item.backupName),
+                item.sourcePath.hasPrefix("/"),
+                try fileSystem.logicalSize(
+                    of: pointRoot.appendingPathComponent(item.backupName)
+                ) == item.logicalBytes
+            else {
+                throw RollbackStoreError.unsafePoint
+            }
         }
     }
 
@@ -314,10 +375,33 @@ public actor RollbackStore {
         return filtered.isEmpty ? "item" : String(filtered.prefix(96))
     }
 
+    private static func isSafeBackupName(_ value: String) -> Bool {
+        guard (1 ... 128).contains(value.utf8.count), value == URL(fileURLWithPath: value).lastPathComponent else {
+            return false
+        }
+        return !value.contains("..") && value.allSatisfy {
+            $0.isASCII && ($0.isLetter || $0.isNumber || ".-_".contains($0))
+        }
+    }
+
     public static var defaultRootDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("container.matrixreligio.com", isDirectory: true)
             .appendingPathComponent("Rollback", isDirectory: true)
+    }
+}
+
+extension RollbackStore: RecoveryRollbackPointVerifying {
+    public func verifiedPointIDs(_ recordedPointIDs: Set<UUID>) async -> Set<UUID> {
+        var verified: Set<UUID> = []
+        for pointID in recordedPointIDs.sorted(by: { $0.uuidString < $1.uuidString }) {
+            do {
+                let point = try loadPoint(id: pointID)
+                _ = try await openPreviousPackage(in: point)
+                verified.insert(pointID)
+            } catch {}
+        }
+        return verified
     }
 }
 
@@ -373,6 +457,40 @@ public struct LocalRollbackStoreFileSystem: RollbackStoreFileSystem {
             try? FileManager.default.removeItem(at: temporary)
             throw error
         }
+    }
+
+    public func readManifest(at url: URL) throws -> Data {
+        let descriptor = Darwin.open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+        guard descriptor >= 0 else { throw posixError() }
+        defer { Darwin.close(descriptor) }
+        var status = stat()
+        guard
+            Darwin.fstat(descriptor, &status) == 0,
+            status.st_mode & S_IFMT == S_IFREG,
+            status.st_uid == geteuid(),
+            status.st_nlink == 1,
+            status.st_mode & 0o077 == 0,
+            status.st_size <= 1024 * 1024
+        else {
+            throw RollbackStoreError.unsafePoint
+        }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 16384)
+        while true {
+            let count = Darwin.read(descriptor, &buffer, buffer.count)
+            guard count >= 0 else {
+                if errno == EINTR {
+                    continue
+                }
+                throw posixError()
+            }
+            guard count > 0 else { break }
+            guard data.count + count <= 1024 * 1024 else {
+                throw RollbackStoreError.unsafePoint
+            }
+            data.append(buffer, count: count)
+        }
+        return data
     }
 
     public func clonePackage(from package: OpenRuntimePackageFile, to destination: URL) throws {

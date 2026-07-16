@@ -211,6 +211,7 @@ public protocol UpgradeJournalWriting: Sendable {
     func begin(kind: LifecycleKind, targetVersion: String) async throws -> UUID
     func recordInstallIntent(transactionID: UUID, digest: String) async throws
     func recordInstallApplied(transactionID: UUID, digest: String) async throws
+    func recordRollbackPoint(transactionID: UUID, pointID: UUID) async throws
     func commit(transactionID: UUID) async throws
     func beginRollback(transactionID: UUID, pointID: UUID) async throws
     func finishRollback(transactionID: UUID) async throws
@@ -246,6 +247,12 @@ public struct LifecycleUpgradeJournalWriter: UpgradeJournalWriting {
 
     public func recordInstallApplied(transactionID: UUID, digest: String) async throws {
         try await journal.recordApplied(.installPackage(digest: digest), transactionID: transactionID)
+    }
+
+    public func recordRollbackPoint(transactionID: UUID, pointID: UUID) async throws {
+        let action = LifecycleAction.retainRollbackPoint(identifier: pointID)
+        try await journal.recordIntent(action, transactionID: transactionID)
+        try await journal.recordApplied(action, transactionID: transactionID)
     }
 
     public func commit(transactionID: UUID) async throws {
@@ -355,6 +362,8 @@ public struct UpgradeTransaction: Sendable {
                 verifiedPrevious: previous,
                 requiresFullData: target.requiresFullDataRollback
             )
+            guard let transactionID, let point else { throw UpgradeError.journalUnavailable }
+            try await journal.recordRollbackPoint(transactionID: transactionID, pointID: point.id)
 
             currentStage = .finalIdleCheck
             let finalWork = try await workloads.activeWork()
@@ -362,7 +371,6 @@ public struct UpgradeTransaction: Sendable {
                 throw UpgradeError.workBecameActive(finalWork.sorted())
             }
 
-            guard let transactionID else { throw UpgradeError.journalUnavailable }
             currentStage = .serviceStop
             stopAttempted = true
             try await services.stopRuntime()
