@@ -393,7 +393,7 @@ git commit -m "feat: install verified runtime transactionally"
 - Test: `Tests/MCSystemLifecycleTests/UpgradeTransactionTests.swift`
 - Test: `Tests/MCSystemLifecycleTests/RollbackStoreTests.swift`
 
-- [ ] **Step 1: Write failing success/idle/rollback tests**
+- [x] **Step 1: Write failing success/idle/rollback tests**
 
 ```swift
 @Test func refusesUpgradeWhenWorkAppearsAtFinalIdleCheck() async {
@@ -413,25 +413,25 @@ git commit -m "feat: install verified runtime transactionally"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'UpgradeTransactionTests|RollbackStoreTests'`
 
 Expected: FAIL because upgrade/rollback types do not exist.
 
-- [ ] **Step 3: Implement the eleven-stage upgrade and seven-stage rollback**
+- [x] **Step 3: Implement the eleven-stage upgrade and seven-stage rollback**
 
 `RollbackStore` retains the previous verified installer and manifest, clones configuration/metadata with APFS clone-on-write, and clones full data only when the compatibility entry requires it. Every item is recorded in a mode-`0600` manifest before creation. Space preflight accounts for package + rollback + 20% headroom.
 
 `UpgradeTransaction` performs verified download, baseline capture, previous-package verification, rollback point, final idle recheck, graceful service stop, install, receipt/payload/API version agreement, start, required probes, commit, cleanup. Any failure after stop invokes rollback: stop target, reinstall previous package, restore required data, start previous service, run previous probes, persist redacted diagnostic, block target version. Downgrade requires explicit destructive/storage-compatibility consent and uses the same rollback protection.
 
-- [ ] **Step 4: Run failure injection at every stage**
+- [x] **Step 4: Run failure injection at every stage**
 
 Run: `swift test --filter 'UpgradeTransactionTests|RollbackStoreTests'`
 
 Expected: PASS; target is never reported successful before probes, previous version is restored whenever rollback is possible, and inability to verify rollback becomes a blocking recovery result.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Upgrade Tests/MCSystemLifecycleTests/UpgradeTransactionTests.swift Tests/MCSystemLifecycleTests/RollbackStoreTests.swift

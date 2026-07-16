@@ -49,6 +49,20 @@ struct LifecycleJournalTests {
         }
     }
 
+    @Test func `rollback may begin when service stop fails before install intent`() async throws {
+        let storage = RecordingJournalStorage()
+        let journal = LifecycleJournal(storage: storage)
+        let id = try await journal.begin(kind: .upgrade, targetVersion: "1.1.0")
+
+        try await journal.recordRollingBack(
+            .restoreRollbackPoint(identifier: UUID()),
+            transactionID: id
+        )
+        try await journal.recordRolledBack(transactionID: id)
+
+        #expect(await storage.events.map(\.phase) == [.began, .rollingBack, .rolledBack])
+    }
+
     @Test func `local storage creates private append only journal`() async throws {
         let fixture = try LocalJournalFixture()
         defer { fixture.cleanup() }

@@ -156,7 +156,8 @@ public actor LifecycleJournal {
         case (.began, .intent), (.applied, .intent), (.verified, .intent),
              (.intent, .applied), (.applied, .verified), (.verified, .committed),
              (.applied, .committed), (.began, .committed),
-             (.intent, .rollingBack), (.applied, .rollingBack), (.verified, .rollingBack),
+             (.began, .rollingBack), (.intent, .rollingBack),
+             (.applied, .rollingBack), (.verified, .rollingBack),
              (.rollingBack, .intent), (.rollingBack, .rolledBack), (.applied, .rolledBack):
             true
         default:
