@@ -447,7 +447,7 @@ git commit -m "feat: upgrade and roll back runtime safely"
 - Test: `Tests/MCSystemLifecycleTests/ResidueAuditorTests.swift`
 - Test: `Tests/MCSystemLifecycleTests/UninstallTransactionTests.swift`
 
-- [ ] **Step 1: Write failing complete-residue matrix tests**
+- [x] **Step 1: Write failing complete-residue matrix tests**
 
 ```swift
 @Test(arguments: ResidueFixture.everyOwnedArtifact)
@@ -471,13 +471,13 @@ func reportsEveryArtifactKind(_ fixture: ResidueFixture) async throws {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'ResidueAuditorTests|UninstallTransactionTests'`
 
 Expected: FAIL because uninstall/audit types are undefined.
 
-- [ ] **Step 3: Implement the complete inventory and transaction**
+- [x] **Step 3: Implement the complete inventory and transaction**
 
 ```swift
 public enum ResidueKind: String, Codable, CaseIterable, Sendable {
@@ -503,13 +503,13 @@ The independent auditor queries launchd service labels, owned process executable
 
 Uninstall refreshes inventory and confirmation, gracefully stops workloads/services, verifies no process, removes Keychain entries in user context, asks the helper to remove resolver/PF/manifest intersection/receipt/known empty directories, removes user artifacts using exact URLs, and invokes the independent audit. It returns success only for `isEmpty == true`. OS-managed historical Unified Logging is documented but never falsely claimed deleted.
 
-- [ ] **Step 4: Run full failure matrix and preservation-mode distinction**
+- [x] **Step 4: Run full failure matrix and preservation-mode distinction**
 
 Run: `swift test --filter 'ResidueAuditorTests|UninstallTransactionTests'`
 
 Expected: PASS for success and failure at every artifact; “preserve data” always reports preserved data and never uses the complete-uninstall success label.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Uninstall Tests/MCSystemLifecycleTests/ResidueAuditorTests.swift Tests/MCSystemLifecycleTests/UninstallTransactionTests.swift

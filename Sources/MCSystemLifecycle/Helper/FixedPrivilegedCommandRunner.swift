@@ -6,6 +6,7 @@ public enum FixedPrivilegedCommand: Equatable, Sendable {
     case forgetContainerReceipt
     case reloadContainerPacketFilter(subnetCIDR: String)
     case clearContainerPacketFilter
+    case inspectContainerPacketFilter
     case reloadDNS
 
     public var executable: String {
@@ -14,7 +15,7 @@ public enum FixedPrivilegedCommand: Equatable, Sendable {
             "/usr/sbin/installer"
         case .forgetContainerReceipt:
             "/usr/sbin/pkgutil"
-        case .reloadContainerPacketFilter, .clearContainerPacketFilter:
+        case .reloadContainerPacketFilter, .clearContainerPacketFilter, .inspectContainerPacketFilter:
             "/sbin/pfctl"
         case .reloadDNS:
             "/usr/bin/killall"
@@ -31,6 +32,8 @@ public enum FixedPrivilegedCommand: Equatable, Sendable {
             [executable, "-a", "com.apple.container", "-f", "-"]
         case .clearContainerPacketFilter:
             [executable, "-a", "com.apple.container", "-F", "all"]
+        case .inspectContainerPacketFilter:
+            [executable, "-a", "com.apple.container", "-sr"]
         case .reloadDNS:
             [executable, "-HUP", "mDNSResponder"]
         }
@@ -87,13 +90,15 @@ public struct FixedPrivilegedCommandInvocation: Equatable, Sendable {
 }
 
 public protocol FixedPrivilegedCommandRunning: Sendable {
-    func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws
+    @discardableResult
+    func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws -> Data
 }
 
 public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunning {
     public init() {}
 
-    public func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws {
+    @discardableResult
+    public func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws -> Data {
         guard command.requiresPackageDescriptor == (package != nil) else {
             throw FixedPrivilegedCommandError.invalidPackageDescriptor
         }
@@ -163,12 +168,13 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
             Darwin.close(inputPipe[1])
             inputPipe[1] = -1
         }
-        _ = try readBoundedOutput(outputPipe[0])
+        let output = try readBoundedOutput(outputPipe[0])
         let status = try waitForExit(processID)
         childWasReaped = true
         guard status & 0x7F == 0, (status >> 8) & 0xFF == 0 else {
             throw FixedPrivilegedCommandError.commandFailed
         }
+        return output
     }
 
     private func makeInputSource(hasData: Bool) throws -> ([Int32], Int32) {

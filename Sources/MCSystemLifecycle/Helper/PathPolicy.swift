@@ -28,11 +28,25 @@ public struct PathPolicy: Sendable {
     }
 
     public func allowsResolverName(_ name: String) -> Bool {
-        let bytes = Array(name.utf8)
-        guard (1 ... 63).contains(bytes.count), let first = bytes.first, first.isASCIILowercaseOrDigit else {
+        let labels = name.split(separator: ".", omittingEmptySubsequences: false)
+        guard
+            (1 ... 253).contains(name.utf8.count),
+            !name.hasPrefix("containerization."),
+            labels.allSatisfy({ label in
+                let bytes = Array(label.utf8)
+                guard
+                    (1 ... 63).contains(bytes.count),
+                    bytes.first?.isASCIILowercaseOrDigit == true,
+                    bytes.last?.isASCIILowercaseOrDigit == true
+                else {
+                    return false
+                }
+                return bytes.allSatisfy { $0.isASCIILowercaseOrDigit || $0 == 45 }
+            })
+        else {
             return false
         }
-        return bytes.allSatisfy { $0.isASCIILowercaseOrDigit || $0 == 45 }
+        return true
     }
 
     public func allowsPacketFilterAnchor(_ anchor: String) -> Bool {

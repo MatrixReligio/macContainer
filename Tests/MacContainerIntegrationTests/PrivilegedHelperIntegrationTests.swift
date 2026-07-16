@@ -26,16 +26,21 @@ final class PrivilegedHelperIntegrationTests: XCTestCase {
             (.removeResolver(name: "default"), nil),
             (.applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24")), nil),
             (.removePacketFilter(anchor: "com.apple.container"), nil),
+            (.auditPacketFilter(anchor: "com.apple.container"), nil),
             (.removeKnownEmptyDirectories(manifestID: "apple-container-1.1.0"), nil)
         ]
 
         for (request, handle) in requests {
-            try await fixture.perform(data: PrivilegedRequestCodec.encode(request), package: handle)
+            let response = try await fixture.perform(data: PrivilegedRequestCodec.encode(request), package: handle)
+            if request == .auditPacketFilter(anchor: "com.apple.container") {
+                XCTAssertEqual(response.residuePresent, true)
+            }
         }
 
         XCTAssertEqual(adapter.actions, [
             "install", "removePayload", "forgetReceipt", "writeResolver",
-            "removeResolver", "applyPacketFilter", "removePacketFilter", "removeKnownEmptyDirectories"
+            "removeResolver", "applyPacketFilter", "removePacketFilter", "auditPacketFilter",
+            "removeKnownEmptyDirectories"
         ])
     }
 
@@ -111,8 +116,8 @@ private final class FixtureHelperConnection: NSObject, NSXPCListenerDelegate {
         return true
     }
 
-    func perform(data: Data, package: FileHandle?) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+    func perform(data: Data, package: FileHandle?) async throws -> PrivilegedResponse {
+        try await withCheckedThrowingContinuation { continuation in
             guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
                 continuation.resume(throwing: error)
             }) as? MCPrivilegedHelperXPCProtocol else {
@@ -122,10 +127,14 @@ private final class FixtureHelperConnection: NSObject, NSXPCListenerDelegate {
             proxy.perform(data, packageFile: package) { response, error in
                 if let error {
                     continuation.resume(throwing: error)
-                } else if response == nil {
-                    continuation.resume(throwing: FixtureError.emptyResponse)
+                } else if let response {
+                    do {
+                        try continuation.resume(returning: PrivilegedResponseCodec.decode(response))
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
                 } else {
-                    continuation.resume()
+                    continuation.resume(throwing: FixtureError.emptyResponse)
                 }
             }
         }
@@ -171,6 +180,11 @@ private final class RecordingPrivilegedSystemAdapter: PrivilegedSystemAdapting, 
 
     func removePacketFilter(anchor _: String) throws {
         record("removePacketFilter")
+    }
+
+    func packetFilterRulesPresent(anchor _: String) throws -> Bool {
+        record("auditPacketFilter")
+        return true
     }
 
     func removeKnownEmptyDirectories(manifestID _: String) throws {

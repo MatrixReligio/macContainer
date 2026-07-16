@@ -23,6 +23,7 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
     case removeResolver(name: String)
     case applyPacketFilter(PacketFilterRequest)
     case removePacketFilter(anchor: String)
+    case auditPacketFilter(anchor: String)
     case removeKnownEmptyDirectories(manifestID: String)
 
     public func validate(policy: PathPolicy) throws {
@@ -39,7 +40,7 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
             try Self.validateResolverName(name, policy: policy)
         case let .applyPacketFilter(request):
             try Self.validate(request, policy: policy)
-        case let .removePacketFilter(anchor):
+        case let .removePacketFilter(anchor), let .auditPacketFilter(anchor):
             try Self.validatePacketFilterAnchor(anchor, policy: policy)
         case let .removeKnownEmptyDirectories(manifestID):
             try Self.validateManifestID(manifestID)
@@ -201,18 +202,24 @@ public enum PrivilegedRequestCodec {
 public struct PrivilegedResponse: Codable, Equatable, Sendable {
     public let version: Int
     public let success: Bool
+    public let residuePresent: Bool?
 
-    public init(version: Int = 1, success: Bool = true) {
+    public init(version: Int = 1, success: Bool = true, residuePresent: Bool? = nil) {
         self.version = version
         self.success = success
+        self.residuePresent = residuePresent
     }
 }
 
 public enum PrivilegedResponseCodec {
     public static func encodeSuccess() throws -> Data {
+        try encode(PrivilegedResponse())
+    }
+
+    public static func encode(_ response: PrivilegedResponse) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        return try encoder.encode(PrivilegedResponse())
+        return try encoder.encode(response)
     }
 
     public static func decode(_ data: Data) throws -> PrivilegedResponse {

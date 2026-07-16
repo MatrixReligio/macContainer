@@ -24,6 +24,7 @@ public protocol PrivilegedHostMutating: Sendable {
     func removeResolver(name: String) throws
     func applyPacketFilter(_ request: PacketFilterRequest) throws
     func removePacketFilter() throws
+    func packetFilterRulesPresent() throws -> Bool
     func removeKnownEmptyDirectories(manifest: RuntimePackageManifest) throws
 }
 
@@ -109,6 +110,11 @@ public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
     public func removePacketFilter(anchor: String) throws {
         try PrivilegedRequest.removePacketFilter(anchor: anchor).validate(policy: .runtime110)
         try host.removePacketFilter()
+    }
+
+    public func packetFilterRulesPresent(anchor: String) throws -> Bool {
+        try PrivilegedRequest.auditPacketFilter(anchor: anchor).validate(policy: .runtime110)
+        return try host.packetFilterRulesPresent()
     }
 
     public func removeKnownEmptyDirectories(manifestID: String) throws {

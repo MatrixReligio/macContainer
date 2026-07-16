@@ -98,6 +98,14 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
         try commandRunner.run(.clearContainerPacketFilter, package: nil)
     }
 
+    public func packetFilterRulesPresent() throws -> Bool {
+        let output = try commandRunner.run(.inspectContainerPacketFilter, package: nil)
+        guard let text = String(data: output, encoding: .utf8) else {
+            throw SystemPrivilegedHostError.invalidCommandOutput
+        }
+        return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     public func removeKnownEmptyDirectories(manifest: RuntimePackageManifest) throws {
         let policy = PathPolicy(
             payload: manifest.payload,
@@ -225,6 +233,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
 }
 
 public enum SystemPrivilegedHostError: Error, Equatable, Sendable {
+    case invalidCommandOutput
     case unsafeDirectory
     case unsafeResolver
 }

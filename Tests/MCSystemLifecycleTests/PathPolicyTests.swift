@@ -32,6 +32,14 @@ struct PathPolicyTests {
         #expect(!PathPolicy.runtime110.allowsResolverName(name))
     }
 
+    @Test func `allows normalized multi-label resolver names created by the runtime`() {
+        #expect(PathPolicy.runtime110.allowsResolverName("web.test"))
+        #expect(PathPolicy.runtime110.allowsResolverName("api-1.dev.test"))
+        #expect(!PathPolicy.runtime110.allowsResolverName("-web.test"))
+        #expect(!PathPolicy.runtime110.allowsResolverName("web-.test"))
+        #expect(!PathPolicy.runtime110.allowsResolverName("containerization.web"))
+    }
+
     @Test func `allows only exact packet filter anchor`() {
         #expect(PathPolicy.runtime110.allowsPacketFilterAnchor("com.apple.container"))
         #expect(!PathPolicy.runtime110.allowsPacketFilterAnchor("com.apple.container; flush all"))
@@ -66,7 +74,7 @@ struct PathPolicyTests {
         }
     }
 
-    @Test func `all eight requests round trip through versioned bounded codec`() throws {
+    @Test func `all nine requests round trip through versioned bounded codec`() throws {
         let requests: [PrivilegedRequest] = [
             .installVerifiedPackage(.init(runtimeVersion: "1.1.0", sha256: String(repeating: "a", count: 64))),
             .removePayload(.init(
@@ -78,6 +86,7 @@ struct PathPolicyTests {
             .removeResolver(name: "default"),
             .applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24")),
             .removePacketFilter(anchor: "com.apple.container"),
+            .auditPacketFilter(anchor: "com.apple.container"),
             .removeKnownEmptyDirectories(manifestID: "apple-container-1.1.0")
         ]
 

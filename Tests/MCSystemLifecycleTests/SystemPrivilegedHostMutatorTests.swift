@@ -87,11 +87,14 @@ struct SystemPrivilegedHostMutatorTests {
         }
         try host.forgetReceipt()
         try host.applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24"))
+        runner.output = Data("pass quick inet from <container_subnets> to any\n".utf8)
+        #expect(try host.packetFilterRulesPresent())
         try host.removePacketFilter()
 
         #expect(runner.commands == [
             .forgetContainerReceipt,
             .reloadContainerPacketFilter(subnetCIDR: "192.168.64.0/24"),
+            .inspectContainerPacketFilter,
             .clearContainerPacketFilter
         ])
         #expect(
@@ -108,9 +111,11 @@ struct SystemPrivilegedHostMutatorTests {
 
 private final class HostRecordingCommandRunner: FixedPrivilegedCommandRunning, @unchecked Sendable {
     private(set) var commands: [FixedPrivilegedCommand] = []
+    var output = Data()
 
-    func run(_ command: FixedPrivilegedCommand, package _: OpenRuntimePackageFile?) throws {
+    func run(_ command: FixedPrivilegedCommand, package _: OpenRuntimePackageFile?) throws -> Data {
         commands.append(command)
+        return output
     }
 }
 

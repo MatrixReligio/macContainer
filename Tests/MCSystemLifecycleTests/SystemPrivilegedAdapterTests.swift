@@ -72,11 +72,12 @@ struct SystemPrivilegedAdapterTests {
         try adapter.removeResolver(name: "default")
         try adapter.applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24"))
         try adapter.removePacketFilter(anchor: "com.apple.container")
+        #expect(try adapter.packetFilterRulesPresent(anchor: "com.apple.container"))
         try adapter.removeKnownEmptyDirectories(manifestID: "apple-container-1.1.0")
 
         #expect(host.actions == [
             "removePayload", "forgetReceipt", "writeResolver", "removeResolver",
-            "applyPacketFilter", "removePacketFilter", "removeKnownEmptyDirectories"
+            "applyPacketFilter", "removePacketFilter", "auditPacketFilter", "removeKnownEmptyDirectories"
         ])
     }
 }
@@ -102,8 +103,9 @@ private final class RecordingPrivilegedPackageVerifier: PrivilegedPackageVerifyi
 private final class RecordingFixedCommandRunner: FixedPrivilegedCommandRunning, @unchecked Sendable {
     private(set) var invocations: [FixedPrivilegedCommandInvocation] = []
 
-    func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws {
+    func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws -> Data {
         invocations.append(.init(command: command, packageDescriptor: package?.fileDescriptor))
+        return Data()
     }
 }
 
@@ -132,6 +134,11 @@ private final class RecordingPrivilegedHostMutator: PrivilegedHostMutating, @unc
 
     func removePacketFilter() throws {
         actions.append("removePacketFilter")
+    }
+
+    func packetFilterRulesPresent() throws -> Bool {
+        actions.append("auditPacketFilter")
+        return true
     }
 
     func removeKnownEmptyDirectories(manifest _: RuntimePackageManifest) throws {

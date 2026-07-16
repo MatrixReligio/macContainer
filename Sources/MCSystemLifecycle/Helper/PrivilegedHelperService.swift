@@ -8,6 +8,7 @@ public protocol PrivilegedSystemAdapting: Sendable {
     func removeResolver(name: String) throws
     func applyPacketFilter(_ request: PacketFilterRequest) throws
     func removePacketFilter(anchor: String) throws
+    func packetFilterRulesPresent(anchor: String) throws -> Bool
     func removeKnownEmptyDirectories(manifestID: String) throws
 }
 
@@ -41,8 +42,7 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         do {
             let response = try operationGate.withLock {
                 let request = try PrivilegedRequestCodec.decode(requestData)
-                try dispatch(request, packageFile: packageFile)
-                return try PrivilegedResponseCodec.encodeSuccess()
+                return try PrivilegedResponseCodec.encode(dispatch(request, packageFile: packageFile))
             }
             reply(response, nil)
         } catch {
@@ -50,7 +50,7 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         }
     }
 
-    private func dispatch(_ request: PrivilegedRequest, packageFile: FileHandle?) throws {
+    private func dispatch(_ request: PrivilegedRequest, packageFile: FileHandle?) throws -> PrivilegedResponse {
         switch request {
         case let .installVerifiedPackage(token):
             guard let packageFile else { throw PrivilegedHelperServiceError.packageFileRequired }
@@ -73,10 +73,14 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         case let .removePacketFilter(anchor):
             try rejectSmuggledPackage(packageFile)
             try system.removePacketFilter(anchor: anchor)
+        case let .auditPacketFilter(anchor):
+            try rejectSmuggledPackage(packageFile)
+            return try PrivilegedResponse(residuePresent: system.packetFilterRulesPresent(anchor: anchor))
         case let .removeKnownEmptyDirectories(manifestID):
             try rejectSmuggledPackage(packageFile)
             try system.removeKnownEmptyDirectories(manifestID: manifestID)
         }
+        return PrivilegedResponse()
     }
 
     private func rejectSmuggledPackage(_ packageFile: FileHandle?) throws {
