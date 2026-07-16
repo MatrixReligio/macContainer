@@ -7,12 +7,13 @@ import Testing
 struct RollbackStoreTests {
     @Test func `records all planned items before cloning and always captures configuration`() async throws {
         let fileSystem = RecordingRollbackFileSystem(availableBytes: 10000)
+        let request = RollbackCaptureRequest.fixture(requiresFullData: false)
         let store = RollbackStore(
             rootDirectory: URL(fileURLWithPath: "/rollback"),
             fileSystem: fileSystem,
-            packageVerifier: RecordingRollbackPackageVerifier()
+            packageVerifier: RecordingRollbackPackageVerifier(),
+            sourcePolicy: .allowing(request)
         )
-        let request = RollbackCaptureRequest.fixture(requiresFullData: false)
 
         let point = try await store.createPoint(
             request,
@@ -29,12 +30,13 @@ struct RollbackStoreTests {
 
     @Test func `captures full data only when compatibility requires it`() async throws {
         let fileSystem = RecordingRollbackFileSystem(availableBytes: 10000)
+        let request = RollbackCaptureRequest.fixture(requiresFullData: true)
         let store = RollbackStore(
             rootDirectory: URL(fileURLWithPath: "/rollback"),
             fileSystem: fileSystem,
-            packageVerifier: RecordingRollbackPackageVerifier()
+            packageVerifier: RecordingRollbackPackageVerifier(),
+            sourcePolicy: .allowing(request)
         )
-        let request = RollbackCaptureRequest.fixture(requiresFullData: true)
 
         let point = try await store.createPoint(
             request,
@@ -48,12 +50,13 @@ struct RollbackStoreTests {
 
     @Test func `space preflight includes twenty percent headroom before mutation`() async throws {
         let fileSystem = RecordingRollbackFileSystem(availableBytes: 359)
+        let request = RollbackCaptureRequest.fixture(requiresFullData: true)
         let store = RollbackStore(
             rootDirectory: URL(fileURLWithPath: "/rollback"),
             fileSystem: fileSystem,
-            packageVerifier: RecordingRollbackPackageVerifier()
+            packageVerifier: RecordingRollbackPackageVerifier(),
+            sourcePolicy: .allowing(request)
         )
-        let request = RollbackCaptureRequest.fixture(requiresFullData: true)
 
         await #expect(throws: RollbackStoreError.insufficientSpace(required: 360, available: 359)) {
             _ = try await store.createPoint(
@@ -69,7 +72,8 @@ struct RollbackStoreTests {
         defer { fixture.cleanup() }
         let store = RollbackStore(
             rootDirectory: fixture.rollbackRoot,
-            packageVerifier: PassthroughRollbackPackageVerifier()
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
         )
         let request = fixture.request
 
@@ -95,12 +99,13 @@ struct RollbackStoreTests {
             availableBytes: 10000,
             failingCloneName: "config"
         )
+        let request = RollbackCaptureRequest.fixture(requiresFullData: false)
         let store = RollbackStore(
             rootDirectory: URL(fileURLWithPath: "/rollback"),
             fileSystem: fileSystem,
-            packageVerifier: RecordingRollbackPackageVerifier()
+            packageVerifier: RecordingRollbackPackageVerifier(),
+            sourcePolicy: .allowing(request)
         )
-        let request = RollbackCaptureRequest.fixture(requiresFullData: false)
 
         await #expect(throws: RollbackFixtureError.injected) {
             _ = try await store.createPoint(
@@ -125,7 +130,8 @@ struct RollbackStoreTests {
         )
         let store = RollbackStore(
             rootDirectory: fixture.rollbackRoot,
-            packageVerifier: PassthroughRollbackPackageVerifier()
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(request)
         )
 
         await #expect(throws: RollbackStoreError.unsafeFileSystemItem) {
@@ -140,12 +146,40 @@ struct RollbackStoreTests {
         #expect(!FileManager.default.fileExists(atPath: fixture.rollbackRoot.path))
     }
 
+    @Test func `local store rejects a redirected rollback root before writing`() async throws {
+        let fixture = try LocalRollbackFixture()
+        defer { fixture.cleanup() }
+        let redirected = fixture.root.appendingPathComponent("redirected", isDirectory: true)
+        try FileManager.default.createDirectory(at: redirected, withIntermediateDirectories: false)
+        try FileManager.default.createSymbolicLink(
+            at: fixture.rollbackRoot,
+            withDestinationURL: redirected
+        )
+        let store = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
+        )
+
+        await #expect(throws: RollbackStoreError.unsafePoint) {
+            _ = try await store.createPoint(
+                fixture.request,
+                verifiedPrevious: .fixture(
+                    manifest: fixture.request.previousManifest,
+                    sourceURL: fixture.package
+                )
+            )
+        }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: redirected.path).isEmpty)
+    }
+
     @Test func `new store instance securely reopens a completed rollback point`() async throws {
         let fixture = try LocalRollbackFixture()
         defer { fixture.cleanup() }
         let first = RollbackStore(
             rootDirectory: fixture.rollbackRoot,
-            packageVerifier: PassthroughRollbackPackageVerifier()
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
         )
         let point = try await first.createPoint(
             fixture.request,
@@ -156,7 +190,8 @@ struct RollbackStoreTests {
         )
         let reopenedStore = RollbackStore(
             rootDirectory: fixture.rollbackRoot,
-            packageVerifier: PassthroughRollbackPackageVerifier()
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
         )
 
         let reopened = try await reopenedStore.loadPoint(id: point.id)
@@ -171,7 +206,8 @@ struct RollbackStoreTests {
         defer { fixture.cleanup() }
         let store = RollbackStore(
             rootDirectory: fixture.rollbackRoot,
-            packageVerifier: PassthroughRollbackPackageVerifier()
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
         )
         let point = try await store.createPoint(
             fixture.request,
@@ -196,9 +232,58 @@ struct RollbackStoreTests {
         )
         let reopenedStore = RollbackStore(
             rootDirectory: fixture.rollbackRoot,
-            packageVerifier: PassthroughRollbackPackageVerifier()
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
         )
 
+        await #expect(throws: RollbackStoreError.unsafePoint) {
+            _ = try await reopenedStore.loadPoint(id: point.id)
+        }
+    }
+
+    @Test func `reopen rejects a tampered restore destination outside the source policy`() async throws {
+        let fixture = try LocalRollbackFixture()
+        defer { fixture.cleanup() }
+        let store = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
+        )
+        let point = try await store.createPoint(
+            fixture.request,
+            verifiedPrevious: .fixture(
+                manifest: fixture.request.previousManifest,
+                sourceURL: fixture.package
+            )
+        )
+        var items = point.manifest.items
+        let index = try #require(items.firstIndex { $0.kind == .configurationAndMetadata })
+        let original = items[index]
+        items[index] = RollbackItem(
+            kind: original.kind,
+            sourcePath: fixture.root.appendingPathComponent("unrelated-user-document").path,
+            backupName: original.backupName,
+            logicalBytes: original.logicalBytes,
+            state: original.state
+        )
+        let tampered = RollbackPointManifest(
+            pointID: point.id,
+            previousManifest: point.manifest.previousManifest,
+            requiresFullData: point.manifest.requiresFullData,
+            items: items
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        try LocalRollbackStoreFileSystem().replaceManifest(
+            encoder.encode(tampered),
+            at: point.manifestURL
+        )
+
+        let reopenedStore = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
+        )
         await #expect(throws: RollbackStoreError.unsafePoint) {
             _ = try await reopenedStore.loadPoint(id: point.id)
         }
@@ -336,6 +421,16 @@ private extension RollbackCaptureRequest {
             configurationAndMetadata: [URL(fileURLWithPath: "/source/config")],
             fullData: [URL(fileURLWithPath: "/source/data")],
             requiresFullData: requiresFullData
+        )
+    }
+}
+
+private extension RollbackSourcePolicy {
+    static func allowing(_ request: RollbackCaptureRequest) -> Self {
+        Self(
+            previousPackageRoots: [request.previousPackageURL.deletingLastPathComponent()],
+            configurationAndMetadataPaths: request.configurationAndMetadata,
+            fullDataPaths: request.fullData
         )
     }
 }

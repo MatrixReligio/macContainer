@@ -503,7 +503,6 @@ public struct UpgradeTransaction: Sendable {
             await preserveRollbackFailure(
                 originalStage: stage,
                 target: target,
-                transactionID: transactionID,
                 failure: failure
             )
             return .recoveryRequired(stage)
@@ -513,7 +512,6 @@ public struct UpgradeTransaction: Sendable {
     private func preserveRollbackFailure(
         originalStage: RollbackStage,
         target: RuntimeUpgradeTarget,
-        transactionID: UUID,
         failure: RedactedLifecycleFailure
     ) async {
         if originalStage != .diagnosticPersist {
@@ -522,13 +520,6 @@ public struct UpgradeTransaction: Sendable {
         if originalStage != .targetBlock {
             try? await blocker.block(version: target.version, failureCode: failure.code)
         }
-        try? await journal.fail(
-            transactionID: transactionID,
-            failure: .init(
-                code: "rollback.\(originalStage.rawValue)",
-                redactedDetail: "recovery-required"
-            )
-        )
     }
 
     private func lifecycleKind(

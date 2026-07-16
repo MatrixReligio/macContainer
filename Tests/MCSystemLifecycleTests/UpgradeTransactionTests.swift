@@ -79,6 +79,8 @@ struct UpgradeTransactionTests {
             _ = try await fixture.transaction.upgrade(to: .upgradeFixture)
         }
         #expect(fixture.blocker.blockAttempts == 1)
+        #expect(fixture.journal.rollbackBeginCount == 1)
+        #expect(fixture.journal.failureCount == 0)
     }
 
     @Test func `downgrade requires explicit destructive storage consent`() async throws {
@@ -413,6 +415,8 @@ private final class RecordingUpgradeProbes: UpgradeProbeRunning, @unchecked Send
 private final class RecordingUpgradeJournal: UpgradeJournalWriting, @unchecked Sendable {
     let actions: LockedUpgradeActions
     private(set) var retainedPointIDs: [UUID] = []
+    private(set) var rollbackBeginCount = 0
+    private(set) var failureCount = 0
 
     init(actions: LockedUpgradeActions) {
         self.actions = actions
@@ -448,6 +452,7 @@ private final class RecordingUpgradeJournal: UpgradeJournalWriting, @unchecked S
     func beginRollback(transactionID: UUID, pointID: UUID) async throws {
         _ = transactionID
         _ = pointID
+        rollbackBeginCount += 1
     }
 
     func finishRollback(transactionID: UUID) async throws {
@@ -457,6 +462,7 @@ private final class RecordingUpgradeJournal: UpgradeJournalWriting, @unchecked S
     func fail(transactionID: UUID, failure: RedactedLifecycleFailure) async throws {
         _ = transactionID
         _ = failure
+        failureCount += 1
     }
 }
 

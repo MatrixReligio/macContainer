@@ -115,6 +115,55 @@ public struct RollbackCaptureRequest: Equatable, Sendable {
     }
 }
 
+public struct RollbackSourcePolicy: Sendable {
+    private let previousPackageRoots: [String]
+    private let configurationAndMetadataPaths: Set<String>
+    private let fullDataPaths: Set<String>
+
+    public init(
+        previousPackageRoots: [URL],
+        configurationAndMetadataPaths: [URL],
+        fullDataPaths: [URL]
+    ) {
+        self.previousPackageRoots = previousPackageRoots.map(\.standardizedFileURL.path)
+        self.configurationAndMetadataPaths = Set(configurationAndMetadataPaths.map(\.standardizedFileURL.path))
+        self.fullDataPaths = Set(fullDataPaths.map(\.standardizedFileURL.path))
+    }
+
+    public static var live: Self {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let applicationSupport = home.appendingPathComponent("Library/Application Support", isDirectory: true)
+        let runtimeData = applicationSupport.appendingPathComponent("com.apple.container", isDirectory: true)
+        return Self(
+            previousPackageRoots: [
+                applicationSupport
+                    .appendingPathComponent("container.matrixreligio.com", isDirectory: true)
+                    .appendingPathComponent("RuntimePackages", isDirectory: true)
+            ],
+            configurationAndMetadataPaths: [
+                home.appendingPathComponent(".config/container", isDirectory: true)
+            ],
+            fullDataPaths: [runtimeData]
+        )
+    }
+
+    public func validate(sourcePath: String, kind: RollbackItemKind) throws {
+        let url = URL(fileURLWithPath: sourcePath).standardizedFileURL
+        guard url.path == sourcePath, sourcePath.hasPrefix("/") else {
+            throw RollbackStoreError.unsafePoint
+        }
+        let isAllowed = switch kind {
+        case .previousPackage:
+            previousPackageRoots.contains { sourcePath.hasPrefix($0 + "/") }
+        case .configurationAndMetadata:
+            configurationAndMetadataPaths.contains(sourcePath)
+        case .fullData:
+            fullDataPaths.contains(sourcePath)
+        }
+        guard isAllowed else { throw RollbackStoreError.unsafePoint }
+    }
+}
+
 public protocol RollbackStoreFileSystem: Sendable {
     func logicalSize(of url: URL) throws -> UInt64
     func availableCapacity(at url: URL) throws -> UInt64
@@ -142,16 +191,19 @@ public actor RollbackStore {
     private let rootDirectory: URL
     private let fileSystem: any RollbackStoreFileSystem
     private let packageVerifier: any InstallRuntimePackageVerifying
+    private let sourcePolicy: RollbackSourcePolicy
     var upgradePoints: [UUID: RollbackPoint] = [:]
 
     public init(
         rootDirectory: URL = RollbackStore.defaultRootDirectory,
         fileSystem: any RollbackStoreFileSystem = LocalRollbackStoreFileSystem(),
-        packageVerifier: any InstallRuntimePackageVerifying
+        packageVerifier: any InstallRuntimePackageVerifying,
+        sourcePolicy: RollbackSourcePolicy = .live
     ) {
         self.rootDirectory = rootDirectory.standardizedFileURL
         self.fileSystem = fileSystem
         self.packageVerifier = packageVerifier
+        self.sourcePolicy = sourcePolicy
     }
 
     public func createPoint(
@@ -255,6 +307,7 @@ public actor RollbackStore {
     public func restore(_ point: RollbackPoint) throws {
         for item in point.manifest.items where item.kind != .previousPackage {
             guard item.state == .created else { throw RollbackStoreError.unsafePoint }
+            try sourcePolicy.validate(sourcePath: item.sourcePath, kind: item.kind)
             try fileSystem.restoreItem(
                 from: point.rootURL.appendingPathComponent(item.backupName),
                 to: URL(fileURLWithPath: item.sourcePath)
@@ -296,6 +349,13 @@ public actor RollbackStore {
         guard sources.allSatisfy(\.isFileURL), Set(sources.map(\.path)).count == sources.count else {
             throw RollbackStoreError.duplicateSource
         }
+        try sourcePolicy.validate(sourcePath: request.previousPackageURL.path, kind: .previousPackage)
+        for source in request.configurationAndMetadata {
+            try sourcePolicy.validate(sourcePath: source.path, kind: .configurationAndMetadata)
+        }
+        for source in request.fullData where request.requiresFullData {
+            try sourcePolicy.validate(sourcePath: source.path, kind: .fullData)
+        }
     }
 
     private func validateReopenedManifest(
@@ -317,9 +377,9 @@ public actor RollbackStore {
             throw RollbackStoreError.unsafePoint
         }
         for item in manifest.items {
+            try sourcePolicy.validate(sourcePath: item.sourcePath, kind: item.kind)
             guard
                 Self.isSafeBackupName(item.backupName),
-                item.sourcePath.hasPrefix("/"),
                 try fileSystem.logicalSize(
                     of: pointRoot.appendingPathComponent(item.backupName)
                 ) == item.logicalBytes
@@ -429,9 +489,24 @@ public struct LocalRollbackStoreFileSystem: RollbackStoreFileSystem {
             withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700]
         )
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
-        guard Darwin.mkdir(url.path, 0o700) == 0 else { throw posixError() }
         var status = stat()
+        guard
+            Darwin.lstat(parent.path, &status) == 0,
+            status.st_mode & S_IFMT == S_IFDIR,
+            status.st_uid == geteuid()
+        else {
+            throw RollbackStoreError.unsafePoint
+        }
+        guard Darwin.chmod(parent.path, 0o700) == 0 else { throw posixError() }
+        guard
+            Darwin.lstat(parent.path, &status) == 0,
+            status.st_mode & S_IFMT == S_IFDIR,
+            status.st_uid == geteuid(),
+            status.st_mode & 0o077 == 0
+        else {
+            throw RollbackStoreError.unsafePoint
+        }
+        guard Darwin.mkdir(url.path, 0o700) == 0 else { throw posixError() }
         guard
             Darwin.lstat(url.path, &status) == 0,
             status.st_mode & S_IFMT == S_IFDIR,

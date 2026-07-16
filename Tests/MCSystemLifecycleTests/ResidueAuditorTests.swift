@@ -31,6 +31,23 @@ struct ResidueAuditorTests {
         #expect(report.items.count == ResidueKind.allCases.count)
         #expect(report.items.allSatisfy { $0.status == .absent })
     }
+
+    @Test func `duplicate absent kinds never satisfy the complete inventory gate`() {
+        let expectation = ResidueInventory.expectations[0]
+        let duplicate = ResidueItem(
+            kind: expectation.kind,
+            redactedLocation: expectation.redactedLocation,
+            status: .absent,
+            recoveryKey: expectation.recoveryKey
+        )
+        let report = ResidueReport(items: Array(
+            repeating: duplicate,
+            count: ResidueKind.allCases.count
+        ))
+
+        #expect(!report.hasCompleteInventory)
+        #expect(!report.isEmpty)
+    }
 }
 
 private actor RecordingResidueChecker: ResidueAuditChecking {

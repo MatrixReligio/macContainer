@@ -134,6 +134,26 @@ struct LifecycleJournalTests {
         #expect(events.map(\.phase) == [.began, .intent])
         #expect(events.last?.action == .removeReceipt(identifier: "com.apple.container-installer"))
     }
+
+    @Test func `journal rejects a redirected lifecycle directory before writing`() async throws {
+        let fixture = try LocalJournalFixture()
+        defer { fixture.cleanup() }
+        try FileManager.default.createDirectory(at: fixture.root, withIntermediateDirectories: false)
+        let redirected = fixture.root.appendingPathComponent("redirected", isDirectory: true)
+        try FileManager.default.createDirectory(at: redirected, withIntermediateDirectories: false)
+        try FileManager.default.createSymbolicLink(
+            at: fixture.journalURL.deletingLastPathComponent(),
+            withDestinationURL: redirected
+        )
+        let journal = LifecycleJournal(
+            storage: JSONLineLifecycleJournalStorage(fileURL: fixture.journalURL)
+        )
+
+        await #expect(throws: LifecycleJournalError.unsafeJournal) {
+            _ = try await journal.begin(kind: .install, targetVersion: "1.1.0")
+        }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: redirected.path).isEmpty)
+    }
 }
 
 private actor RecordingJournalStorage: LifecycleJournalStorage {

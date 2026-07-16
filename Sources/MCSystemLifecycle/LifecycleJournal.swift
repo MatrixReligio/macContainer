@@ -301,12 +301,32 @@ public actor JSONLineLifecycleJournalStorage: LifecycleJournalStorage {
 
     private func prepareParent() throws {
         let parent = fileURL.deletingLastPathComponent()
+        try preparePrivateDirectory(parent)
+    }
+
+    private func preparePrivateDirectory(_ directory: URL) throws {
         try FileManager.default.createDirectory(
-            at: parent,
+            at: directory,
             withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700]
         )
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+        var status = stat()
+        guard
+            Darwin.lstat(directory.path, &status) == 0,
+            status.st_mode & S_IFMT == S_IFDIR,
+            status.st_uid == getuid()
+        else {
+            throw LifecycleJournalError.unsafeJournal
+        }
+        guard Darwin.chmod(directory.path, 0o700) == 0 else { throw posixError() }
+        guard
+            Darwin.lstat(directory.path, &status) == 0,
+            status.st_mode & S_IFMT == S_IFDIR,
+            status.st_uid == getuid(),
+            status.st_mode & 0o077 == 0
+        else {
+            throw LifecycleJournalError.unsafeJournal
+        }
     }
 
     private func validateDescriptor(_ descriptor: Int32) throws {
@@ -343,12 +363,7 @@ public actor JSONLineLifecycleJournalStorage: LifecycleJournalStorage {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
         let parent = fileURL.deletingLastPathComponent()
         let quarantine = parent.appendingPathComponent(".quarantine", isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: quarantine,
-            withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700]
-        )
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: quarantine.path)
+        try preparePrivateDirectory(quarantine)
         let destination = quarantine.appendingPathComponent(
             "journal.jsonl.corrupt.\(UUID().uuidString)",
             isDirectory: false
@@ -360,7 +375,7 @@ public actor JSONLineLifecycleJournalStorage: LifecycleJournalStorage {
     }
 
     private func synchronizeDirectory(_ url: URL) throws {
-        let descriptor = Darwin.open(url.path, O_RDONLY | O_CLOEXEC)
+        let descriptor = Darwin.open(url.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
         guard descriptor >= 0 else { throw posixError() }
         defer { Darwin.close(descriptor) }
         guard Darwin.fsync(descriptor) == 0 else { throw posixError() }

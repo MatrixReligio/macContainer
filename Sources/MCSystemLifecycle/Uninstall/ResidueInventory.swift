@@ -28,8 +28,13 @@ public struct ResidueItem: Codable, Equatable, Sendable {
 public struct ResidueReport: Codable, Equatable, Sendable {
     public let items: [ResidueItem]
 
+    public var hasCompleteInventory: Bool {
+        items.count == ResidueKind.allCases.count &&
+            Set(items.map(\.kind)) == Set(ResidueKind.allCases)
+    }
+
     public var isEmpty: Bool {
-        items.count == ResidueKind.allCases.count && items.allSatisfy { $0.status == .absent }
+        hasCompleteInventory && items.allSatisfy { $0.status == .absent }
     }
 
     public var remainingItems: [ResidueItem] {

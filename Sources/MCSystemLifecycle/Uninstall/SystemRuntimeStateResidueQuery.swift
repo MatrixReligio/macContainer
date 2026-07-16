@@ -19,6 +19,42 @@ public protocol PacketFilterResidueInspecting: Sendable {
     func hasRules(anchor: String) async throws -> Bool
 }
 
+struct ProcessIDBatch: Sendable {
+    let processIDs: [pid_t]
+    let isSaturated: Bool
+}
+
+protocol ProcessIDListing: Sendable {
+    func estimateCount() throws -> Int
+    func list(capacity: Int) throws -> ProcessIDBatch
+}
+
+private struct DarwinProcessIDList: ProcessIDListing {
+    func estimateCount() throws -> Int {
+        let count = proc_listallpids(nil, 0)
+        guard count >= 0 else { throw posixError() }
+        return Int(count)
+    }
+
+    func list(capacity: Int) throws -> ProcessIDBatch {
+        guard capacity > 0, capacity <= Int(Int32.max) / MemoryLayout<pid_t>.stride else {
+            throw SystemRuntimeStateResidueError.unstableProcessList
+        }
+        var processIDs = [pid_t](repeating: 0, count: capacity)
+        let byteCount = Int32(capacity * MemoryLayout<pid_t>.stride)
+        let count = proc_listallpids(&processIDs, byteCount)
+        guard count >= 0, Int(count) <= capacity else { throw posixError() }
+        return ProcessIDBatch(
+            processIDs: Array(processIDs.prefix(Int(count))),
+            isSaturated: Int(count) == capacity
+        )
+    }
+
+    private func posixError() -> NSError {
+        NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+    }
+}
+
 public struct SystemRuntimeStateResidueQuery: RuntimeStateResidueQuerying {
     private let manifest: RuntimePackageManifest
     private let launchServices: any LaunchServiceResidueInspecting
@@ -116,7 +152,15 @@ extension HelperClient: PacketFilterResidueInspecting {
 }
 
 public struct SystemOwnedProcessResidueInspector: OwnedProcessResidueInspecting {
-    public init() {}
+    private let processList: any ProcessIDListing
+
+    public init() {
+        processList = DarwinProcessIDList()
+    }
+
+    init(processList: any ProcessIDListing) {
+        self.processList = processList
+    }
 
     public func hasOwnedProcess(executablePaths: Set<String>, expectedTeamID: String) throws -> Bool {
         guard !executablePaths.isEmpty, !expectedTeamID.isEmpty else {
@@ -132,14 +176,23 @@ public struct SystemOwnedProcessResidueInspector: OwnedProcessResidueInspecting 
         return false
     }
 
-    private func processIDs() throws -> [pid_t] {
-        let capacity = proc_listallpids(nil, 0)
-        guard capacity >= 0 else { throw posixError() }
-        var processIDs = [pid_t](repeating: 0, count: Int(capacity) + 32)
-        let byteCount = Int32(processIDs.count * MemoryLayout<pid_t>.stride)
-        let count = proc_listallpids(&processIDs, byteCount)
-        guard count >= 0 else { throw posixError() }
-        return Array(processIDs.prefix(Int(count))).filter { $0 > 0 }
+    func processIDs() throws -> [pid_t] {
+        let estimated = try processList.estimateCount()
+        guard estimated >= 0, estimated <= (Int.max - 32) else {
+            throw SystemRuntimeStateResidueError.unstableProcessList
+        }
+        var capacity = max(estimated + 32, 64)
+        for _ in 0 ..< 5 {
+            let batch = try processList.list(capacity: capacity)
+            if !batch.isSaturated {
+                return batch.processIDs.filter { $0 > 0 }
+            }
+            guard capacity <= Int(Int32.max) / 2 else {
+                throw SystemRuntimeStateResidueError.unstableProcessList
+            }
+            capacity *= 2
+        }
+        throw SystemRuntimeStateResidueError.unstableProcessList
     }
 
     private func executablePath(processID: pid_t) throws -> String? {
@@ -197,5 +250,6 @@ public enum SystemRuntimeStateResidueError: Error, Equatable, Sendable {
     case invalidProcessPath
     case invalidProcessSignature
     case missingPrivilegedAuditResult
+    case unstableProcessList
     case unsupportedKind(ResidueKind)
 }

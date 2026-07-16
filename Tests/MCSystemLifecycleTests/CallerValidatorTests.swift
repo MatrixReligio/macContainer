@@ -30,6 +30,86 @@ struct CallerValidatorTests {
         #expect(CodeSigningRequirements.app.contains(#"certificate leaf[subject.OU] = "4DUQGD879H""#))
         #expect(CodeSigningRequirements.app != CodeSigningRequirements.helper)
     }
+
+    @Test func `rejects a separately signed hardened process with the wrong identifier`() throws {
+        guard let identity = ProcessInfo.processInfo.environment["MACCONTAINER_SECURITY_SIGNING_IDENTITY"] else {
+            return
+        }
+        let fixture = try SignedWrongIdentifierFixture(signingIdentity: identity)
+        defer { fixture.cleanup() }
+        let validator = CallerValidator()
+
+        do {
+            _ = try validator.validate(.init(
+                processIdentifier: fixture.processIdentifier,
+                effectiveUserIdentifier: geteuid(),
+                connectionRequirementEnforced: true
+            ))
+            Issue.record("The wrong independently signed identifier was accepted")
+        } catch let error as HelperAuthorizationError {
+            #expect(error == .bundleIdentifierMismatch)
+        }
+    }
+}
+
+private final class SignedWrongIdentifierFixture {
+    private let directory: URL
+    private let process: Process
+
+    var processIdentifier: Int32 {
+        process.processIdentifier
+    }
+
+    init(signingIdentity: String) throws {
+        directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MacContainer-SignedPeer-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        let executable = directory.appendingPathComponent("wrong-peer", isDirectory: false)
+        try FileManager.default.copyItem(at: URL(fileURLWithPath: "/bin/sleep"), to: executable)
+        try Self.run("/usr/bin/codesign", arguments: [
+            "--force", "--options", "runtime", "--timestamp=none",
+            "--identifier", "example.attacker.maccontainer", "--sign", signingIdentity,
+            executable.path
+        ])
+        process = Process()
+        process.executableURL = executable
+        process.arguments = ["30"]
+        try process.run()
+        guard process.isRunning, process.processIdentifier > 0 else {
+            throw SignedFixtureError.processDidNotStart
+        }
+    }
+
+    func cleanup() {
+        if process.isRunning {
+            process.terminate()
+            process.waitUntilExit()
+        }
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    private static func run(_ executable: String, arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        let errorPipe = Pipe()
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = errorPipe
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw SignedFixtureError.commandFailed
+        }
+    }
+}
+
+private enum SignedFixtureError: Error {
+    case commandFailed
+    case processDidNotStart
 }
 
 private enum CallerMutation: CaseIterable, Sendable {

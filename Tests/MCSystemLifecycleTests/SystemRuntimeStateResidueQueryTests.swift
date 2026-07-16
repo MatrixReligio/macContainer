@@ -40,6 +40,56 @@ struct SystemRuntimeStateResidueQueryTests {
             _ = try await query.status(for: .receipt)
         }
     }
+
+    @Test func `process inventory retries a saturated kernel snapshot before declaring absence`() throws {
+        let source = RecordingProcessIDList(
+            estimatedCount: 1,
+            batches: [
+                .init(processIDs: [11], isSaturated: true),
+                .init(processIDs: [11, 22], isSaturated: false)
+            ]
+        )
+        let inspector = SystemOwnedProcessResidueInspector(processList: source)
+
+        #expect(try inspector.processIDs() == [11, 22])
+        #expect(source.capacities.count == 2)
+        #expect(source.capacities[1] == source.capacities[0] * 2)
+    }
+
+    @Test func `process inventory fails closed when every kernel snapshot is saturated`() {
+        let source = RecordingProcessIDList(
+            estimatedCount: 1,
+            batches: Array(
+                repeating: .init(processIDs: [11], isSaturated: true),
+                count: 5
+            )
+        )
+        let inspector = SystemOwnedProcessResidueInspector(processList: source)
+
+        #expect(throws: SystemRuntimeStateResidueError.unstableProcessList) {
+            _ = try inspector.processIDs()
+        }
+    }
+}
+
+private final class RecordingProcessIDList: ProcessIDListing, @unchecked Sendable {
+    let estimatedCount: Int
+    private var batches: [ProcessIDBatch]
+    private(set) var capacities: [Int] = []
+
+    init(estimatedCount: Int, batches: [ProcessIDBatch]) {
+        self.estimatedCount = estimatedCount
+        self.batches = batches
+    }
+
+    func estimateCount() throws -> Int {
+        estimatedCount
+    }
+
+    func list(capacity: Int) throws -> ProcessIDBatch {
+        capacities.append(capacity)
+        return batches.removeFirst()
+    }
 }
 
 private final class RecordingLaunchResidueInspector: LaunchServiceResidueInspecting, @unchecked Sendable {

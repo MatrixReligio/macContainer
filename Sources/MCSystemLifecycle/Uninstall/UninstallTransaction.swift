@@ -465,6 +465,7 @@ public struct UninstallTransaction: Sendable {
     }
 
     private func result(for mode: UninstallMode, report: ResidueReport) throws -> UninstallResult {
+        guard report.hasCompleteInventory else { throw UninstallError.incomplete(report) }
         if mode == .complete {
             guard report.isEmpty else { throw UninstallError.incomplete(report) }
             return .init(completion: .complete, audit: report, preservedKinds: [])
