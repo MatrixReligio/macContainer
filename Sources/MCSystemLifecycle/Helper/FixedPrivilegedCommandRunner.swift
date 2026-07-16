@@ -104,15 +104,7 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
         defer { outputPipe.forEach(closeIfOpen) }
 
         let input = command.standardInput
-        var inputPipe = [Int32](repeating: -1, count: 2)
-        let nullInput: Int32
-        if input != nil {
-            guard Darwin.pipe(&inputPipe) == 0 else { throw posixError() }
-            nullInput = -1
-        } else {
-            nullInput = Darwin.open("/dev/null", O_RDONLY | O_CLOEXEC)
-            guard nullInput >= 0 else { throw posixError() }
-        }
+        var (inputPipe, nullInput) = try makeInputSource(hasData: input != nil)
         defer {
             inputPipe.forEach(closeIfOpen)
             closeIfOpen(nullInput)
@@ -177,6 +169,17 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
         guard status & 0x7F == 0, (status >> 8) & 0xFF == 0 else {
             throw FixedPrivilegedCommandError.commandFailed
         }
+    }
+
+    private func makeInputSource(hasData: Bool) throws -> ([Int32], Int32) {
+        var inputPipe = [Int32](repeating: -1, count: 2)
+        if hasData {
+            guard Darwin.pipe(&inputPipe) == 0 else { throw posixError() }
+            return (inputPipe, -1)
+        }
+        let nullInput = Darwin.open("/dev/null", O_RDONLY | O_CLOEXEC)
+        guard nullInput >= 0 else { throw posixError() }
+        return (inputPipe, nullInput)
     }
 
     private func check(_ status: Int32) throws {

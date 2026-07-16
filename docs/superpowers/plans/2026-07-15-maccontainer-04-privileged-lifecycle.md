@@ -338,7 +338,7 @@ git commit -m "feat: implement networkless privileged helper"
 - Create: `Sources/MCSystemLifecycle/Install/InstallTransaction.swift`
 - Test: `Tests/MCSystemLifecycleTests/InstallTransactionTests.swift`
 
-- [ ] **Step 1: Write failing ordered-transaction tests**
+- [x] **Step 1: Write failing ordered-transaction tests**
 
 ```swift
 @Test func successfulInstallUsesVerifiedDescriptorAndCleansDownload() async throws {
@@ -360,25 +360,25 @@ git commit -m "feat: implement networkless privileged helper"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter InstallTransactionTests`
 
 Expected: FAIL because the transaction is undefined.
 
-- [ ] **Step 3: Implement all thirteen approved installation stages**
+- [x] **Step 3: Implement all thirteen approved installation stages**
 
 The transaction injects platform checker, GitHub metadata client, private downloader, package verifier, consent provider, helper, receipt/payload verifier, system controller, kernel adapter, probe runner, journal, residue auditor, and file system. It uses a `defer` cleanup ledger from the moment the temporary root is created. The metadata client accepts only `https://api.github.com/repos/apple/container/releases/...`; the selected asset name and digest come from the embedded manifest, never remote checksums.
 
 Installer success is not returned until receipt, payload, service, kernel, and every required probe pass. If there was no prior installation, failure runs the partial-uninstall/residue path; inaccessible residue is surfaced as incomplete recovery.
 
-- [ ] **Step 4: Run every failure boundary**
+- [x] **Step 4: Run every failure boundary**
 
 Run: `swift test --filter InstallTransactionTests`
 
 Expected: PASS for injected failure before/after every one of the thirteen stages and no fixture-owned temporary path remains.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Install Tests/MCSystemLifecycleTests/InstallTransactionTests.swift
