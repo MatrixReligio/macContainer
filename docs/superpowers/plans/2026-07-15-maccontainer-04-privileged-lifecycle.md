@@ -564,7 +564,7 @@ git commit -m "feat: recover interrupted lifecycle work"
 **Files:**
 - Create: `docs/reviews/stage-4.md`
 
-- [ ] **Step 1: Run all lifecycle and helper tests**
+- [x] **Step 1: Run all lifecycle and helper tests**
 
 ```bash
 swift test --filter MCSystemLifecycleTests
@@ -575,15 +575,15 @@ git diff --check
 
 Expected: PASS.
 
-- [ ] **Step 2: Run security-specific static/dynamic checks**
+- [x] **Step 2: Run security-specific static/dynamic checks**
 
 Inspect helper entitlements, Mach service and launch daemon plist; scan for `Process` (only fixed installer wrapper allowed), `/bin/sh`, shell fragments, arbitrary path/request fields, network API imports, unredacted credentials, unsafe decoder classes, symlink-following opens, and world/group-writable lifecycle files. Test helper peer authentication with a separately signed wrong-identifier fixture.
 
-- [ ] **Step 3: Review every lifecycle transition and residue item**
+- [x] **Step 3: Review every lifecycle transition and residue item**
 
 Trace success, cancellation, crash, verifier failure, helper rejection, installer partial success, service failure, probe failure, rollback failure, uninstall partial failure, inaccessible audit, and recovery ambiguity. Require an exact recovery path and cleanup outcome for each. Resolve findings and rerun affected tests.
 
-- [ ] **Step 4: Commit Stage 4 PASS**
+- [x] **Step 4: Commit Stage 4 PASS**
 
 ```bash
 git add docs/reviews/stage-4.md
