@@ -19,6 +19,8 @@ enum MCPhysicalTool {
             try await recover(arguments)
         case "assert-no-active-ledger":
             try await assertNoActiveLedger(arguments)
+        case "simulate-run":
+            try await PhysicalSimulation.run(arguments)
         default:
             throw UsageError()
         }
@@ -125,6 +127,6 @@ enum MCPhysicalTool {
 
 private struct UsageError: Error, CustomStringConvertible {
     var description: String {
-        "usage: mc-physical preflight --output <path> | compare-baseline <before> <after> | recover --run-root <path> --run-id <uuid> | assert-no-active-ledger <physical-root>"
+        "usage: mc-physical preflight --output <path> | compare-baseline <before> <after> | recover --run-root <path> --run-id <uuid> | assert-no-active-ledger <physical-root> | simulate-run --run-root <path> --run-id <uuid> --plan <path>"
     }
 }
