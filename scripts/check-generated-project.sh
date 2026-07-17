@@ -8,7 +8,10 @@ committed_project="$repo_root/MacContainer.xcodeproj"
 /bin/mkdir -p "$repo_root/.build"
 temporary_root="$(mktemp -d "$repo_root/.build/xcodegen-check.XXXXXX")"
 trap 'rm -rf "$temporary_root"' EXIT
-temporary_repo="$temporary_root/implementation"
+# XcodeGen derives the display name and stable object ID of a root-local package
+# from the specification directory name. Generate from the canonical checkout
+# basename so committed output is independent of an agent/worktree directory.
+temporary_repo="$temporary_root/macContainer"
 
 if [[ -x "$repo_root/.tools/bin/xcodegen" ]]; then
     xcodegen="$repo_root/.tools/bin/xcodegen"

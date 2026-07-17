@@ -117,6 +117,7 @@
 
 /* Begin PBXFileReference section */
 		0128286F3B5EFE5B66781FB7 /* SparkleUpdateUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdateUITests.swift; sourceTree = "<group>"; };
+		022BE63DC63BA25A8DF10A3A /* macContainer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = macContainer; path = .; sourceTree = SOURCE_ROOT; };
 		0709F38F0C8DDC711FBF84BB /* BuildSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildSmokeTests.swift; sourceTree = "<group>"; };
 		079028DC65ABD81F07404895 /* PlainProcessOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainProcessOutputView.swift; sourceTree = "<group>"; };
 		0E5EF59FE148D2BBC8A1570B /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
@@ -157,7 +158,6 @@
 		989F811DF50B5619478CDABA /* SwiftTermRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTermRepresentable.swift; sourceTree = "<group>"; };
 		9BC1A31552E07923EC3F3B11 /* PrivilegedHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrivilegedHelper.entitlements; sourceTree = "<group>"; };
 		A2548BDB4028A5C02E2BAAD4 /* ResourceManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceManagementTests.swift; sourceTree = "<group>"; };
-		AA6A59B7E6B4610BC3BCB4CE /* maccontainer-codex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "maccontainer-codex"; path = .; sourceTree = SOURCE_ROOT; };
 		ABAFFEE5CFB076D6D10FE65D /* VisualAdaptationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualAdaptationTests.swift; sourceTree = "<group>"; };
 		B646E9D495927C93F5326780 /* AboutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSettingsView.swift; sourceTree = "<group>"; };
 		B6A5B71A36B743C745E4374A /* OperationReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationReview.swift; sourceTree = "<group>"; };
@@ -409,7 +409,7 @@
 		A45A4323920150734BE1021A /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				AA6A59B7E6B4610BC3BCB4CE /* maccontainer-codex */,
+				022BE63DC63BA25A8DF10A3A /* macContainer */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
