@@ -1,5 +1,5 @@
-import Observation
 import MCSystemLifecycle
+import Observation
 import SwiftUI
 
 public enum AppRoute: String, CaseIterable, Codable, Sendable {
@@ -51,6 +51,7 @@ public final class AppState {
     public var simpleModePresented = false
     public var health: HealthState = .checking
     public var runtimeUpdateState: RuntimeUpdateState
+    public var hasUnsavedWork = false
     public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter
     public let environment: AppEnvironment

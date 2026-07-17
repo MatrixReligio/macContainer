@@ -32,7 +32,7 @@
 - Modify: `App/MacContainer/Views/Settings/GeneralSettingsView.swift`
 - Test: `Tests/MCAppCoreTests/LanguageControllerTests.swift`
 
-- [ ] **Step 1: Write failing language resolution tests**
+- [x] **Step 1: Write failing language resolution tests**
 
 ```swift
 import Testing
@@ -55,13 +55,13 @@ struct LanguageControllerTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter LanguageControllerTests`
 
 Expected: FAIL because language types are undefined.
 
-- [ ] **Step 3: Implement language choice and safe relaunch requirement**
+- [x] **Step 3: Implement language choice and safe relaunch requirement**
 
 ```swift
 public enum AppLanguage: String, Codable, CaseIterable, Sendable {
@@ -83,13 +83,13 @@ public final class LanguageController {
 
 System resolution performs exact/normalized BCP-47 matching in the required order and falls back to English. The app persists only the enum selection, not remote strings. Change UI shows Save/Cancel/Relaunch and never discards drafts or active activities.
 
-- [ ] **Step 4: Run language controller tests**
+- [x] **Step 4: Run language controller tests**
 
 Run: `swift test --filter LanguageControllerTests`
 
 Expected: PASS for system fallback, explicit choices, unsaved draft, active terminal/activity, persistence corruption, and relaunch cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCAppCore/AppLanguage.swift Sources/MCAppCore/LanguageController.swift App/MacContainer/MacContainerApp.swift App/MacContainer/Views/Settings/GeneralSettingsView.swift Tests/MCAppCoreTests/LanguageControllerTests.swift

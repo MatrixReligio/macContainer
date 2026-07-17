@@ -104,6 +104,10 @@ public final class ActivityCenter {
         tasks[id] != nil
     }
 
+    public var hasActiveOperations: Bool {
+        activities.values.contains { $0.outcome == nil }
+    }
+
     private func releaseTask(_ id: UUID) {
         tasks.removeValue(forKey: id)
     }

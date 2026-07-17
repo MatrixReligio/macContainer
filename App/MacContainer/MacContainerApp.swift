@@ -16,6 +16,10 @@ struct MacContainerApp: App {
         WindowGroup("MacContainer", id: "main-window") {
             RootScene()
                 .environment(state)
+                .environment(
+                    \.locale,
+                    Locale(identifier: state.environment.languageController.resolvedIdentifier)
+                )
         }
         .defaultSize(width: 1180, height: 760)
         .commands {
@@ -31,6 +35,10 @@ struct MacContainerApp: App {
         Settings {
             SettingsScene()
                 .environment(state)
+                .environment(
+                    \.locale,
+                    Locale(identifier: state.environment.languageController.resolvedIdentifier)
+                )
         }
     }
 }
