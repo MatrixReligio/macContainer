@@ -9,7 +9,7 @@ document_id: readme
 
 MacContainer는 Apple `container` 런타임을 위한 네이티브 macOS 제어 센터입니다. 검토된 전체 기능을 SwiftUI로 쉽게 사용할 수 있게 하면서 고급 매개변수, 명확한 안전 게이트, 정확한 복구 정보를 유지합니다.
 
-> **시험판:** 버전 0.1.0은 Apple Silicon과 macOS 26 이상이 필요합니다. 중요한 컨테이너 데이터는 별도로 백업하고 파괴적 작업 전에 모든 값을 검토하십시오.
+> **시험판:** 버전 0.1.1은 Apple Silicon과 macOS 26 이상이 필요합니다. 중요한 컨테이너 데이터는 별도로 백업하고 파괴적 작업 전에 모든 값을 검토하십시오.
 
 [English](README.md) · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 

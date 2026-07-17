@@ -5,6 +5,22 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.1 - 2026-07-18
+
+### Added
+
+- Explicit authorization gates for physical-host lifecycle UI tests so destructive
+  installation, upgrade, and uninstall paths cannot run without an intentional test mode.
+- Shared window-layout policy for stable, readable app sizing across automated and
+  interactive macOS sessions.
+
+### Fixed
+
+- Public release verification now receives the release-notes artifact it independently
+  requires after downloading a GitHub Release.
+- Daily CI now follows the lean native macOS build, test, and policy model without
+  repeatedly validating one-time marketing screenshots or UI capture fixtures.
+
 ## 0.1.0 - 2026-07-17
 
 ### Added
