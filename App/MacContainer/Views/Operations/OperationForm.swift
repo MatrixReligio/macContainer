@@ -1,3 +1,4 @@
+import AppKit
 import MCAppCore
 import MCContracts
 import MCModel
@@ -43,9 +44,14 @@ struct OperationForm: View {
                     }
 
                     ForEach(Array(issues.enumerated()), id: \.offset) { _, issue in
-                        Label(issue.messageKey, systemImage: "exclamationmark.circle")
-                            .foregroundStyle(issue.severity == .error ? .red : .orange)
-                            .accessibilityIdentifier("validation.\(operation.id).\(issue.parameterID)")
+                        Label {
+                            Text(issue.messageKey)
+                                .foregroundStyle(.primary)
+                        } icon: {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundStyle(issue.severity == .error ? .red : .orange)
+                        }
+                        .accessibilityIdentifier("validation.\(operation.id).\(issue.parameterID)")
                     }
                 }
                 .padding(20)
@@ -56,8 +62,8 @@ struct OperationForm: View {
             Divider()
             HStack {
                 Text(hasErrors ? "Resolve validation issues before review." : "Ready to review")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
                 Spacer()
                 Button("Review") {
                     reviewPresented = true
@@ -70,6 +76,7 @@ struct OperationForm: View {
         }
         .navigationTitle(operation.id)
         .accessibilityElement(children: .contain)
+        .accessibilityLabel("Configure \(operation.domain.rawValue.capitalized) operation")
         .accessibilityIdentifier("operation-form.\(operation.id)")
         .sheet(isPresented: $reviewPresented) {
             OperationReview(
@@ -92,8 +99,8 @@ struct OperationForm: View {
                 Text(operation.id)
                     .font(.title2.weight(.semibold).monospaced())
                 Text(verbatim: "Native \(operation.nativeAction) · Apple container \(runtimeVersion)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
             Spacer()
             Text(operation.risk.rawValue.capitalized)
@@ -101,7 +108,7 @@ struct OperationForm: View {
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .background(tint.opacity(0.12), in: Capsule())
-                .foregroundStyle(tint)
+                .foregroundStyle(.primary)
         }
         .padding(16)
     }

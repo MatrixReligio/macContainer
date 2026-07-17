@@ -28,7 +28,7 @@ struct ParameterHelpButton: View {
                     Spacer()
                     Text(parameter.valueType.rawValue)
                         .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                 }
                 Text(parameter.detailedHelpKey)
                     .fixedSize(horizontal: false, vertical: true)
@@ -43,11 +43,12 @@ struct ParameterHelpButton: View {
                 LabeledContent("Security impact", value: parameter.securityImpact.rawValue.capitalized)
                 Text(parameter.recoveryKey)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
             }
             .padding(18)
             .frame(width: 430)
             .accessibilityElement(children: .contain)
+            .accessibilityLabel("Information about \(parameter.labelKey)")
             .accessibilityIdentifier("parameter-help-popover")
         }
     }

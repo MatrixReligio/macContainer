@@ -1,23 +1,86 @@
 import SwiftUI
 
 struct SettingsScene: View {
+    @State private var selection: SettingsPane = .general
+
     var body: some View {
-        TabView {
-            GeneralSettingsView()
-                .tabItem { Label("General", systemImage: "gearshape") }
-            RuntimeSettingsView()
-                .tabItem { Label("Runtime", systemImage: "shippingbox") }
-            RuntimeUpdateSettingsView()
-                .tabItem { Label("Runtime Updates", systemImage: "arrow.triangle.2.circlepath") }
-            CompatibilitySettingsView()
-                .tabItem { Label("Compatibility", systemImage: "checkmark.shield") }
-            DefaultsSettingsView()
-                .tabItem { Label("Defaults & Templates", systemImage: "slider.horizontal.3") }
-            AdvancedSettingsView()
-                .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
-            AboutSettingsView()
-                .tabItem { Label("About", systemImage: "info.circle") }
+        NavigationSplitView {
+            List(SettingsPane.allCases, selection: $selection) { pane in
+                Label(pane.title, systemImage: pane.symbol)
+                    .tag(pane)
+                    .accessibilityIdentifier("settings-pane.\(pane.rawValue)")
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("Settings")
+            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 240)
+            .accessibilityLabel("Settings categories")
+        } detail: {
+            selectedPane
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle(selection.title)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("\(selection.title) settings")
+                .accessibilityIdentifier("settings-content.\(selection.rawValue)")
         }
-        .frame(width: 820, height: 620)
+        .frame(minWidth: 760, minHeight: 620)
+        .accessibilityIdentifier("settings-scene")
+    }
+
+    @ViewBuilder
+    private var selectedPane: some View {
+        switch selection {
+        case .general:
+            GeneralSettingsView()
+        case .runtime:
+            RuntimeSettingsView()
+        case .runtimeUpdates:
+            RuntimeUpdateSettingsView()
+        case .compatibility:
+            CompatibilitySettingsView()
+        case .defaults:
+            DefaultsSettingsView()
+        case .advanced:
+            AdvancedSettingsView()
+        case .about:
+            AboutSettingsView()
+        }
+    }
+}
+
+private enum SettingsPane: String, CaseIterable, Identifiable {
+    case general
+    case runtime
+    case runtimeUpdates = "runtime-updates"
+    case compatibility
+    case defaults
+    case advanced
+    case about
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .runtime: "Runtime"
+        case .runtimeUpdates: "Runtime Updates"
+        case .compatibility: "Compatibility"
+        case .defaults: "Defaults & Templates"
+        case .advanced: "Advanced"
+        case .about: "About"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .general: "gearshape"
+        case .runtime: "shippingbox"
+        case .runtimeUpdates: "arrow.triangle.2.circlepath"
+        case .compatibility: "checkmark.shield"
+        case .defaults: "slider.horizontal.3"
+        case .advanced: "wrench.and.screwdriver"
+        case .about: "info.circle"
+        }
     }
 }

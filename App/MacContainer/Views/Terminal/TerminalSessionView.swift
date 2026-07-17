@@ -14,12 +14,18 @@ struct TerminalSessionView: View {
                     Text("Direct interactive session")
                         .font(.headline)
                     Text("Remote clipboard, links, notifications, and title changes are blocked.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                 }
                 Spacer()
-                Text(status)
-                    .foregroundStyle(status == "Connected" ? .green : .secondary)
+                Label {
+                    Text(status)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: status == "Connected" ? "checkmark.circle.fill" : "info.circle.fill")
+                        .foregroundStyle(status == "Connected" ? .green : .orange)
+                }
             }
             .padding()
 
@@ -34,10 +40,11 @@ struct TerminalSessionView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Reduced motion: terminal output updates without decorative animation.")
-                        .font(.caption)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                     Text(readerStatus)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline.monospaced().weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                 }
                 Spacer()
                 Button("Detach") {

@@ -21,13 +21,20 @@ struct InstallRuntimeView: View {
                     .font(.headline)
                 Text("Source: developer.apple.com")
                 Text("Signer: Apple Inc. - Containerization (UPBK2H6LZM)")
-                    .font(.caption)
-                Label("SHA-256 digest verified", systemImage: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
+                Label {
+                    Text("SHA-256 digest verified")
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                }
+                .fontWeight(.semibold)
                 Text("Disk impact: up to 420 MB")
                 Text("Administrator approval is requested only when installation begins.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
 
                 Button("Review and install") {
                     phase = .postflightPending
@@ -44,8 +51,13 @@ struct InstallRuntimeView: View {
                         .accessibilityIdentifier("simulate-install-postflight")
                     }
                 } else if phase == .complete {
-                    Label("Runtime ready", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                    Label {
+                        Text("Runtime ready")
+                            .foregroundStyle(Color(nsColor: .labelColor))
+                    } icon: {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

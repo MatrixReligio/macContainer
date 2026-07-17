@@ -14,7 +14,7 @@ struct OverviewView: View {
                         .font(.largeTitle.bold())
                     Text("Runtime health and the safest next action, at a glance.")
                         .font(.title3)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                 }
 
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
@@ -37,6 +37,8 @@ struct OverviewView: View {
                         symbol: "list.bullet.rectangle"
                     )
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Runtime summary")
 
                 Divider()
 
@@ -58,6 +60,7 @@ struct OverviewView: View {
         }
         .navigationTitle("Overview")
         .accessibilityElement(children: .contain)
+        .accessibilityLabel("Overview")
         .accessibilityIdentifier("overview-content")
     }
 }
@@ -77,7 +80,8 @@ private struct HealthSummary: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
                     Text(value)
                         .font(.headline)
                         .accessibilityIdentifier(identifier)
@@ -85,6 +89,8 @@ private struct HealthSummary: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 
@@ -102,12 +108,15 @@ private struct MetricSummary: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
                     Text(value)
                         .font(.headline.monospacedDigit())
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }

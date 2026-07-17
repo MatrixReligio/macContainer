@@ -14,8 +14,9 @@ struct UninstallRuntimeView: View {
     @State private var result: ResultState = .none
     let isAuditMode: Bool
 
-    init(isAuditMode: Bool = false) {
+    init(isAuditMode: Bool = false, initialConfirmation: String = "") {
         self.isAuditMode = isAuditMode
+        _confirmation = State(initialValue: initialConfirmation)
     }
 
     var body: some View {
@@ -27,8 +28,8 @@ struct UninstallRuntimeView: View {
                 Text("Remove runtime, preserve container data")
                     .font(.subheadline.bold())
                 Text("Keeps images, volumes, configuration, and registry credentials.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
                 Button("Remove runtime and preserve data") {
                     result = .dataPreserved
                 }
@@ -37,9 +38,14 @@ struct UninstallRuntimeView: View {
                 Divider()
                 Text("Complete uninstall")
                     .font(.subheadline.bold())
-                Text("This permanently removes runtime data, credentials, caches, and rollback points.")
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                Label {
+                    Text("This permanently removes runtime data, credentials, caches, and rollback points.")
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                }
+                .font(.subheadline.weight(.semibold))
                 TextField("Type REMOVE APPLE CONTAINER", text: $confirmation)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
@@ -47,6 +53,8 @@ struct UninstallRuntimeView: View {
                 Button("Completely uninstall") {
                     result = isAuditMode ? .incomplete : .none
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
                 .disabled(confirmation != Self.confirmationToken)
                 .accessibilityIdentifier("complete-uninstall")
 
@@ -57,7 +65,8 @@ struct UninstallRuntimeView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
                     ForEach(ResidueInventory.expectations, id: \.kind.rawValue) { item in
                         Label(item.kind.displayName, systemImage: "circle.fill")
-                            .font(.caption2)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color(nsColor: .labelColor))
                             .lineLimit(1)
                             .accessibilityIdentifier("residue.\(item.kind.rawValue)")
                     }
@@ -74,14 +83,20 @@ struct UninstallRuntimeView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Label("Uninstall incomplete", systemImage: "exclamationmark.triangle.fill")
                     .font(.headline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color(nsColor: .labelColor))
                 Text("Could not verify resolver cleanup")
                 Text("Recovery: retry the residue audit after restoring administrator access.")
-                    .font(.caption)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
         } else if result == .dataPreserved {
-            Label("Runtime removed; user data preserved", systemImage: "externaldrive.badge.checkmark")
-                .foregroundStyle(.green)
+            Label {
+                Text("Runtime removed; user data preserved")
+                    .foregroundStyle(Color(nsColor: .labelColor))
+            } icon: {
+                Image(systemName: "externaldrive.badge.checkmark")
+                    .foregroundStyle(.green)
+            }
         }
     }
 }

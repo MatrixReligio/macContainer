@@ -18,18 +18,40 @@ struct SimpleModeView: View {
     @State private var reviewPresented = false
     @State private var libraryPresented = false
     @State private var statusMessage: String?
+    @State private var compactSection: CompactSection = .templates
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
+    private enum CompactSection {
+        case templates
+        case configuration
+    }
+
     var body: some View {
-        HSplitView {
-            templateList
-                .frame(minWidth: 390, idealWidth: 440)
-            configuration
-                .frame(minWidth: 500, idealWidth: 640)
+        GeometryReader { proxy in
+            if proxy.size.width >= 900 {
+                HSplitView {
+                    templateList
+                        .frame(minWidth: 300, idealWidth: 360)
+                    configuration
+                        .frame(minWidth: 420, idealWidth: 560)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    compactSectionPicker
+                    Divider()
+                    switch compactSection {
+                    case .templates:
+                        templateList
+                    case .configuration:
+                        configuration
+                    }
+                }
+            }
         }
-        .frame(minWidth: 960, minHeight: 660)
+        .frame(minHeight: 660)
         .accessibilityElement(children: .contain)
+        .accessibilityLabel("Scenario template builder")
         .accessibilityIdentifier("simple-mode")
         .sheet(isPresented: $reviewPresented) {
             if let template = selectedTemplate, let review {
@@ -48,6 +70,52 @@ struct SimpleModeView: View {
         }
     }
 
+    private var compactSectionPicker: some View {
+        HStack(spacing: 8) {
+            compactSectionButton(
+                "1. Choose scenario",
+                symbol: "square.grid.2x2",
+                section: .templates,
+                identifier: "template-section.templates"
+            )
+            compactSectionButton(
+                "2. Configure",
+                symbol: "slider.horizontal.3",
+                section: .configuration,
+                identifier: "template-section.configuration"
+            )
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Template workflow steps")
+    }
+
+    private func compactSectionButton(
+        _ title: String,
+        symbol: String,
+        section: CompactSection,
+        identifier: String
+    ) -> some View {
+        Button {
+            compactSection = section
+        } label: {
+            Label(title, systemImage: symbol)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    compactSection == section ? Color.accentColor : Color.secondary.opacity(0.12),
+                    in: RoundedRectangle(cornerRadius: 8)
+                )
+                .foregroundStyle(compactSection == section ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(compactSection == section ? "Selected" : "")
+        .accessibilityIdentifier(identifier)
+    }
+
     private var templateList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -55,7 +123,8 @@ struct SimpleModeView: View {
                     Text("What do you want to do?")
                         .font(.title.bold())
                     Text("Choose an outcome. MacContainer fills in safe, host-aware defaults.")
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color(nsColor: .labelColor))
                 }
 
                 LazyVGrid(columns: columns, spacing: 10) {
@@ -63,6 +132,8 @@ struct SimpleModeView: View {
                         templateCard(template)
                     }
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Available scenario templates")
 
                 Button {
                     libraryPresented = true
@@ -73,6 +144,8 @@ struct SimpleModeView: View {
             }
             .padding(20)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Choose a scenario template")
     }
 
     private var configuration: some View {
@@ -83,7 +156,8 @@ struct SimpleModeView: View {
                         Label(metadata.title, systemImage: metadata.symbol)
                             .font(.title2.bold())
                         Text(metadata.summary)
-                            .foregroundStyle(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color(nsColor: .labelColor))
                     }
                 }
 
@@ -156,6 +230,8 @@ struct SimpleModeView: View {
             .padding(24)
             .frame(maxWidth: 720, alignment: .leading)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Configure the selected scenario")
     }
 
     @ViewBuilder

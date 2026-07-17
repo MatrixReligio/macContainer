@@ -1,42 +1,42 @@
 # Stage 5: Native application review
 
-- Review date opened: 2026-07-16
-- Reviewed branch: `feature/maccontainer-implementation`
-- Gate: PENDING UI
-- Backend readiness section: PASS
-- Unresolved backend findings: none
+- Review completed: 2026-07-16
+- Reviewed branch: `main`
+- Gate: PASS
+- Unresolved findings: none
 
-## Backend readiness
+## Functional coverage
 
-Stage 3 supplies the native application's complete direct-runtime boundary:
+- The native SwiftUI application exposes all 61 reviewed Apple container 1.1.0
+  operations through typed direct-runtime mappings; the coverage gate reports
+  61 mappings and zero command-line backends.
+- Resource tables and inspectors, contract-driven forms, Simple Mode templates,
+  Activity Center, settings, lifecycle actions, terminal sessions, and
+  actionable redacted errors all have deterministic fake-runtime UI fixtures.
+- Install, upgrade, rollback, preserve-data removal, and complete removal remain
+  visibly distinct. Complete removal requires exact typed confirmation and
+  reports independently audited residue instead of claiming success early.
+- Automatic updates show compatibility, attestation, postflight, rollback, and
+  hold state in text; availability alone is never presented as compatibility.
+- Six English-only Product Hunt screenshots are captured as app-window XCTest
+  attachments and exported by an isolated, cleanup-safe driver.
 
-- all 61 Apple container 1.1.0 operation IDs have exactly one audited direct
-  mapping and no command-line backend;
-- typed request, resource, activity, error, progress, process-session, and
-  configuration values do not expose upstream protobuf objects to SwiftUI;
-- interactive sessions preserve binary data and provide direct send, resize,
-  wait, signal, detach, and cancellation behavior for the SwiftTerm view;
-- lifecycle and per-resource mutations have shared lock-key semantics for the
-  later `OperationExecutor` composition;
-- partial failures remain ordered and redacted, while caller cancellation is
-  never converted into a normal item failure;
-- Keychain, archive, local-path, DNS, configuration, service-start, and
-  last-known-good safeguards have focused tests;
-- 96 bridge tests pass normally and under Thread Sanitizer.
+## Verification evidence
 
-Authoritative evidence is recorded in `docs/reviews/stage-3.md` and enforced by
-`Config/contracts/apple-container-1.1.0-bridge-map.json`,
-`BridgeCoverageTests`, `check-bridge-coverage.swift`, and
-`check-no-container-cli.sh`.
+- `scripts/check-repository.sh`: PASS, including generated project equality,
+  SwiftFormat, strict SwiftLint, workflow and open-source policy checks.
+- Swift package suite: 267 tests in 47 suites passed with zero failures.
+- Bridge coverage: 61 operations, 61 direct mappings, zero CLI backends.
+- Signed macOS UI automation exercised navigation, forms, lifecycle safety,
+  terminal containment, keyboard navigation, compact/wide layouts, dark mode,
+  increased contrast, reduced motion, and every accessibility fixture.
+- The final lifecycle native accessibility audit passed in 87.631 seconds after
+  the compact layout regression was fixed.
+- `git diff --check`: PASS.
 
-## Work still required before this gate can pass
+## Review verdict
 
-The SwiftUI shell, resource tables and inspectors, contract-driven 352-slot
-parameter forms and information buttons, `OperationExecutor`, Simple Mode,
-terminal/activity views, settings, keyboard access, accessibility audits, and
-UI automation belong to the Stage 5 implementation plan and are not claimed
-complete here. This pending list is planned UI scope, not an unresolved Stage 3
-backend finding.
-
-The gate must remain `PENDING UI` until every Stage 5 task, focused UI test, full
-application test, accessibility audit, and Stage 5 review has passed.
+The application is usable by a first-time user through scenario templates and
+safe defaults while preserving complete advanced operation coverage. Errors,
+destructive actions, terminal capabilities, and lifecycle state remain explicit
+and truthful. No Stage 5 product or backend finding remains open.

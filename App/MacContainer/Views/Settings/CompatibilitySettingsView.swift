@@ -6,8 +6,8 @@ struct CompatibilitySettingsView: View {
             Section("Policy") {
                 Label("Fail closed for unknown runtime versions", systemImage: "lock.shield.fill")
                 Text("Unknown, incomplete, or stale compatibility evidence blocks automatic installation.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
             Section("Required probe domains") {
                 ForEach([

@@ -65,13 +65,20 @@ final class ParameterFormTests: XCTestCase {
     }
 
     private func openOperation(_ operation: String) {
-        let search = app.searchFields["operation-search"]
+        let search = app.textFields["operation-search"]
         XCTAssertTrue(search.waitForExistence(timeout: 3))
+        let clearButton = app.buttons["operation-search-clear"]
+        if clearButton.exists {
+            clearButton.click()
+            XCTAssertTrue(
+                NSPredicate(format: "value == ''").evaluate(with: search),
+                "Operation search did not clear before entering \(operation)"
+            )
+        }
         search.click()
-        search.typeKey("a", modifierFlags: [.command])
         search.typeText(operation)
         let button = app.buttons["open-operation.\(operation)"]
-        XCTAssertTrue(button.waitForExistence(timeout: 3))
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing operation result \(operation)")
         button.click()
         XCTAssertTrue(app.scrollViews["operation-form-scroll"].waitForExistence(timeout: 3))
     }

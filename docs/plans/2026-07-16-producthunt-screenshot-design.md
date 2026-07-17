@@ -36,10 +36,10 @@ testing does not generate additional marketing variants.
 
 `MarketingScreenshotTests` launches only the fake runtime with reset state, selects a stable
 fixture, waits for an explicit readiness identifier, and calls `XCUIElement.screenshot()` on the
-main window. It writes PNG data only when `MARKETING_SCREENSHOT_DIR` is supplied and also keeps
-an XCTest attachment for debugging. A repository script runs the selected test suite into a
-temporary DerivedData directory, validates dimensions and file signatures, generates the
-manifest, and removes temporary build/test artifacts.
+main window. It keeps named XCTest attachments only when `MARKETING_SCREENSHOT_DIR` is supplied.
+A repository script runs the selected test suite into a temporary DerivedData directory, exports
+those attachments after the Runner exits, validates dimensions and file signatures, generates
+the manifest, and removes temporary build/test artifacts.
 
 ## Quality and privacy gates
 

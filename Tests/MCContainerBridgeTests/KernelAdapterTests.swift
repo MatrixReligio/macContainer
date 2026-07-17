@@ -178,7 +178,7 @@ struct KernelAdapterTests {
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appending(path: ".mc-kernel-adapter-test-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        return root
+        return root.resolvingSymlinksInPath()
     }
 
     private struct TarEntry {

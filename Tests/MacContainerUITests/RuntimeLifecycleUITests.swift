@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 
 @MainActor
@@ -51,6 +52,13 @@ final class RuntimeLifecycleUITests: XCTestCase {
     }
 
     func testCompleteUninstallUsesFreshInventoryTypedConfirmationAndRecoveryDetails() {
+        let scrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 3))
+        let firstResidue = app.descendants(matching: .any)["residue.launchService"]
+        for _ in 0 ..< 12 where !firstResidue.exists {
+            scrollView.swipeUp()
+        }
+        XCTAssertTrue(firstResidue.exists)
         for kind in [
             "launchService", "process", "receipt", "receiptPayload", "applicationSupport",
             "configuration", "defaultsDomain", "registryCredential", "resolver", "packetFilter",
@@ -65,12 +73,7 @@ final class RuntimeLifecycleUITests: XCTestCase {
         XCTAssertFalse(app.buttons["complete-uninstall"].isEnabled)
 
         let confirmation = app.textFields["complete-uninstall-confirmation"]
-        confirmation.click()
-        confirmation.typeText("REMOVE")
-        confirmation.typeKey(.space, modifierFlags: [])
-        confirmation.typeText("APPLE")
-        confirmation.typeKey(.space, modifierFlags: [])
-        confirmation.typeText("CONTAINER")
+        pastePreservingGeneralPasteboard("REMOVE APPLE CONTAINER", into: confirmation)
         confirmation.typeKey(.tab, modifierFlags: [])
         XCTAssertEqual(confirmation.value as? String, "REMOVE APPLE CONTAINER")
         let completeButton = app.buttons["complete-uninstall"]
@@ -94,5 +97,31 @@ final class RuntimeLifecycleUITests: XCTestCase {
         app.buttons["preserve-data-uninstall"].click()
         XCTAssertTrue(app.staticTexts["Runtime removed; user data preserved"].exists)
         XCTAssertFalse(app.staticTexts["Uninstall complete"].exists)
+    }
+
+    private func pastePreservingGeneralPasteboard(_ text: String, into element: XCUIElement) {
+        let pasteboard = NSPasteboard.general
+        let savedItems: [NSPasteboardItem] = pasteboard.pasteboardItems?.map { item in
+            let copy = NSPasteboardItem()
+            for type in item.types {
+                if let data = item.data(forType: type) {
+                    copy.setData(data, forType: type)
+                }
+            }
+            return copy
+        } ?? []
+
+        defer {
+            pasteboard.clearContents()
+            for item in savedItems {
+                _ = pasteboard.writeObjects([item])
+            }
+        }
+
+        pasteboard.clearContents()
+        XCTAssertTrue(pasteboard.setString(text, forType: .string))
+        element.click()
+        element.typeKey("v", modifierFlags: [.command])
+        XCTAssertEqual(element.value as? String, text)
     }
 }

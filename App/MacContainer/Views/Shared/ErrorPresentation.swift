@@ -14,13 +14,19 @@ struct ErrorPresentation: View {
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
-                Label(error.titleKey, systemImage: "exclamationmark.triangle.fill")
-                    .font(.headline)
-                    .foregroundStyle(.orange)
+                Label {
+                    Text(error.titleKey)
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                .font(.headline)
                 Text(error.explanationKey)
                 if style == .activity {
                     Text(error.diagnosticDetail)
-                        .font(.caption.monospaced())
+                        .font(.subheadline.monospaced().weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                         .textSelection(.enabled)
                         .accessibilityIdentifier("error-diagnostic")
                 }

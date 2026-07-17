@@ -513,7 +513,7 @@ git commit -m "feat: present safe actionable errors"
 - Create: `docs/reviews/stage-6.md`
 - Modify: `docs/reviews/stage-5.md`
 
-- [ ] **Step 1: Add failing accessibility audits for every major screen**
+- [x] **Step 1: Add failing accessibility audits for every major screen**
 
 ```swift
 func testMajorScreensHaveNoAccessibilityAuditFailure() throws {
@@ -527,17 +527,17 @@ func testMajorScreensHaveNoAccessibilityAuditFailure() throws {
 
 Major routes include Overview, every resource table/detail, all creation/operation forms, eight template reviews, Activity Center, all Settings tabs, install/update/rollback/uninstall, terminal, and every error/recovery state.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/AccessibilityAuditTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL with concrete missing labels/contrast/hit-region issues before fixes.
 
-- [ ] **Step 3: Fix and test accessibility behavior**
+- [x] **Step 3: Fix and test accessibility behavior**
 
 Ensure explicit labels/values/hints for custom status/help/progress/terminal controls, deterministic keyboard order, menu equivalents, no color-only status, textual phase, reduced motion, increased contrast, resizable layouts, 44-point practical hit targets where HIG calls for them, and native focus behavior. Do not suppress audit classes globally; document any OS-framework false positive with a minimal isolated reproduction and narrowly scoped assertion.
 
-- [ ] **Step 4: Run Stage 5/6 UI gates**
+- [x] **Step 4: Run Stage 5/6 UI gates**
 
 ```bash
 xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests CODE_SIGNING_ALLOWED=NO test
@@ -548,7 +548,7 @@ git diff --check
 
 Expected: PASS and all 61 operations are reachable in the UI registry.
 
-- [ ] **Step 5: Perform and record stage reviews**
+- [x] **Step 5: Perform and record stage reviews**
 
 Review functional coverage, error paths, HIG hierarchy, usability for a new user, advanced completeness, destructive safety, keyboard navigation, VoiceOver, large text, reduced motion, contrast, empty/loading/error states, terminal containment, and lifecycle truthfulness. Fix every finding and rerun.
 

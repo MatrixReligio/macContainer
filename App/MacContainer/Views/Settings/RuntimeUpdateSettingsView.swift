@@ -30,18 +30,29 @@ struct RuntimeUpdateSettingsView: View {
                     "Automatically install only compatibility-approved updates",
                     isOn: $settings.autoInstallCompatibleRuntimeUpdates
                 )
-                Text("Automatic installation is off until you explicitly opt in.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    settings.autoInstallCompatibleRuntimeUpdates
+                        ? "Automatic installation is limited to compatibility-approved updates."
+                        : "Automatic installation is off until you explicitly opt in."
+                )
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color(nsColor: .labelColor))
 
                 Divider()
-                Label("Compatible update: 1.1.0", systemImage: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
-                Label(
-                    "Unknown version 1.2.0 is held — no automatic install",
-                    systemImage: "pause.circle.fill"
-                )
-                .foregroundStyle(.orange)
+                Label {
+                    Text("Compatible update: 1.1.0")
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                }
+                Label {
+                    Text("Unknown version 1.2.0 is held — no automatic install")
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "pause.circle.fill")
+                        .foregroundStyle(.orange)
+                }
                 Text("Rollback point: 1.0.0 · verified · retained")
                     .font(.caption.monospaced())
 
@@ -67,7 +78,7 @@ struct RuntimeUpdateSettingsView: View {
                         "Compatibility failed — rolled back to 1.0.0",
                         systemImage: "arrow.uturn.backward.circle.fill"
                     )
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color(nsColor: .labelColor))
                     Button("Retry after review") {
                         phase = .ready
                     }
@@ -75,8 +86,8 @@ struct RuntimeUpdateSettingsView: View {
                 }
 
                 Text("Administrator approval appears only after download, signature verification, and review.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)

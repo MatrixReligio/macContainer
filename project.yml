@@ -172,3 +172,5 @@ schemes:
       targets:
         - MacContainerIntegrationTests
         - MacContainerUITests
+      environmentVariables:
+        MARKETING_SCREENSHOT_DIR: $(MARKETING_SCREENSHOT_DIR)

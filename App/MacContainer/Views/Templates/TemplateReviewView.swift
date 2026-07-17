@@ -16,11 +16,19 @@ struct TemplateReviewView: View {
         NavigationStack {
             List {
                 Section("Outcome") {
-                    LabeledContent("Template", value: template.id)
-                    LabeledContent("Native operation", value: review.draft.operationID)
+                    LabeledContent("Template") {
+                        Text(template.id)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color(nsColor: .labelColor))
+                    }
+                    LabeledContent("Native operation") {
+                        Text(review.draft.operationID)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color(nsColor: .labelColor))
+                    }
                     Text("Every generated value, its source, and its difference from Apple defaults is shown below.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                 }
 
                 Section("Generated values") {
@@ -28,7 +36,8 @@ struct TemplateReviewView: View {
                         VStack(alignment: .leading, spacing: 5) {
                             HStack {
                                 Text(row.parameterID)
-                                    .font(.body.monospaced())
+                                    .font(.title3.monospaced().weight(.bold))
+                                    .foregroundStyle(Color(nsColor: .labelColor))
                                 Spacer()
                                 Text(row.value.displayValue)
                                     .textSelection(.enabled)
@@ -36,13 +45,18 @@ struct TemplateReviewView: View {
                             }
                             HStack {
                                 Text(row.sourceDescriptionKey)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Color(nsColor: .labelColor))
                                 Spacer()
                                 if review.diffFromUpstream.contains(where: { $0.id == row.id }) {
-                                    Text("Changed from Apple default")
-                                        .font(.caption2.weight(.medium))
-                                        .foregroundStyle(.blue)
+                                    Label {
+                                        Text("Changed from Apple default")
+                                            .foregroundStyle(Color(nsColor: .labelColor))
+                                    } icon: {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                            .foregroundStyle(.blue)
+                                    }
+                                    .font(.subheadline.weight(.semibold))
                                 }
                             }
                         }

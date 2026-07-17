@@ -105,7 +105,10 @@ guard CommandLine.arguments.count == 3 else {
 }
 
 let fileManager = FileManager.default
-let repositoryRoot = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
+let repositoryRoot = URL(
+    fileURLWithPath: fileManager.currentDirectoryPath,
+    isDirectory: true
+).standardizedFileURL
 let contractURL = URL(fileURLWithPath: CommandLine.arguments[1], relativeTo: repositoryRoot).standardizedFileURL
 let mapURL = URL(fileURLWithPath: CommandLine.arguments[2], relativeTo: repositoryRoot).standardizedFileURL
 let decoder = JSONDecoder()

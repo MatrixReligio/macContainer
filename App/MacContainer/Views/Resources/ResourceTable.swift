@@ -74,22 +74,28 @@ struct ResourceTable: View {
                 Table(filteredResources, selection: $selection) {
                     TableColumn("Name") { resource in
                         Text(resource.name)
-                            .lineLimit(1)
-                            .contextMenu {
-                                resourceMenu(resource)
-                            }
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color(nsColor: .labelColor))
                     }
-                    TableColumn("Status") { resource in
-                        Label(resource.status, systemImage: statusSymbol(for: resource.status))
-                            .foregroundStyle(.secondary)
-                    }
-                    TableColumn("Details") { resource in
-                        Text(resource.detail)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    TableColumn("Status", value: \.status)
+                    TableColumn("Details", value: \.detail)
+                }
+                .foregroundStyle(.primary)
+                .accessibilityLabel("\(route.title) resources")
+                .accessibilityIdentifier("resource-table.\(route.rawValue)")
+                .contextMenu(forSelectionType: ResourceRow.ID.self) { selectedIDs in
+                    if let resource = resources.first(where: { selectedIDs.contains($0.id) }) {
+                        Button("Inspect") {
+                            selection = selectedIDs
+                        }
+                        Divider()
+                        Button("Delete", role: .destructive) {
+                            selection = selectedIDs
+                            confirmationPresented = true
+                        }
+                        .disabled(resource.isProtected)
                     }
                 }
-                .accessibilityIdentifier("resource-table.\(route.rawValue)")
                 .onChange(of: selection) {
                     guard let id = selection.first,
                           let resource = resources.first(where: { $0.id == id })
@@ -120,19 +126,6 @@ struct ResourceTable: View {
         }
     }
 
-    @ViewBuilder
-    private func resourceMenu(_ resource: ResourceRow) -> some View {
-        Button("Inspect") {
-            selection = [resource.id]
-        }
-        Divider()
-        Button("Delete", role: .destructive) {
-            selection = [resource.id]
-            confirmationPresented = true
-        }
-        .disabled(resource.isProtected)
-    }
-
     private func refresh() {
         let id = state.activities.start(titleKey: "activity.\(route.rawValue).refresh")
         state.activities.finish(id, outcome: .succeeded)
@@ -147,15 +140,6 @@ struct ResourceTable: View {
             itemResults: ids.map { ActivityItemResult(resourceID: $0, outcome: .succeeded) }
         )
         selection = []
-    }
-
-    private func statusSymbol(for status: String) -> String {
-        switch status {
-        case "Running", "Ready", "Connected": "checkmark.circle.fill"
-        case "Stopped": "stop.circle"
-        case "Failed": "exclamationmark.triangle.fill"
-        default: "circle"
-        }
     }
 }
 

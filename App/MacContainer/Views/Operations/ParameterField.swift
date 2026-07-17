@@ -1,3 +1,4 @@
+import AppKit
 import MCContracts
 import MCModel
 import SwiftUI
@@ -15,7 +16,7 @@ struct ParameterField: View {
                 if parameter.required {
                     Text("Required")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.primary)
                 }
                 Spacer()
                 ParameterHelpButton(operation: operation, parameter: parameter)
@@ -25,28 +26,31 @@ struct ParameterField: View {
 
             HStack(spacing: 8) {
                 Text(parameter.conciseHelpKey)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
                 Spacer()
                 Text(field.source.rawValue)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.tertiary)
+                    .font(.caption.weight(.semibold).monospaced())
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
 
             if parameter.securityImpact == .destructive || parameter.securityImpact == .privileged {
-                Label(
-                    parameter.securityImpact == .privileged
+                Label {
+                    Text(parameter.securityImpact == .privileged
                         ? "May change privileged system state"
-                        : "May permanently remove data",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
+                        : "May permanently remove data")
+                        .foregroundStyle(.primary)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
                 .font(.caption)
-                .foregroundStyle(.orange)
             }
         }
         .padding(12)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(parameter.labelKey). \(parameter.required ? "Required" : "Optional")")
         .accessibilityIdentifier("parameter.\(operation.id).\(parameter.id)")
     }
 
@@ -90,20 +94,19 @@ struct ParameterField: View {
                 TextField("Seconds", text: numericBinding(kind: .duration))
                     .textFieldStyle(.roundedBorder)
                 Text("seconds")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
             }
         case .enumeration, .signal:
             if parameter.acceptedValues.isEmpty {
                 TextField("Value", text: stringBinding(path: false))
                     .textFieldStyle(.roundedBorder)
             } else {
-                Picker("Value", selection: stringBinding(path: false)) {
-                    Text("Not set").tag("")
-                    ForEach(parameter.acceptedValues, id: \.self) { value in
-                        Text(value).tag(value)
-                    }
-                }
-                .labelsHidden()
+                AccessibleValuePicker(
+                    label: humanReadableParameterLabel,
+                    values: parameter.acceptedValues,
+                    selection: stringBinding(path: false)
+                )
+                .frame(maxWidth: .infinity, minHeight: 26)
             }
         case .keyValue:
             repeatedEditor(kind: .keyValue, prompt: "KEY=value")
@@ -141,8 +144,8 @@ struct ParameterField: View {
                 .frame(minHeight: 72)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(.quaternary))
             Text(prompt)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color(nsColor: .labelColor))
         }
     }
 
@@ -288,5 +291,64 @@ struct ParameterField: View {
 
     private func setValue(_ value: FieldValue) {
         field = DraftField(value: value, source: .userOverride)
+    }
+
+    private var humanReadableParameterLabel: String {
+        parameter.id.reduce(into: "") { result, character in
+            if character.isUppercase, result.isEmpty == false {
+                result.append(" ")
+            }
+            result.append(character)
+        }
+        .capitalized
+    }
+}
+
+private struct AccessibleValuePicker: NSViewRepresentable {
+    let label: String
+    let values: [String]
+    @Binding var selection: String
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let button = NSPopUpButton(frame: .zero, pullsDown: false)
+        button.controlSize = .regular
+        button.target = context.coordinator
+        button.action = #selector(Coordinator.didSelect(_:))
+        configure(button)
+        return button
+    }
+
+    func updateNSView(_ button: NSPopUpButton, context: Context) {
+        context.coordinator.parent = self
+        configure(button)
+    }
+
+    private func configure(_ button: NSPopUpButton) {
+        let expectedTitles = ["Not set"] + values
+        if button.itemTitles != expectedTitles {
+            button.removeAllItems()
+            button.addItems(withTitles: expectedTitles)
+        }
+        button.selectItem(at: max(0, (values.firstIndex(of: selection) ?? -1) + 1))
+        button.setAccessibilityLabel(label)
+        button.setAccessibilityValue(selection.isEmpty ? "Not set" : selection)
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        var parent: AccessibleValuePicker
+
+        init(parent: AccessibleValuePicker) {
+            self.parent = parent
+        }
+
+        @objc func didSelect(_ sender: NSPopUpButton) {
+            let index = sender.indexOfSelectedItem - 1
+            parent.selection = index >= 0 ? parent.values[index] : ""
+        }
     }
 }

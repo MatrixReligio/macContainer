@@ -8,8 +8,8 @@ struct AdvancedSettingsView: View {
             Section("Diagnostics") {
                 Toggle("Retain redacted compatibility and rollback diagnostics", isOn: $retainDiagnostics)
                 Text("Passwords, tokens, credentials, authorization data, and private temporary paths are redacted.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
             Section("Recovery") {
                 Button("Open Activity Center") {}

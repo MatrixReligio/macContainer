@@ -11,7 +11,11 @@ struct RootScene: View {
         let arguments = ProcessInfo.processInfo.arguments
 
         Group {
-            if let contract = Self.contract, arguments.contains("--contract-audit-mode") {
+            if let fixture = MarketingFixture.from(arguments: arguments), arguments.contains("--fake-runtime") {
+                MarketingFixturesView(fixture: fixture)
+            } else if arguments.contains("--accessibility-fixtures") {
+                AccessibilityAuditFixturesView()
+            } else if let contract = Self.contract, arguments.contains("--contract-audit-mode") {
                 ContractAuditView(contract: contract)
             } else if arguments.contains("--onboarding-mode") {
                 OnboardingView()

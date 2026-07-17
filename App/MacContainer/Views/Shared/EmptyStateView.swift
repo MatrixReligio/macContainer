@@ -30,7 +30,8 @@ struct ActivityCenterView: View {
                             Text(activity.titleKey)
                                 .font(.headline)
                             Text(activity.phaseKey)
-                                .foregroundStyle(.secondary)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color(nsColor: .labelColor))
                             if let progress = activity.progress {
                                 ProgressView(value: progress)
                             } else if activity.outcome == nil {
@@ -72,6 +73,7 @@ struct WindowAccessibilityIdentifier: NSViewRepresentable {
         init(identifier: String) {
             accessibilityID = identifier
             super.init(frame: .zero)
+            setAccessibilityElement(false)
         }
 
         @available(*, unavailable)

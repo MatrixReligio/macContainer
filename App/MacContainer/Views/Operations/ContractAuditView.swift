@@ -1,4 +1,3 @@
-import AppKit
 import MCContracts
 import SwiftUI
 
@@ -7,6 +6,11 @@ struct ContractAuditView: View {
 
     @State private var searchText = ""
     @State private var selection: String?
+
+    init(contract: UpstreamContract, initialSelection: String? = nil) {
+        self.contract = contract
+        _selection = State(initialValue: initialSelection)
+    }
 
     private var filteredOperations: [OperationContract] {
         guard searchText.isEmpty == false else { return contract.operations }
@@ -24,7 +28,7 @@ struct ContractAuditView: View {
                         .font(.headline)
                     Text("\(contract.operations.count) operations · \(parameterCount) parameters")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                     OperationSearchField(text: $searchText)
                         .frame(height: 28)
                 }
@@ -46,6 +50,8 @@ struct ContractAuditView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(humanReadableLabel(for: operation))
+                    .accessibilityHint("Operation ID \(operation.id)")
                     .accessibilityIdentifier("open-operation.\(operation.id)")
                 }
             }
@@ -55,14 +61,23 @@ struct ContractAuditView: View {
                 OperationForm(operation: operation, runtimeVersion: contract.runtimeVersion)
                     .id(operation.id)
             } else {
-                ContentUnavailableView(
-                    "Choose an operation",
-                    systemImage: "slider.horizontal.3",
-                    description: Text("Search the complete Apple container contract to configure a native action.")
+                VStack(spacing: 10) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.largeTitle)
+                        .accessibilityHidden(true)
+                    Text("Choose an operation")
+                        .font(.title2.bold())
+                    Text("Search the complete Apple container contract to configure a native action.")
+                        .multilineTextAlignment(.center)
+                }
+                .foregroundStyle(.primary)
+                .padding(24)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "Choose an operation. Search the complete Apple container contract to configure a native action."
                 )
             }
         }
-        .navigationTitle("Contract audit")
         .accessibilityIdentifier("contract-audit")
         .onChange(of: searchText) {
             if filteredOperations.count == 1 {
@@ -78,43 +93,48 @@ struct ContractAuditView: View {
     private var selectedOperation: OperationContract? {
         selection.flatMap(contract.operation(id:))
     }
+
+    private func humanReadableLabel(for operation: OperationContract) -> String {
+        let action = operation.id
+            .split(separator: ".")
+            .dropFirst()
+            .joined(separator: " ")
+            .replacingOccurrences(
+                of: "([a-z0-9])([A-Z])",
+                with: "$1 $2",
+                options: .regularExpression
+            )
+            .capitalized
+        return "Configure \(operation.domain.rawValue.capitalized): \(action)"
+    }
 }
 
-private struct OperationSearchField: NSViewRepresentable {
+private struct OperationSearchField: View {
     @Binding var text: String
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
-    }
-
-    func makeNSView(context: Context) -> NSSearchField {
-        let field = NSSearchField()
-        field.placeholderString = "Search 61 operations"
-        field.target = context.coordinator
-        field.action = #selector(Coordinator.changed(_:))
-        field.sendsSearchStringImmediately = true
-        field.setAccessibilityIdentifier("operation-search")
-        return field
-    }
-
-    func updateNSView(_ field: NSSearchField, context: Context) {
-        if field.stringValue != text {
-            field.stringValue = text
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField("Search 61 operations", text: $text)
+                .textFieldStyle(.plain)
+                .accessibilityLabel("Search operations")
+                .accessibilityIdentifier("operation-search")
+            if text.isEmpty == false {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear operation search")
+                .accessibilityIdentifier("operation-search-clear")
+            }
         }
-        field.setAccessibilityIdentifier("operation-search")
-    }
-
-    @MainActor
-    final class Coordinator: NSObject {
-        @Binding private var text: String
-
-        init(text: Binding<String>) {
-            _text = text
-        }
-
-        @objc
-        func changed(_ sender: NSSearchField) {
-            text = sender.stringValue
-        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 5)
+        .background(.background, in: RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.separator, lineWidth: 1))
     }
 }
