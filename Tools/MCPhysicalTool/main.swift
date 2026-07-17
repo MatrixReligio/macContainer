@@ -15,6 +15,10 @@ enum MCPhysicalTool {
             try await preflight(arguments)
         case "compare-baseline":
             try compareBaseline(arguments)
+        case "recover":
+            try await recover(arguments)
+        case "assert-no-active-ledger":
+            try await assertNoActiveLedger(arguments)
         default:
             throw UsageError()
         }
@@ -64,10 +68,63 @@ enum MCPhysicalTool {
         }
         print("BASELINE_MATCH")
     }
+
+    private static func recover(_ arguments: [String]) async throws {
+        guard
+            arguments.count == 4,
+            arguments[0] == "--run-root",
+            arguments[2] == "--run-id",
+            let runID = UUID(uuidString: arguments[3])
+        else {
+            throw UsageError()
+        }
+        let root = URL(fileURLWithPath: arguments[1], isDirectory: true).standardizedFileURL
+        let ledgerURL = root.appendingPathComponent("cleanup.jsonl")
+        let storage = try FileCleanupLedgerStorage(url: ledgerURL)
+        let ledger = try await CleanupLedger.recover(storage: storage, runID: runID)
+        let policy = PhysicalCleanupPolicy(runID: runID, runRoot: root)
+        let cleanup = GuardedCleanup(policy: policy, ledger: ledger)
+        try await GuardedCleanupRecovery(
+            policy: policy,
+            ledger: ledger,
+            cleanup: cleanup,
+            ledgerURL: ledgerURL
+        ).run()
+        print("RECOVERY_PASS: cleanup ledger contains only verifiedAbsent states")
+    }
+
+    private static func assertNoActiveLedger(_ arguments: [String]) async throws {
+        guard arguments.count == 1 else { throw UsageError() }
+        let root = URL(fileURLWithPath: arguments[0], isDirectory: true).standardizedFileURL
+        guard FileManager.default.fileExists(atPath: root.path) else {
+            print("NO_ACTIVE_LEDGER")
+            return
+        }
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else {
+            throw CleanupPolicyError.absenceVerificationFailed
+        }
+        var ledgerCount = 0
+        while let url = enumerator.nextObject() as? URL {
+            guard url.lastPathComponent == "cleanup.jsonl" else { continue }
+            ledgerCount += 1
+            let storage = try FileCleanupLedgerStorage(url: url)
+            let events = try await storage.load()
+            guard !events.isEmpty else { throw CleanupLedgerError.corruptLedger }
+            let latest = Dictionary(grouping: events, by: \.artifact).compactMapValues(\.last?.state)
+            guard latest.values.allSatisfy({ $0 == .verifiedAbsent }) else {
+                throw CleanupPolicyError.absenceVerificationFailed
+            }
+        }
+        print("NO_ACTIVE_LEDGER: \(ledgerCount) completed ledger(s)")
+    }
 }
 
 private struct UsageError: Error, CustomStringConvertible {
     var description: String {
-        "usage: mc-physical preflight --output <path> | compare-baseline <before> <after>"
+        "usage: mc-physical preflight --output <path> | compare-baseline <before> <after> | recover --run-root <path> --run-id <uuid> | assert-no-active-ledger <physical-root>"
     }
 }
