@@ -105,12 +105,15 @@ public struct SystemUpgradeBaselineCapture: UpgradeBaselineCapturing, Sendable {
     }
 
     public func capture() async throws -> UpgradeBaseline {
+        let optionalNodes = configurationAndMetadata + fullData
         guard previousTarget.manifest == ReviewedRuntime100Manifest.package,
               previousPackageURL.isFileURL,
               !configurationAndMetadata.isEmpty,
-              ([previousPackageURL] + configurationAndMetadata + fullData).allSatisfy({
-                  $0.isFileURL && $0.path.hasPrefix("/") && FileManager.default.fileExists(atPath: $0.path)
+              FileManager.default.fileExists(atPath: previousPackageURL.path),
+              ([previousPackageURL] + optionalNodes).allSatisfy({
+                  $0.isFileURL && $0.path.hasPrefix("/")
               }),
+              optionalNodes.allSatisfy(Self.isSafePresentOrAbsentNode),
               Set(([previousPackageURL] + configurationAndMetadata + fullData).map(\.path)).count ==
               1 + configurationAndMetadata.count + fullData.count
         else {
@@ -122,6 +125,15 @@ public struct SystemUpgradeBaselineCapture: UpgradeBaselineCapturing, Sendable {
             configurationAndMetadata: configurationAndMetadata,
             fullData: fullData
         )
+    }
+
+    private static func isSafePresentOrAbsentNode(_ url: URL) -> Bool {
+        var status = stat()
+        guard Darwin.lstat(url.path, &status) == 0 else {
+            return errno == ENOENT || errno == ENOTDIR
+        }
+        let kind = status.st_mode & S_IFMT
+        return status.st_uid == geteuid() && (kind == S_IFREG || kind == S_IFDIR)
     }
 }
 

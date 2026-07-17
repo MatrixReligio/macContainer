@@ -17,6 +17,7 @@ public struct RollbackItem: Codable, Equatable, Sendable {
     public let sourcePath: String
     public let backupName: String
     public let logicalBytes: UInt64
+    public let sourceWasPresent: Bool
     public var state: RollbackItemState
 
     public init(
@@ -24,13 +25,44 @@ public struct RollbackItem: Codable, Equatable, Sendable {
         sourcePath: String,
         backupName: String,
         logicalBytes: UInt64,
+        sourceWasPresent: Bool = true,
         state: RollbackItemState
     ) {
         self.kind = kind
         self.sourcePath = sourcePath
         self.backupName = backupName
         self.logicalBytes = logicalBytes
+        self.sourceWasPresent = sourceWasPresent
         self.state = state
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case sourcePath
+        case backupName
+        case logicalBytes
+        case sourceWasPresent
+        case state
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try values.decode(RollbackItemKind.self, forKey: .kind)
+        sourcePath = try values.decode(String.self, forKey: .sourcePath)
+        backupName = try values.decode(String.self, forKey: .backupName)
+        logicalBytes = try values.decode(UInt64.self, forKey: .logicalBytes)
+        sourceWasPresent = try values.decodeIfPresent(Bool.self, forKey: .sourceWasPresent) ?? true
+        state = try values.decode(RollbackItemState.self, forKey: .state)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(kind, forKey: .kind)
+        try values.encode(sourcePath, forKey: .sourcePath)
+        try values.encode(backupName, forKey: .backupName)
+        try values.encode(logicalBytes, forKey: .logicalBytes)
+        try values.encode(sourceWasPresent, forKey: .sourceWasPresent)
+        try values.encode(state, forKey: .state)
     }
 }
 
@@ -165,6 +197,7 @@ public struct RollbackSourcePolicy: Sendable {
 }
 
 public protocol RollbackStoreFileSystem: Sendable {
+    func itemExists(at url: URL) throws -> Bool
     func logicalSize(of url: URL) throws -> UInt64
     func availableCapacity(at url: URL) throws -> UInt64
     func createPrivateDirectory(at url: URL) throws
@@ -174,6 +207,7 @@ public protocol RollbackStoreFileSystem: Sendable {
     func clonePackage(from package: OpenRuntimePackageFile, to destination: URL) throws
     func cloneItem(from source: URL, to destination: URL) throws
     func restoreItem(from source: URL, to destination: URL) throws
+    func restoreAbsence(at destination: URL) throws
     func removePoint(at url: URL, identity: RollbackDirectoryIdentity) throws
     func directoryIdentity(at url: URL) throws -> RollbackDirectoryIdentity
 }
@@ -238,7 +272,9 @@ public actor RollbackStore {
             for index in manifest.items.indices {
                 let item = manifest.items[index]
                 let destination = pointRoot.appendingPathComponent(item.backupName)
-                if item.kind == .previousPackage {
+                if !item.sourceWasPresent {
+                    // An absent baseline is recorded in the manifest without inventing a payload.
+                } else if item.kind == .previousPackage {
                     try fileSystem.clonePackage(from: verifiedPrevious.openFile, to: destination)
                 } else {
                     try fileSystem.cloneItem(
@@ -308,10 +344,15 @@ public actor RollbackStore {
         for item in point.manifest.items where item.kind != .previousPackage {
             guard item.state == .created else { throw RollbackStoreError.unsafePoint }
             try sourcePolicy.validate(sourcePath: item.sourcePath, kind: item.kind)
-            try fileSystem.restoreItem(
-                from: point.rootURL.appendingPathComponent(item.backupName),
-                to: URL(fileURLWithPath: item.sourcePath)
-            )
+            let destination = URL(fileURLWithPath: item.sourcePath)
+            if item.sourceWasPresent {
+                try fileSystem.restoreItem(
+                    from: point.rootURL.appendingPathComponent(item.backupName),
+                    to: destination
+                )
+            } else {
+                try fileSystem.restoreAbsence(at: destination)
+            }
         }
     }
 
@@ -370,6 +411,7 @@ public actor RollbackStore {
             !manifest.items.isEmpty,
             manifest.items.allSatisfy({ $0.state == .created }),
             manifest.items.filter({ $0.kind == .previousPackage }).count == 1,
+            manifest.items.first(where: { $0.kind == .previousPackage })?.sourceWasPresent == true,
             !manifest.requiresFullData || manifest.items.contains(where: { $0.kind == .fullData }),
             Set(manifest.items.map(\.backupName)).count == manifest.items.count,
             Set(manifest.items.map(\.sourcePath)).count == manifest.items.count
@@ -378,13 +420,18 @@ public actor RollbackStore {
         }
         for item in manifest.items {
             try sourcePolicy.validate(sourcePath: item.sourcePath, kind: item.kind)
-            guard
-                Self.isSafeBackupName(item.backupName),
-                try fileSystem.logicalSize(
-                    of: pointRoot.appendingPathComponent(item.backupName)
-                ) == item.logicalBytes
-            else {
+            guard Self.isSafeBackupName(item.backupName) else {
                 throw RollbackStoreError.unsafePoint
+            }
+            let backup = pointRoot.appendingPathComponent(item.backupName)
+            if item.sourceWasPresent {
+                guard try fileSystem.logicalSize(of: backup) == item.logicalBytes else {
+                    throw RollbackStoreError.unsafePoint
+                }
+            } else {
+                guard item.logicalBytes == 0, try !fileSystem.itemExists(at: backup) else {
+                    throw RollbackStoreError.unsafePoint
+                }
             }
         }
     }
@@ -397,11 +444,13 @@ public actor RollbackStore {
         }
         return try sources.enumerated().map { index, entry in
             let safeName = Self.safeBackupName(entry.1.lastPathComponent)
+            let sourceWasPresent = try fileSystem.itemExists(at: entry.1)
             return try RollbackItem(
                 kind: entry.0,
                 sourcePath: entry.1.path,
                 backupName: String(format: "%02d-%@", index, safeName),
-                logicalBytes: fileSystem.logicalSize(of: entry.1),
+                logicalBytes: sourceWasPresent ? fileSystem.logicalSize(of: entry.1) : 0,
+                sourceWasPresent: sourceWasPresent,
                 state: .planned
             )
         }
@@ -467,6 +516,18 @@ extension RollbackStore: RecoveryRollbackPointVerifying {
 
 public struct LocalRollbackStoreFileSystem: RollbackStoreFileSystem {
     public init() {}
+
+    public func itemExists(at url: URL) throws -> Bool {
+        var status = stat()
+        guard Darwin.lstat(url.path, &status) == 0 else {
+            if errno == ENOENT || errno == ENOTDIR {
+                return false
+            }
+            throw posixError()
+        }
+        try validateTree(at: url)
+        return true
+    }
 
     public func logicalSize(of url: URL) throws -> UInt64 {
         try validateTree(at: url)
@@ -616,6 +677,17 @@ public struct LocalRollbackStoreFileSystem: RollbackStoreFileSystem {
         }
         if existed {
             try FileManager.default.removeItem(at: displaced)
+        }
+        try synchronizeDirectory(parent)
+    }
+
+    public func restoreAbsence(at destination: URL) throws {
+        guard try itemExists(at: destination) else { return }
+        let parent = destination.deletingLastPathComponent()
+        try FileManager.default.removeItem(at: destination)
+        var status = stat()
+        guard Darwin.lstat(destination.path, &status) != 0, errno == ENOENT else {
+            throw RollbackStoreError.unsafeFileSystemItem
         }
         try synchronizeDirectory(parent)
     }

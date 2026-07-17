@@ -69,6 +69,28 @@ struct ProductionUpgradeComponentsTests {
         #expect(baseline.configurationAndMetadata == [configuration.standardizedFileURL])
     }
 
+    @Test func `baseline preserves an exact configuration path that is initially absent`() async throws {
+        let root = try makePrivateRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let package = root.appendingPathComponent("container-1.0.0-installer-signed.pkg")
+        let configuration = root.appendingPathComponent("configuration", isDirectory: true)
+        try Data("package".utf8).write(to: package)
+
+        let baseline = try await SystemUpgradeBaselineCapture(
+            previousTarget: RuntimeInstallTarget(
+                manifest: ReviewedRuntime100Manifest.package,
+                releaseAPIURL: package,
+                requiredProbes: ["health"]
+            ),
+            previousPackageURL: package,
+            configurationAndMetadata: [configuration],
+            fullData: []
+        ).capture()
+
+        #expect(baseline.configurationAndMetadata == [configuration.standardizedFileURL])
+        #expect(!FileManager.default.fileExists(atPath: configuration.path))
+    }
+
     @Test func `installed verifier requires receipt payload binary and API agreement`() async throws {
         let manifest = ReviewedRuntime110Manifest.package
         let verifier = SystemUpgradeInstalledRuntimeVerifier(

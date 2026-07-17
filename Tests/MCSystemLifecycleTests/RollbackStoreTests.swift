@@ -94,6 +94,83 @@ struct RollbackStoreTests {
         #expect(Darwin.lstat(point.rootURL.path, &status) != 0 && errno == ENOENT)
     }
 
+    @Test func `rollback restores an initially absent configuration to absence`() async throws {
+        let fixture = try LocalRollbackFixture(configurationExists: false)
+        defer { fixture.cleanup() }
+        let store = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
+        )
+
+        let point = try await store.createPoint(
+            fixture.request,
+            verifiedPrevious: .fixture(
+                manifest: fixture.request.previousManifest,
+                sourceURL: fixture.package
+            )
+        )
+        let configurationItem = try #require(
+            point.manifest.items.first { $0.kind == .configurationAndMetadata }
+        )
+        #expect(configurationItem.sourceWasPresent == false)
+        #expect(configurationItem.logicalBytes == 0)
+
+        try FileManager.default.createDirectory(
+            at: fixture.config,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try Data("generated-by-target".utf8).write(
+            to: fixture.config.appendingPathComponent("config.json")
+        )
+        try await store.restore(point)
+
+        var status = stat()
+        #expect(Darwin.lstat(fixture.config.path, &status) != 0 && errno == ENOENT)
+    }
+
+    @Test func `rollback refuses to restore absence across a symbolic link`() async throws {
+        let fixture = try LocalRollbackFixture(configurationExists: false)
+        defer { fixture.cleanup() }
+        let store = RollbackStore(
+            rootDirectory: fixture.rollbackRoot,
+            packageVerifier: PassthroughRollbackPackageVerifier(),
+            sourcePolicy: .allowing(fixture.request)
+        )
+        let point = try await store.createPoint(
+            fixture.request,
+            verifiedPrevious: .fixture(
+                manifest: fixture.request.previousManifest,
+                sourceURL: fixture.package
+            )
+        )
+        let unrelated = fixture.root.appendingPathComponent("unrelated")
+        try Data("keep".utf8).write(to: unrelated)
+        try FileManager.default.createSymbolicLink(at: fixture.config, withDestinationURL: unrelated)
+
+        await #expect(throws: RollbackStoreError.unsafeFileSystemItem) {
+            try await store.restore(point)
+        }
+        #expect(try String(contentsOf: unrelated, encoding: .utf8) == "keep")
+    }
+
+    @Test func `legacy rollback items decode as an existing source`() throws {
+        let data = Data("""
+        {
+          "kind":"configurationAndMetadata",
+          "sourcePath":"/source/config",
+          "backupName":"01-config",
+          "logicalBytes":7,
+          "state":"created"
+        }
+        """.utf8)
+
+        let item = try JSONDecoder().decode(RollbackItem.self, from: data)
+
+        #expect(item.sourceWasPresent)
+    }
+
     @Test func `clone failure removes the partial rollback point`() async throws {
         let fileSystem = RecordingRollbackFileSystem(
             availableBytes: 10000,
@@ -300,6 +377,10 @@ private final class RecordingRollbackFileSystem: RollbackStoreFileSystem, @unche
         self.failingCloneName = failingCloneName
     }
 
+    func itemExists(at _: URL) -> Bool {
+        true
+    }
+
     func logicalSize(of url: URL) throws -> UInt64 {
         switch url.lastPathComponent {
         case "previous.pkg": 100
@@ -346,6 +427,10 @@ private final class RecordingRollbackFileSystem: RollbackStoreFileSystem, @unche
         events.append("restore")
     }
 
+    func restoreAbsence(at _: URL) throws {
+        events.append("restore.absence")
+    }
+
     func removePoint(at _: URL, identity _: RollbackDirectoryIdentity) throws {
         events.append("remove")
     }
@@ -385,7 +470,7 @@ private struct LocalRollbackFixture {
     let data: URL
     let request: RollbackCaptureRequest
 
-    init() throws {
+    init(configurationExists: Bool = true) throws {
         root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MacContainerRollbackTests-\(UUID().uuidString)", isDirectory: true)
         rollbackRoot = root.appendingPathComponent("rollback", isDirectory: true)
@@ -394,9 +479,11 @@ private struct LocalRollbackFixture {
         data = root.appendingPathComponent("data")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
         try Data("package".utf8).write(to: package)
-        try Data("config".utf8).write(to: config)
+        if configurationExists {
+            try Data("config".utf8).write(to: config)
+        }
         try Data("data".utf8).write(to: data)
-        for url in [package, config, data] {
+        for url in [package, data] + (configurationExists ? [config] : []) {
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         }
         request = .init(

@@ -36,9 +36,7 @@ struct PhysicalUpgradeTests {
         let configuration = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config/container", isDirectory: true)
             .standardizedFileURL
-        guard FileManager.default.fileExists(atPath: configuration.path) else {
-            throw PhysicalUpgradeFailure.configurationBaselineMissing
-        }
+        #expect(!FileManager.default.fileExists(atPath: configuration.path))
         let context = try makeContext(.init(
             stateRoot: stateRoot,
             package100: package100,
@@ -270,7 +268,6 @@ private struct PhysicalDowngradeConsent: UpgradeDowngradeConsentProviding {
 }
 
 private enum PhysicalUpgradeFailure: Error {
-    case configurationBaselineMissing
     case injectedPostflight
     case targetMismatch
 }
