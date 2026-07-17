@@ -51,13 +51,16 @@ public struct PhysicalCleanupPolicy: Sendable {
             throw CleanupPolicyError.outsideRunNamespace
         }
         let standardized = URL(fileURLWithPath: path).standardizedFileURL.path
-        guard standardized != "/", standardized != "/Users", standardized != "/usr/local" else {
+        guard let canonical = Self.canonicalPath(standardized) else {
+            throw CleanupPolicyError.outsideRunNamespace
+        }
+        guard canonical != "/", canonical != "/Users", canonical != "/usr/local" else {
             throw CleanupPolicyError.protectedPath
         }
-        if standardized == runRoot.path {
+        if canonical == canonicalRunRoot {
             guard allowRunRoot else { throw CleanupPolicyError.outsideRunNamespace }
         } else {
-            guard standardized.hasPrefix("\(runRoot.path)/") else {
+            guard canonical.hasPrefix("\(canonicalRunRoot)/") else {
                 throw CleanupPolicyError.outsideRunNamespace
             }
         }
@@ -67,6 +70,22 @@ public struct PhysicalCleanupPolicy: Sendable {
             guard canonicalParent == canonicalRunRoot || canonicalParent.hasPrefix("\(canonicalRunRoot)/") else {
                 throw CleanupPolicyError.ancestorSubstitution
             }
+        }
+    }
+
+    private static func canonicalPath(_ path: String) -> String? {
+        var ancestor = URL(fileURLWithPath: path).standardizedFileURL
+        var missingComponents: [String] = []
+        while realPath(ancestor.path) == nil {
+            guard ancestor.path != "/", !ancestor.lastPathComponent.isEmpty else { return nil }
+            missingComponents.insert(ancestor.lastPathComponent, at: 0)
+            let parent = ancestor.deletingLastPathComponent()
+            guard parent.path != ancestor.path else { return nil }
+            ancestor = parent
+        }
+        guard let resolvedAncestor = realPath(ancestor.path) else { return nil }
+        return missingComponents.reduce(resolvedAncestor) { partial, component in
+            partial == "/" ? "/\(component)" : "\(partial)/\(component)"
         }
     }
 

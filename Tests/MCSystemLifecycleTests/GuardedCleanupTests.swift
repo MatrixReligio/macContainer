@@ -36,6 +36,25 @@ struct GuardedCleanupTests {
         #expect(FileManager.default.fileExists(atPath: fixture.outsideSentinel.path))
     }
 
+    @Test func `accepts a child expressed through the private tmp alias of the canonical run root`() throws {
+        let runID = UUID()
+        let runRoot = URL(
+            fileURLWithPath: "/private/tmp/maccontainer-cleanup-alias-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: runRoot,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: runRoot) }
+        let child = runRoot.appendingPathComponent("results", isDirectory: true)
+
+        try PhysicalCleanupPolicy(runID: runID, runRoot: runRoot).validate(
+            .temporaryDirectory(child.path)
+        )
+    }
+
     @Test func `requires planned created removed verified transition order`() async throws {
         let fixture = try CleanupFixture()
         defer { fixture.destroy() }
