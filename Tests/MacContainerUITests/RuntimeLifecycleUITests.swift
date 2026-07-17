@@ -92,12 +92,18 @@ final class RuntimeLifecycleUITests: XCTestCase {
     }
 
     func testPreserveDataIsASeparateNonDestructiveAction() {
-        XCTAssertTrue(app.buttons["preserve-data-uninstall"].exists)
+        let scrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 3))
+        let preserveButton = app.buttons["preserve-data-uninstall"]
+        for _ in 0 ..< 15 where !preserveButton.isHittable {
+            scrollView.swipeUp()
+        }
+        XCTAssertTrue(preserveButton.isHittable)
         XCTAssertTrue(app.staticTexts["Remove runtime, preserve container data"].exists)
         XCTAssertTrue(app.staticTexts["Keeps images, volumes, configuration, and registry credentials."].exists)
         XCTAssertFalse(app.buttons["complete-uninstall"].isEnabled)
 
-        app.buttons["preserve-data-uninstall"].click()
+        preserveButton.click()
         XCTAssertTrue(app.staticTexts["Runtime removed; user data preserved"].exists)
         XCTAssertFalse(app.staticTexts["Uninstall complete"].exists)
     }

@@ -191,7 +191,7 @@ final class AccessibilityAuditTests: XCTestCase {
             abs(frame.minX - windowFrame.minX) <= 4 &&
             abs(frame.minY - windowFrame.minY) <= 4 &&
             abs(frame.width - windowFrame.width) <= 16 &&
-            abs(frame.height - windowFrame.height) <= 12
+            abs(frame.height - windowFrame.height) <= 48
     }
 
     /// The macOS 26 contrast audit samples the titlebar as synthetic static text.

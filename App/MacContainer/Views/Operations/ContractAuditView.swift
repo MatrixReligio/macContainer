@@ -27,8 +27,8 @@ struct ContractAuditView: View {
                     Text("Operation catalog")
                         .font(.headline)
                     Text("\(contract.operations.count) operations · \(parameterCount) parameters")
-                        .font(.caption)
-                        .foregroundStyle(.primary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                     OperationSearchField(text: $searchText)
                         .frame(height: 28)
                 }

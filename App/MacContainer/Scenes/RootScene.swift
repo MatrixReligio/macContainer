@@ -49,7 +49,10 @@ struct RootScene: View {
                 }
             }
         }
-        .frame(minWidth: 940, minHeight: 620)
+        .frame(
+            minWidth: AppWindowLayout.minimumContentWidth,
+            minHeight: AppWindowLayout.minimumContentHeight
+        )
         .background(WindowAccessibilityIdentifier("main-window"))
     }
 

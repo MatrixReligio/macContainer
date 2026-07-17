@@ -1,13 +1,16 @@
+import Foundation
 import XCTest
 
 @MainActor
 final class PhysicalRuntimeUITests: XCTestCase {
     func testProductionRuntimeExposesAuthoritativeResourcesWithoutRegisteringBackgroundAgents() throws {
         let environment = ProcessInfo.processInfo.environment
-        let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
         try XCTSkipUnless(
-            environment["PHYSICAL_TEST_AUTHORIZATION"] == runID,
+            validatedPhysicalRunID(environment: environment) != nil,
             "Exact physical UI authorization is required"
+        )
+        let runID = try XCTUnwrap(
+            validatedPhysicalRunID(environment: environment)
         )
 
         let app = XCUIApplication()
@@ -89,9 +92,8 @@ final class PhysicalRuntimeUITests: XCTestCase {
 
     private func authorizedEnvironment() throws -> [String: String] {
         let environment = ProcessInfo.processInfo.environment
-        let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
         try XCTSkipUnless(
-            environment["PHYSICAL_TEST_AUTHORIZATION"] == runID,
+            validatedPhysicalRunID(environment: environment) != nil,
             "Exact physical UI authorization is required"
         )
         return environment
@@ -101,7 +103,9 @@ final class PhysicalRuntimeUITests: XCTestCase {
         language: String,
         environment: [String: String]
     ) throws -> XCUIApplication {
-        let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
+        let runID = try XCTUnwrap(
+            validatedPhysicalRunID(environment: environment)
+        )
         let app = XCUIApplication()
         app.launchArguments = [
             "--physical-runtime-ui-test",
@@ -198,4 +202,17 @@ final class PhysicalRuntimeUITests: XCTestCase {
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
         }
     }
+}
+
+private func validatedPhysicalRunID(environment: [String: String]) -> String? {
+    guard let runID = environment["PHYSICAL_RUN_ID"],
+          let uuid = UUID(uuidString: runID),
+          uuid.uuidString.lowercased() == runID,
+          environment["PHYSICAL_TEST_AUTHORIZATION"] == runID,
+          let root = environment["PHYSICAL_RUN_ROOT"]
+    else {
+        return nil
+    }
+    let standardizedRoot = URL(fileURLWithPath: root, isDirectory: true).standardizedFileURL
+    return standardizedRoot.lastPathComponent == runID ? runID : nil
 }

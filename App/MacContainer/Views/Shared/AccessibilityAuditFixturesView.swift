@@ -259,7 +259,10 @@ private struct AuditWindowConfigurator: NSViewRepresentable {
 
         init(arguments: [String]) {
             if arguments.contains("--audit-compact-window") {
-                contentSize = NSSize(width: 960, height: 680)
+                contentSize = NSSize(
+                    width: AppWindowLayout.defaultContentWidth,
+                    height: AppWindowLayout.defaultContentHeight
+                )
             } else if arguments.contains("--audit-wide-window") {
                 contentSize = NSSize(width: 1440, height: 900)
             } else {
@@ -281,7 +284,10 @@ private struct AuditWindowConfigurator: NSViewRepresentable {
 
         func applySize() {
             guard let contentSize, let window else { return }
-            window.contentMinSize = NSSize(width: 940, height: 620)
+            window.contentMinSize = NSSize(
+                width: AppWindowLayout.minimumContentWidth,
+                height: AppWindowLayout.minimumContentHeight
+            )
             window.setContentSize(contentSize)
         }
 

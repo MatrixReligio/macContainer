@@ -19,7 +19,7 @@ struct MacContainerApp: App {
             : .production
         let physicalRuntimeUITest = mode == .production &&
             arguments.contains("--physical-runtime-ui-test") &&
-            Self.isAuthorizedPhysicalTest(environment)
+            PhysicalTestAuthorization.validatedRunID(environment: environment) != nil
         isPhysicalRuntimeUITest = physicalRuntimeUITest
         let fakeRuntimeLanguage = arguments.compactMap(Self.fakeRuntimeLanguage).first
         let physicalRuntimeLanguage = physicalRuntimeUITest
@@ -92,7 +92,10 @@ struct MacContainerApp: App {
                     NSApplication.shared.terminate(nil)
                 }
         }
-        .defaultSize(width: 1180, height: 760)
+        .defaultSize(
+            width: AppWindowLayout.defaultContentWidth,
+            height: AppWindowLayout.defaultContentHeight
+        )
         .commands {
             MacContainerCommands(state: state)
         }
@@ -123,18 +126,6 @@ struct MacContainerApp: App {
         let prefix = "--physical-runtime-language="
         guard argument.hasPrefix(prefix) else { return nil }
         return AppLanguage(rawValue: String(argument.dropFirst(prefix.count)))
-    }
-
-    private static func isAuthorizedPhysicalTest(_ environment: [String: String]) -> Bool {
-        guard let runID = environment["PHYSICAL_RUN_ID"],
-              UUID(uuidString: runID) != nil,
-              environment["PHYSICAL_TEST_AUTHORIZATION"] == runID,
-              let root = environment["PHYSICAL_RUN_ROOT"]
-        else {
-            return false
-        }
-        return URL(fileURLWithPath: root, isDirectory: true)
-            .standardizedFileURL.lastPathComponent == runID
     }
 }
 

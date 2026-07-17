@@ -21,8 +21,8 @@ struct AboutSettingsView: View {
                     .accessibilityLabel("Email Matrix Religio support")
                     .accessibilityHint("Opens a message to contact at matrixreligio dot com")
                 Text("Apache License 2.0")
-                    .font(.subheadline.weight(.semibold))
-                    .readableForeground()
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
             .frame(maxWidth: .infinity)
 
@@ -61,8 +61,8 @@ struct AboutSettingsView: View {
 
                 // swiftlint:disable:next line_length
                 Text("Application updates are signed and handled separately from Apple container runtime updates, which always require compatibility approval.")
-                    .font(.footnote)
-                    .readableForeground()
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
         }
         .formStyle(.grouped)

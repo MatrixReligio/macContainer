@@ -72,11 +72,20 @@ jobs:
           -clonedSourcePackagesDirPath .build/xcode-packages
           ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
 
-  ui-tests:
-    name: Integration and UI tests with ephemeral signing
-    needs: [verify, coverage, app-build]
+  ui-shards:
+    name: ${{ matrix.name }} with ephemeral signing
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: accessibility
+            name: Native accessibility audits
+            test-selection: -only-testing:MacContainerUITests/AccessibilityAuditTests
+          - id: functional
+            name: Integration and functional UI tests
+            test-selection: -skip-testing:MacContainerUITests/AccessibilityAuditTests
     permissions:
       contents: read
     steps:
@@ -94,38 +103,61 @@ jobs:
           ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
           build-for-testing
 
-      - name: Run integration and UI tests in fake-runtime mode
+      - name: Run the isolated UI test shard in fake-runtime mode
         run: >-
           xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
           -configuration Debug -derivedDataPath .build/ci-tests
           -clonedSourcePackagesDirPath .build/xcode-packages
-          -resultBundlePath .build/TestResults.xcresult
+          -resultBundlePath .build/TestResults-${{ matrix.id }}.xcresult
           -test-timeouts-enabled YES
-          -default-test-execution-time-allowance 60
-          -maximum-test-execution-time-allowance 120
+          -default-test-execution-time-allowance 180
+          -maximum-test-execution-time-allowance 300
+          ${{ matrix.test-selection }}
           ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
           test-without-building
 
       - name: Export the test summary
         if: always()
         run: |
-          if [[ -d .build/TestResults.xcresult ]]; then
+          if [[ -d .build/TestResults-${{ matrix.id }}.xcresult ]]; then
             xcrun xcresulttool get test-results summary \
-              --path .build/TestResults.xcresult > .build/test-summary.json
+              --path .build/TestResults-${{ matrix.id }}.xcresult \
+              > .build/test-summary-${{ matrix.id }}.json
           else
             printf '%s\n' '{"result":"Tests did not produce an xcresult bundle"}' \
-              > .build/test-summary.json
+              > .build/test-summary-${{ matrix.id }}.json
           fi
 
       - name: Upload the test summary only
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: maccontainer-test-summary
-          path: .build/test-summary.json
+          name: maccontainer-test-summary-${{ matrix.id }}
+          path: .build/test-summary-${{ matrix.id }}.json
           if-no-files-found: error
           retention-days: 14
 
       - name: Remove test process state
         if: always()
         run: rm -rf "${TMPDIR%/}/container.matrixreligio.com.savedState"
+
+  ui-tests:
+    name: Integration and UI tests with ephemeral signing
+    if: always()
+    needs: [verify, coverage, app-build, ui-shards]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Require every build, test, and UI shard to pass
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          COVERAGE_RESULT: ${{ needs.coverage.result }}
+          APP_BUILD_RESULT: ${{ needs.app-build.result }}
+          UI_SHARDS_RESULT: ${{ needs.ui-shards.result }}
+        run: |
+          test "$VERIFY_RESULT" = success
+          test "$COVERAGE_RESULT" = success
+          test "$APP_BUILD_RESULT" = success
+          test "$UI_SHARDS_RESULT" = success

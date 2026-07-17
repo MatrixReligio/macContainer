@@ -45,13 +45,15 @@ struct RuntimeUpdateSettingsView: View {
                 if isAuditMode {
                     Label {
                         Text("Unknown version 1.2.0 is held — no automatic install")
+                            .font(.body.weight(.semibold))
                             .foregroundStyle(Color(nsColor: .labelColor))
                     } icon: {
                         Image(systemName: "pause.circle.fill")
                             .foregroundStyle(.orange)
                     }
                     Text("Rollback point: 1.0.0 · verified · retained")
-                        .font(.caption.monospaced())
+                        .font(.subheadline.monospaced().weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                 }
 
                 HStack {

@@ -45,18 +45,41 @@ intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-
     "$fixture/.github/workflows/ci.yml" || true)"
 arm_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' \
     "$fixture/.github/workflows/ci.yml" || true)"
-if [[ "$intel_runner_count" != 3 || "$arm_runner_count" != 1 ]]; then
-    print -u2 -- "expected three parallel 14 GB Intel gates and one native Apple Silicon UI runner"
+linux_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*ubuntu-24.04[[:space:]]*$' \
+    "$fixture/.github/workflows/ci.yml" || true)"
+if [[ "$intel_runner_count" != 3 || "$arm_runner_count" != 1 || "$linux_runner_count" != 1 ]]; then
+    print -u2 -- "expected three Intel gates, one Apple Silicon matrix, and one lightweight aggregator"
     exit 1
 fi
 
 /usr/bin/ruby -e '
     require "yaml"
     jobs = YAML.load_file(ARGV.fetch(0)).fetch("jobs")
-    %w[verify coverage app-build ui-tests].each { |name| jobs.fetch(name) }
-    needs = jobs.fetch("ui-tests").fetch("needs")
-    abort "UI tests must wait for every parallel gate" unless needs == %w[verify coverage app-build]
-    abort "UI tests need a measured 30 minute budget" unless jobs.fetch("ui-tests").fetch("timeout-minutes") >= 30
+    %w[verify coverage app-build ui-shards ui-tests].each { |name| jobs.fetch(name) }
+
+    shards = jobs.fetch("ui-shards")
+    abort "UI shards must start independently" if shards.key?("needs")
+    abort "UI shards need a measured 45 minute budget" unless shards.fetch("timeout-minutes") >= 45
+    include_rows = shards.fetch("strategy").fetch("matrix").fetch("include")
+    abort "UI shards must split accessibility and functional coverage" unless
+      include_rows.map { |row| row.fetch("id") } == %w[accessibility functional]
+    selections = include_rows.map { |row| row.fetch("test-selection") }
+    abort "UI shard selectors are incomplete" unless
+      selections.any? { |value| value.include?("-only-testing:MacContainerUITests/AccessibilityAuditTests") } &&
+      selections.any? { |value| value.include?("-skip-testing:MacContainerUITests/AccessibilityAuditTests") }
+    shard_runs = shards.fetch("steps").map { |step| step["run"] }.compact.join("\n")
+    abort "UI tests need realistic per-test allowances" unless
+      shard_runs.include?("-default-test-execution-time-allowance 180") &&
+      shard_runs.include?("-maximum-test-execution-time-allowance 300")
+
+    aggregate = jobs.fetch("ui-tests")
+    needs = aggregate.fetch("needs")
+    abort "UI result must wait for every parallel gate and shard" unless
+      needs == %w[verify coverage app-build ui-shards]
+    abort "UI result must always evaluate dependencies" unless aggregate.fetch("if") == "always()"
+    abort "UI result must use the lightweight pinned Linux image" unless
+      aggregate.fetch("runs-on") == "ubuntu-24.04"
+    abort "UI result should finish quickly" unless aggregate.fetch("timeout-minutes") <= 5
 ' "$fixture/.github/workflows/ci.yml"
 
 "$fixture/scripts/check-workflow-policy.sh"

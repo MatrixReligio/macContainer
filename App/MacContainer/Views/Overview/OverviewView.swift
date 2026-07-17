@@ -80,8 +80,8 @@ private struct HealthSummary: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                     Text(value)
                         .font(.headline)
                         .readableForeground()
@@ -108,8 +108,8 @@ private struct MetricSummary: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
                     Text(value)
                         .font(.headline.monospacedDigit())
                         .readableForeground()

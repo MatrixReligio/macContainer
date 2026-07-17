@@ -83,7 +83,7 @@ if ! /usr/bin/grep -Eq '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' 
     errors+=("ci.yml must run UI tests on native Apple Silicon macos-26")
 fi
 if /usr/bin/grep -E '^[[:space:]]*runs-on:' "$ci" | \
-   /usr/bin/grep -Evq 'macos-26(-intel)?[[:space:]]*$'; then
+   /usr/bin/grep -Evq '(macos-26(-intel)?|ubuntu-24\.04)[[:space:]]*$'; then
     errors+=("ci.yml contains an unapproved runner")
 fi
 if ! /usr/bin/grep -Fq 'scripts/check-repository.sh' "$ci"; then
