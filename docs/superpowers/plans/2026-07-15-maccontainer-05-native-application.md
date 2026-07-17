@@ -334,29 +334,29 @@ git commit -m "feat: render complete explained operation forms"
 - Create: `App/MacContainer/Views/Templates/TemplateLibraryView.swift`
 - Test: `Tests/MacContainerUITests/SimpleModeTests.swift`
 
-- [ ] **Step 1: Write failing eight-template workflow tests**
+- [x] **Step 1: Write failing eight-template workflow tests**
 
 For every built-in template, launch onboarding/fake host+image, fill only required user choices, inspect generated review rows/source labels/upstream diff, edit an advanced value, save/duplicate/export/import custom template, and execute through the fake bridge. Test secure, database, Rosetta, and nested-virtualization safeguards explicitly.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/SimpleModeTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because template UI is absent.
 
-- [ ] **Step 3: Implement progressive disclosure**
+- [x] **Step 3: Implement progressive disclosure**
 
 Onboarding checks OS/chip/runtime status, introduces install without Terminal, explains auto-update consent, recommends Simple Mode, and never enables automatic runtime install without explicit toggle + helper authorization. Simple Mode shows scenario cards with plain-language outcome and risk, only required choices, then a fully editable review. Advanced mode is one control away and preserves draft values.
 
 Template import uses `fileImporter`, decodes/migrates before showing preview, rejects secrets/future schema safely, and obtains no persistent security-scope permission after import. Export writes through `fileExporter` and proves no secrets.
 
-- [ ] **Step 4: Run onboarding and template workflows**
+- [x] **Step 4: Run onboarding and template workflows**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/SimpleModeTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: PASS for eight scenarios and all safeguard cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer/Views/Templates Tests/MacContainerUITests/SimpleModeTests.swift

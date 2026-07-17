@@ -43,6 +43,8 @@ targets:
         product: MCSystemLifecycle
       - package: MacContainerCore
         product: MCAppCore
+      - package: MacContainerCore
+        product: MCTemplates
       - package: Sparkle
         product: Sparkle
       - package: SwiftTerm

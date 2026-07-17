@@ -47,6 +47,7 @@ public final class AppState {
 
     public var columnVisibility: NavigationSplitViewVisibility = .all
     public var activityCenterPresented = false
+    public var simpleModePresented = false
     public var health: HealthState = .checking
     public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter

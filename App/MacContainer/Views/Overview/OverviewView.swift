@@ -44,7 +44,7 @@ struct OverviewView: View {
                     Text("Recommended")
                         .font(.headline)
                     Button {
-                        state.selection = .containers
+                        state.simpleModePresented = true
                     } label: {
                         Label("Create your first container", systemImage: "plus.circle.fill")
                     }

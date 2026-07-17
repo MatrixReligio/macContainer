@@ -8,10 +8,15 @@ struct RootScene: View {
 
     var body: some View {
         @Bindable var state = state
+        let arguments = ProcessInfo.processInfo.arguments
 
         Group {
-            if let contract = Self.contract, ProcessInfo.processInfo.arguments.contains("--contract-audit-mode") {
+            if let contract = Self.contract, arguments.contains("--contract-audit-mode") {
                 ContractAuditView(contract: contract)
+            } else if arguments.contains("--onboarding-mode") {
+                OnboardingView()
+            } else if arguments.contains("--simple-mode-audit") {
+                SimpleModeView()
             } else {
                 NavigationSplitView(columnVisibility: $state.columnVisibility) {
                     Sidebar(selection: $state.selection)
@@ -25,6 +30,9 @@ struct RootScene: View {
                 }
                 .onChange(of: state.activityCenterPresented) {
                     openWindow(id: "activity-center")
+                }
+                .sheet(isPresented: $state.simpleModePresented) {
+                    SimpleModeView()
                 }
             }
         }

@@ -10,10 +10,10 @@ struct OperationForm: View {
     @State private var draft: OperationDraft
     @State private var reviewPresented = false
 
-    init(operation: OperationContract, runtimeVersion: RuntimeVersion) {
+    init(operation: OperationContract, runtimeVersion: RuntimeVersion, draft: OperationDraft? = nil) {
         self.operation = operation
         self.runtimeVersion = runtimeVersion
-        _draft = State(initialValue: OperationDraftFactory().makeDraft(for: operation))
+        _draft = State(initialValue: draft ?? OperationDraftFactory().makeDraft(for: operation))
     }
 
     private var issues: [ValidationIssue] {

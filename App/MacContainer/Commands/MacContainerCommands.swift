@@ -19,7 +19,7 @@ struct MacContainerCommands: Commands {
 
         CommandGroup(after: .newItem) {
             Button("New…") {
-                NotificationCenter.default.post(name: .macContainerNewResource, object: nil)
+                state.simpleModePresented = true
             }
             .keyboardShortcut("n", modifiers: .command)
         }
