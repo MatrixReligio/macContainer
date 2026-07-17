@@ -55,16 +55,16 @@ final class PrivilegedHelperIntegrationTests: XCTestCase {
         defer { package.cleanup() }
 
         await XCTAssertThrowsErrorAsync {
-            try await fixture.perform(
+            _ = try await fixture.perform(
                 data: Data(repeating: 0x41, count: PrivilegedRequestCodec.maximumMessageBytes + 1),
                 package: nil
             )
         }
         await XCTAssertThrowsErrorAsync {
-            try await fixture.perform(data: Data(#"{"version":999}"#.utf8), package: nil)
+            _ = try await fixture.perform(data: Data(#"{"version":999}"#.utf8), package: nil)
         }
         await XCTAssertThrowsErrorAsync {
-            try await fixture.perform(
+            _ = try await fixture.perform(
                 data: PrivilegedRequestCodec.encode(.removeResolver(name: "default")),
                 package: package.handle
             )
