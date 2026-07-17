@@ -4,6 +4,38 @@ import Testing
 
 @Suite("Fixed privileged command runner")
 struct FixedPrivilegedCommandRunnerTests {
+    @Test func `installer receives an immutable private path instead of a process descriptor`() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-installer-stage-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source.pkg")
+        try Data("immutable-reviewed-package".utf8).write(to: source, options: .withoutOverwriting)
+        let handle = try FileHandle(forReadingFrom: source)
+        defer { try? handle.close() }
+        let package = try OpenRuntimePackageFile(duplicating: handle.fileDescriptor)
+        let runner = PosixSpawnFixedPrivilegedCommandRunner(
+            packageStager: PrivatePackageStager(rootDirectory: root, requiredRootOwner: geteuid()),
+            installerExecutable: "/bin/echo"
+        )
+
+        let output = try runner.run(.installPackage, package: package)
+        let arguments = try #require(String(data: output, encoding: .utf8))
+            .split(separator: " ")
+            .map(String.init)
+        let stagedPath = try #require(arguments.dropFirst().first)
+
+        #expect(arguments.first == "-pkg")
+        #expect(stagedPath.hasPrefix(root.path + "/container.matrixreligio.com.install."))
+        #expect(!stagedPath.hasPrefix("/dev/fd/"))
+        #expect(!FileManager.default.fileExists(atPath: stagedPath))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: root.path) == ["source.pkg"])
+    }
+
     @Test func `returns stdout without merging stderr diagnostics`() throws {
         let invocation = FixedPrivilegedCommandInvocation(
             command: .inspectContainerPacketFilter,

@@ -102,11 +102,42 @@ public protocol FixedPrivilegedCommandRunning: Sendable {
 }
 
 public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunning {
-    public init() {}
+    private let packageStager: PrivatePackageStager
+    private let installerExecutable: String
+
+    public init() {
+        packageStager = PrivatePackageStager(
+            rootDirectory: URL(fileURLWithPath: "/private/var/tmp", isDirectory: true),
+            requiredRootOwner: 0
+        )
+        installerExecutable = "/usr/sbin/installer"
+    }
+
+    init(packageStager: PrivatePackageStager, installerExecutable: String) {
+        self.packageStager = packageStager
+        self.installerExecutable = installerExecutable
+    }
 
     @discardableResult
     public func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws -> Data {
-        try run(
+        if command == .installPackage {
+            guard let package else { throw FixedPrivilegedCommandError.invalidPackageDescriptor }
+            return try packageStager.withStagedPackage(package) { stagedPackage in
+                try run(
+                    FixedPrivilegedCommandInvocation(
+                        command: command,
+                        packageDescriptor: package.fileDescriptor,
+                        executable: installerExecutable,
+                        arguments: [installerExecutable, "-pkg", stagedPackage.path, "-target", "/"],
+                        environment: [:],
+                        workingDirectory: "/"
+                    ),
+                    standardInput: nil,
+                    package: package
+                )
+            }
+        }
+        return try run(
             FixedPrivilegedCommandInvocation(
                 command: command,
                 packageDescriptor: package?.fileDescriptor
@@ -282,9 +313,130 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
     }
 }
 
+struct PrivatePackageStager: Sendable {
+    private let rootDirectory: URL
+    private let requiredRootOwner: uid_t
+
+    init(rootDirectory: URL, requiredRootOwner: uid_t) {
+        self.rootDirectory = rootDirectory.standardizedFileURL
+        self.requiredRootOwner = requiredRootOwner
+    }
+
+    func withStagedPackage<T>(
+        _ package: OpenRuntimePackageFile,
+        operation: (URL) throws -> T
+    ) throws -> T {
+        try validateRoot()
+        try package.revalidateIdentity()
+        var template = Array(
+            rootDirectory
+                .appendingPathComponent("container.matrixreligio.com.install.XXXXXX", isDirectory: true)
+                .path.utf8CString
+        )
+        guard let created = template.withUnsafeMutableBufferPointer({ pointer in
+            Darwin.mkdtemp(pointer.baseAddress)
+        }) else {
+            throw FixedPrivilegedCommandError.packageStagingFailed
+        }
+        let directory = URL(fileURLWithPath: String(cString: created), isDirectory: true)
+        let stagedPackage = directory.appendingPathComponent("reviewed.pkg", isDirectory: false)
+        var requiresBestEffortCleanup = true
+        defer {
+            if requiresBestEffortCleanup {
+                _ = Darwin.unlink(stagedPackage.path)
+                _ = Darwin.rmdir(directory.path)
+            }
+        }
+        guard Darwin.chmod(directory.path, 0o700) == 0 else {
+            throw FixedPrivilegedCommandError.packageStagingFailed
+        }
+        let output = Darwin.open(
+            stagedPackage.path,
+            O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
+            0o600
+        )
+        guard output >= 0 else { throw FixedPrivilegedCommandError.packageStagingFailed }
+        do {
+            try copy(package: package, to: output)
+            guard Darwin.fsync(output) == 0 else {
+                throw FixedPrivilegedCommandError.packageStagingFailed
+            }
+        } catch {
+            Darwin.close(output)
+            throw error
+        }
+        Darwin.close(output)
+        try package.revalidateIdentity()
+        let result = Result { try operation(stagedPackage) }
+        guard Darwin.unlink(stagedPackage.path) == 0,
+              Darwin.rmdir(directory.path) == 0
+        else {
+            throw FixedPrivilegedCommandError.packageStagingCleanupFailed
+        }
+        requiresBestEffortCleanup = false
+        return try result.get()
+    }
+
+    private func validateRoot() throws {
+        var status = stat()
+        guard geteuid() == requiredRootOwner,
+              rootDirectory.path.hasPrefix("/"),
+              Darwin.lstat(rootDirectory.path, &status) == 0,
+              status.st_mode & S_IFMT == S_IFDIR,
+              status.st_uid == requiredRootOwner
+        else {
+            throw FixedPrivilegedCommandError.unsafePackageStagingRoot
+        }
+        let permissions = status.st_mode & 0o7777
+        guard
+            permissions & 0o077 == 0 ||
+            (requiredRootOwner == 0 && permissions & mode_t(S_ISVTX) != 0)
+        else {
+            throw FixedPrivilegedCommandError.unsafePackageStagingRoot
+        }
+    }
+
+    private func copy(package: OpenRuntimePackageFile, to output: Int32) throws {
+        var offset: off_t = 0
+        var buffer = [UInt8](repeating: 0, count: 1024 * 1024)
+        while true {
+            let count = Darwin.pread(package.fileDescriptor, &buffer, buffer.count, offset)
+            guard count >= 0 else {
+                if errno == EINTR {
+                    continue
+                }
+                throw FixedPrivilegedCommandError.packageStagingFailed
+            }
+            guard count > 0 else { break }
+            try writeAll(buffer.prefix(count), to: output)
+            offset += off_t(count)
+        }
+    }
+
+    private func writeAll(_ bytes: ArraySlice<UInt8>, to output: Int32) throws {
+        try bytes.withUnsafeBytes { buffer in
+            guard let baseAddress = buffer.baseAddress else { return }
+            var offset = 0
+            while offset < buffer.count {
+                let count = Darwin.write(output, baseAddress.advanced(by: offset), buffer.count - offset)
+                guard count >= 0 else {
+                    if errno == EINTR {
+                        continue
+                    }
+                    throw FixedPrivilegedCommandError.packageStagingFailed
+                }
+                offset += count
+            }
+        }
+    }
+}
+
 public enum FixedPrivilegedCommandError: Error, Equatable, Sendable {
     case commandFailed
     case invalidPackageDescriptor
     case launchFailed(Int32)
     case outputTooLarge
+    case packageStagingCleanupFailed
+    case packageStagingFailed
+    case unsafePackageStagingRoot
 }
