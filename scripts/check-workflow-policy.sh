@@ -5,10 +5,11 @@ script_dir="${0:A:h}"
 repo_root="${script_dir:h}"
 ci="$repo_root/.github/workflows/ci.yml"
 upstream="$repo_root/.github/workflows/upstream-monitor.yml"
+verification="$repo_root/.github/workflows/verify-compatibility-pr.yml"
 approved_upload_artifact_sha="043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
 errors=()
 
-for workflow in "$ci" "$upstream"; do
+for workflow in "$ci" "$upstream" "$verification"; do
     if [[ ! -f "$workflow" ]]; then
         errors+=("missing workflow: ${workflow#$repo_root/}")
     fi
@@ -19,7 +20,7 @@ if (( ${#errors} > 0 )); then
     exit 1
 fi
 
-for workflow in "$ci" "$upstream"; do
+for workflow in "$ci" "$upstream" "$verification"; do
     relative="${workflow#$repo_root/}"
     if ! /usr/bin/ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0))' "$workflow"; then
         errors+=("invalid YAML: $relative")
@@ -92,6 +93,19 @@ if ! /usr/bin/grep -Fq "actions/upload-artifact@$approved_upload_artifact_sha" "
 fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*issues:[[:space:]]*write([[:space:]]|$)' "$upstream"; then
     errors+=("upstream-monitor.yml must grant issue write access at job scope")
+fi
+if /usr/bin/grep -Eq 'contents:[[:space:]]*write|pull_request_target|auto-merge|merge_method' "$upstream"; then
+    errors+=("upstream monitor has forbidden compatibility mutation authority")
+fi
+if /usr/bin/grep -Eq 'Config/compatibility/catalog-v1.json|git[[:space:]]+(add|commit|push)' "$upstream"; then
+    errors+=("upstream monitor must not edit compatibility sources")
+fi
+if ! /usr/bin/grep -Eq '^[[:space:]]*pull-requests:[[:space:]]*read([[:space:]]|$)' "$verification"; then
+    errors+=("compatibility verification must have pull-request read access only")
+fi
+if ! /usr/bin/grep -Fq 'scripts/verify-physical-attestation.swift' "$verification" || \
+   ! /usr/bin/grep -Fq 'pulls.listReviews' "$verification"; then
+    errors+=("compatibility verification must check signed proof and reviewer approval")
 fi
 
 if (( ${#errors} > 0 )); then

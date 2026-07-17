@@ -1,0 +1,13 @@
+{
+  "tag_name": "1.1.0",
+  "html_url": "https://github.com/apple/container/releases/tag/1.1.0",
+  "published_at": "2026-06-18T17:00:00Z",
+  "assets": [
+    {
+      "name": "container-1.1.0-installer-signed.pkg",
+      "size": 419430400,
+      "browser_download_url": "https://github.com/apple/container/releases/download/1.1.0/container-1.1.0-installer-signed.pkg",
+      "digest": "sha256:0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714"
+    }
+  ]
+}

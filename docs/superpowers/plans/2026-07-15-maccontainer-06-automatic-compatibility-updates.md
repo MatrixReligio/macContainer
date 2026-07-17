@@ -444,27 +444,27 @@ git commit -m "feat: verify physical compatibility attestations"
 - Create: `scripts/inspect-upstream-release.swift`
 - Test: `Tests/ToolingTests/upstream-monitor-policy.bats`
 
-- [ ] **Step 1: Write failing workflow authority tests**
+- [x] **Step 1: Write failing workflow authority tests**
 
 The checker rejects workflow tokens with `contents: write`, direct catalog commits, auto-merge, compatibility labels, unsigned artifact acceptance, mutable action tags, and any path where monitor output changes `Config/compatibility/catalog-v1.json`.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `zsh Tests/ToolingTests/upstream-monitor-policy.bats`
 
 Expected: FAIL until workflows and inspector exist.
 
-- [ ] **Step 3: Implement metadata-only monitoring and PR verification**
+- [x] **Step 3: Implement metadata-only monitoring and PR verification**
 
 Monitor fetches official GitHub API release metadata, records asset name/size/digest independently, and creates/updates an issue titled `Compatibility candidate: Apple container ${RUNTIME_VERSION}` containing `Status: UNVERIFIED`; it cannot edit code. A human/Codex-created compatibility PR must include contract/package changes plus a signed attestation. Verification workflow checks schema, exact package identity, source diff, attestation signature/content, operation coverage, cleanup, and a reviewer approval requirement; it cannot synthesize the attestation.
 
-- [ ] **Step 4: Run workflow policy and dry-run fixture**
+- [x] **Step 4: Run workflow policy and dry-run fixture**
 
 Run: `zsh Tests/ToolingTests/upstream-monitor-policy.bats && swift scripts/inspect-upstream-release.swift --fixture Tests/Fixtures/github/apple-container-release-1.1.0.json`
 
 Expected: PASS and output includes `Status: UNVERIFIED` without modifying the worktree.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows scripts/inspect-upstream-release.swift Tests/ToolingTests Tests/Fixtures/github

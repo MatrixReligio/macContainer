@@ -41,6 +41,7 @@ done
 zsh Tests/ToolingTests/check-no-container-cli.bats
 zsh Tests/ToolingTests/check-app-icon.bats
 zsh Tests/ToolingTests/check-workflow-policy.bats
+zsh Tests/ToolingTests/upstream-monitor-policy.bats
 zsh Tests/ToolingTests/check-open-source-baseline.bats
 scripts/check-no-container-cli.sh
 scripts/check-workflow-policy.sh

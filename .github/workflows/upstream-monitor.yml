@@ -10,62 +10,49 @@ permissions:
 
 jobs:
   inspect:
-    name: Record unreviewed upstream releases
+    name: Record unverified upstream release metadata
     runs-on: macos-26
     permissions:
       contents: read
       issues: write
     steps:
-      - name: Check out the embedded compatibility contract
+      - name: Check out the metadata inspector
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Create or refresh a draft compatibility issue
+      - name: Fetch metadata and independently hash the installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          metadata="$RUNNER_TEMP/apple-container-release.json"
+          package="$RUNNER_TEMP/apple-container-installer.pkg"
+          issue="$RUNNER_TEMP/apple-container-candidate.md"
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/repos/apple/container/releases/latest \
+            --output "$metadata"
+          asset_url="$(jq -er '.assets[] | select(.name | endswith("installer-signed.pkg")) | .browser_download_url' "$metadata" | head -1)"
+          [[ "$asset_url" == https://github.com/apple/container/releases/download/* ]]
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            "$asset_url" --output "$package"
+          swift scripts/inspect-upstream-release.swift \
+            --fixture "$metadata" \
+            --asset-file "$package" \
+            > "$issue"
+
+      - name: Create or refresh the unverified candidate issue
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const fs = require("node:fs");
-            const contractPath = "Sources/MCContracts/Resources/apple-container-1.1.0.json";
-            const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"));
-            const reviewed = [
-              contract.runtimeVersion.major,
-              contract.runtimeVersion.minor,
-              contract.runtimeVersion.patch,
-            ].join(".");
-            const { data: release } = await github.rest.repos.getLatestRelease({
-              owner: "apple",
-              repo: "container",
-            });
-            const upstream = release.tag_name.replace(/^v/, "");
-            core.summary.addHeading("Apple container release monitor");
-            core.summary.addTable([
-              [{ data: "Reviewed", header: true }, reviewed],
-              [{ data: "Latest upstream", header: true }, upstream],
-            ]);
-            if (upstream === reviewed) {
-              core.summary.addRaw("No compatibility review is required.");
-              await core.summary.write();
+            const body = fs.readFileSync(`${process.env.RUNNER_TEMP}/apple-container-candidate.md`, "utf8");
+            const title = body.split("\n", 1)[0];
+            if (!title.startsWith("Compatibility candidate: Apple container ")) {
+              core.setFailed("Inspector did not emit the required candidate title");
               return;
             }
-
-            const title = `[Draft compatibility] Review Apple container ${release.tag_name}`;
-            const assets = release.assets.length === 0
-              ? "- No release assets reported"
-              : release.assets.map((asset) =>
-                  `- ${asset.name}: ${asset.size} bytes, ${asset.browser_download_url}`
-                ).join("\n");
-            const body = [
-              "An Apple container release newer than the embedded reviewed contract was detected.",
-              "",
-              `- Embedded reviewed version: ${reviewed}`,
-              `- Upstream tag: ${release.tag_name}`,
-              `- Published: ${release.published_at}`,
-              `- Release: ${release.html_url}`,
-              "",
-              "Release assets:",
-              assets,
-              "",
-              "This issue is an intake record only. Do not enable, install, or mark this version compatible until the full compatibility review and test matrix pass.",
-            ].join("\n");
             const issues = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -89,5 +76,3 @@ jobs:
                 body,
               });
             }
-            core.summary.addRaw(`Recorded ${release.tag_name} for explicit review.`);
-            await core.summary.write();

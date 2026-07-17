@@ -1,0 +1,78 @@
+name: Verify compatibility promotion PR
+
+on:
+  pull_request:
+    paths:
+      - "Config/compatibility/**"
+      - "Sources/MCCompatibility/**"
+      - "Sources/MCContracts/**"
+      - "Sources/MCSystemLifecycle/Package/**"
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify:
+    name: Verify reviewed package and physical proof
+    if: github.event.pull_request.draft == false
+    runs-on: macos-26
+    steps:
+      - name: Require at least one approving reviewer
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const latest = new Map();
+            for (const review of reviews) {
+              if (review.user?.login) latest.set(review.user.login, review.state);
+            }
+            if (![...latest.values()].includes("APPROVED")) {
+              core.setFailed("Compatibility promotion requires an approving review");
+            }
+
+      - name: Check out the proposed source exactly
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Require catalog, implementation, and signed proof changes together
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$RUNNER_TEMP/compatibility-changed.txt"
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > "$changed"
+          grep -Fxq 'Config/compatibility/catalog-v1.json' "$changed"
+          grep -Eq '^Config/compatibility/attestations/.+\.json$' "$changed"
+          grep -Eq '^Sources/(MCCompatibility|MCContracts|MCSystemLifecycle/Package)/' "$changed"
+
+      - name: Verify every changed signed physical attestation
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r attestation; do
+            [[ -n "$attestation" ]] || continue
+            expectations="${attestation%.json}.expectations.json"
+            test -f "$expectations"
+            swift scripts/verify-physical-attestation.swift \
+              "$attestation" \
+              --expectations "$expectations"
+            count=$((count + 1))
+          done < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'Config/compatibility/attestations/*.json' | grep -v '\.expectations\.json$')
+          test "$count" -gt 0
+
+      - name: Run complete immutable repository gates
+        run: scripts/check-repository.sh

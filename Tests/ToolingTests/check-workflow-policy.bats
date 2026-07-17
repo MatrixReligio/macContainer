@@ -9,6 +9,7 @@ mkdir -p "$fixture/scripts" "$fixture/.github/workflows"
 cp "$repo_root/scripts/check-workflow-policy.sh" "$fixture/scripts/"
 cp "$repo_root/.github/workflows/ci.yml" "$fixture/.github/workflows/"
 cp "$repo_root/.github/workflows/upstream-monitor.yml" "$fixture/.github/workflows/"
+cp "$repo_root/.github/workflows/verify-compatibility-pr.yml" "$fixture/.github/workflows/"
 
 approved_upload_artifact='actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1'
 if ! /usr/bin/grep -Fq "$approved_upload_artifact" "$fixture/.github/workflows/ci.yml"; then
