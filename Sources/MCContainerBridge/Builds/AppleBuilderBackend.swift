@@ -16,13 +16,22 @@ public enum AppleBuilderBackendError: Error, Equatable, Sendable {
 public struct AppleBuilderBackend: BuilderBackend, Sendable {
     public static let identifier = Builder.builderContainerId
 
-    private let client: ContainerClient
+    private let makeClient: @Sendable () -> ContainerClient
 
-    public init(client: ContainerClient = ContainerClient()) {
-        self.client = client
+    public init() {
+        makeClient = { ContainerClient() }
+    }
+
+    public init(client: ContainerClient) {
+        makeClient = { client }
+    }
+
+    init(makeClient: @escaping @Sendable () -> ContainerClient) {
+        self.makeClient = makeClient
     }
 
     public func start(resources: RuntimeResources) async throws -> BuilderSummary {
+        let client = makeClient()
         guard resources.cpuCount > 0,
               resources.memoryBytes > 0,
               resources.diskBytes.map({ $0 > 0 }) ?? true
@@ -49,8 +58,8 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
                 resources: resources,
                 systemConfiguration: systemConfiguration
             ):
-                try await bootstrap()
-                return try await status()
+                try await bootstrap(client: client)
+                return try await status(client: client)
             case .running:
                 try await client.stop(id: Self.identifier)
                 try await client.delete(id: Self.identifier)
@@ -61,10 +70,14 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
             }
         }
 
-        try await create(resources: resources, systemConfiguration: systemConfiguration)
+        try await create(
+            resources: resources,
+            systemConfiguration: systemConfiguration,
+            client: client
+        )
         do {
-            try await bootstrap()
-            return try await status()
+            try await bootstrap(client: client)
+            return try await status(client: client)
         } catch {
             try? await client.stop(id: Self.identifier)
             try? await client.delete(id: Self.identifier, force: true)
@@ -73,6 +86,10 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
     }
 
     public func status() async throws -> BuilderSummary {
+        try await status(client: makeClient())
+    }
+
+    private func status(client: ContainerClient) async throws -> BuilderSummary {
         do {
             return try await Self.summary(client.get(id: Self.identifier))
         } catch let error as ContainerizationError where error.code == .notFound {
@@ -81,6 +98,7 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
     }
 
     public func stop() async throws {
+        let client = makeClient()
         do {
             let existing = try await client.get(id: Self.identifier)
             if existing.status != .stopped {
@@ -92,6 +110,7 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
     }
 
     public func delete() async throws {
+        let client = makeClient()
         do {
             let existing = try await client.get(id: Self.identifier)
             if existing.status != .stopped {
@@ -105,7 +124,8 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
 
     private func create(
         resources: RuntimeResources,
-        systemConfiguration: ContainerSystemConfig
+        systemConfiguration: ContainerSystemConfig,
+        client: ContainerClient
     ) async throws {
         let platform = Platform(arch: "arm64", os: "linux", variant: "v8")
         let image = try await ClientImage.fetch(
@@ -181,7 +201,7 @@ public struct AppleBuilderBackend: BuilderBackend, Sendable {
         )
     }
 
-    private func bootstrap() async throws {
+    private func bootstrap(client: ContainerClient) async throws {
         let process = try await client.bootstrap(
             id: Self.identifier,
             stdio: [nil, nil, nil],

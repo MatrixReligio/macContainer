@@ -183,7 +183,9 @@ public struct SystemServiceController: Sendable {
         self.retryPolicy = retryPolicy
     }
 
-    public static func production() -> Self {
+    public static func production(
+        workloads: any WorkloadManaging = AppleWorkloadManager()
+    ) -> Self {
         let configuration = SystemServiceConfiguration.productionDefault
         return Self(
             apiServerURL: URL(fileURLWithPath: apiServerPath),
@@ -192,7 +194,7 @@ public struct SystemServiceController: Sendable {
             ),
             health: AppleHealthChecker(),
             machineAPI: AppleMachineAPIProbe(),
-            workloads: AppleWorkloadManager(),
+            workloads: workloads,
             configurationLoader: AppleSystemConfigurationLoader(),
             configuration: configuration
         )
@@ -568,15 +570,30 @@ public struct AppleSystemConfigurationLoader: SystemConfigurationLoading {
 }
 
 public struct AppleWorkloadManager: WorkloadManaging {
-    private let containers: ContainerClient
-    private let machines: MachineClient
+    private let makeContainers: @Sendable () -> ContainerClient
+    private let makeMachines: @Sendable () -> MachineClient
 
-    public init(containers: ContainerClient = ContainerClient(), machines: MachineClient = MachineClient()) {
-        self.containers = containers
-        self.machines = machines
+    public init() {
+        makeContainers = { ContainerClient() }
+        makeMachines = { MachineClient() }
+    }
+
+    public init(containers: ContainerClient, machines: MachineClient) {
+        makeContainers = { containers }
+        makeMachines = { machines }
+    }
+
+    init(
+        makeContainers: @escaping @Sendable () -> ContainerClient,
+        makeMachines: @escaping @Sendable () -> MachineClient
+    ) {
+        self.makeContainers = makeContainers
+        self.makeMachines = makeMachines
     }
 
     public func inventory() async throws -> WorkloadInventory {
+        let containers = makeContainers()
+        let machines = makeMachines()
         async let containerSnapshots = containers.list(filters: ContainerListFilters(status: .running))
         async let machineSnapshots = machines.list()
         return try await WorkloadInventory(
@@ -586,6 +603,8 @@ public struct AppleWorkloadManager: WorkloadManaging {
     }
 
     public func stopAll(_ inventory: WorkloadInventory, timeout: Duration) async throws {
+        let containers = makeContainers()
+        let machines = makeMachines()
         for id in inventory.activeMachineIDs.sorted() {
             try Task.checkCancellation()
             try await machines.stop(id: id)

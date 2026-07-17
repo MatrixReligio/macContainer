@@ -1,11 +1,33 @@
 import Foundation
-import MCContainerBridge
+@testable import MCContainerBridge
 import MCModel
 import Testing
 import TestSupport
 
 @Suite("Runtime bridge contracts")
 struct RuntimeBridgeContractTests {
+    @Test func `production bridge defers upstream clients until an operation needs them`() {
+        let counter = RuntimeClientConstructionCounter()
+        let factories = AppleRuntimeClientFactories(
+            container: {
+                counter.increment()
+                return .init()
+            },
+            machine: {
+                counter.increment()
+                return .init()
+            },
+            network: {
+                counter.increment()
+                return .init()
+            }
+        )
+
+        _ = AppleRuntimeBridge(clientFactories: factories)
+
+        #expect(counter.value == 0)
+    }
+
     @Test func `fake bridge can represent every domain`() async throws {
         let bridge = FakeRuntimeBridge()
 
@@ -71,5 +93,18 @@ struct RuntimeBridgeContractTests {
 
     private func roundTrip<Value: Codable>(_ value: Value) throws -> Value {
         try JSONDecoder().decode(Value.self, from: JSONEncoder().encode(value))
+    }
+}
+
+private final class RuntimeClientConstructionCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    var value: Int {
+        lock.withLock { count }
+    }
+
+    func increment() {
+        lock.withLock { count += 1 }
     }
 }

@@ -20,24 +20,80 @@ public struct AppleRuntimeBridge: RuntimeBridge, Sendable {
         kernelTemporaryRoot: URL = FileManager.default.temporaryDirectory
             .appending(path: "container.matrixreligio.com/kernel-downloads", directoryHint: .isDirectory)
     ) {
-        containers = ContainerAdapter(client: AppleContainerBackend(), coordinator: coordinator)
+        self.init(
+            coordinator: coordinator,
+            dnsBackend: dnsBackend,
+            kernelTemporaryRoot: kernelTemporaryRoot,
+            clientFactories: .production
+        )
+    }
+
+    init(clientFactories: AppleRuntimeClientFactories) {
+        self.init(
+            coordinator: OperationCoordinator(),
+            dnsBackend: AppleDNSBackend(),
+            kernelTemporaryRoot: FileManager.default.temporaryDirectory
+                .appending(path: "container.matrixreligio.com/kernel-downloads", directoryHint: .isDirectory),
+            clientFactories: clientFactories
+        )
+    }
+
+    private init(
+        coordinator: OperationCoordinator,
+        dnsBackend: any DNSBackend,
+        kernelTemporaryRoot: URL,
+        clientFactories: AppleRuntimeClientFactories
+    ) {
+        containers = ContainerAdapter(
+            client: AppleContainerBackend(makeClient: clientFactories.container),
+            coordinator: coordinator
+        )
         images = ImageAdapter(client: AppleImageBackend(), coordinator: coordinator)
-        builds = BuildAdapter(client: AppleBuildBackend(), coordinator: coordinator)
-        builders = BuilderAdapter(client: AppleBuilderBackend(), coordinator: coordinator)
-        networks = NetworkAdapter(client: AppleNetworkBackend(), coordinator: coordinator)
-        volumes = VolumeAdapter(client: AppleVolumeBackend(), coordinator: coordinator)
+        let builderBackend = AppleBuilderBackend(makeClient: clientFactories.container)
+        builds = BuildAdapter(
+            client: AppleBuildBackend(
+                makeClient: clientFactories.container,
+                builder: builderBackend
+            ),
+            coordinator: coordinator
+        )
+        builders = BuilderAdapter(client: builderBackend, coordinator: coordinator)
+        networks = NetworkAdapter(
+            client: AppleNetworkBackend(
+                makeNetworkClient: clientFactories.network,
+                makeContainerClient: clientFactories.container
+            ),
+            coordinator: coordinator
+        )
+        volumes = VolumeAdapter(
+            client: AppleVolumeBackend(makeContainerClient: clientFactories.container),
+            coordinator: coordinator
+        )
         registries = RegistryAdapter(
             verifier: AppleRegistryVerifier(),
             store: RegistryCredentialStore(),
             coordinator: coordinator
         )
         machines = MachineAdapter(
-            client: AppleMachineBackend(),
+            client: AppleMachineBackend(
+                makeMachineClient: clientFactories.machine,
+                makeContainerClient: clientFactories.container
+            ),
             capabilities: AppleMachineCapabilities(),
             kernels: AppleMachineKernelResolver(),
             coordinator: coordinator
         )
-        system = SystemAdapter(backend: AppleSystemRuntimeBackend(), coordinator: coordinator)
+        let workloads = AppleWorkloadManager(
+            makeContainers: clientFactories.container,
+            makeMachines: clientFactories.machine
+        )
+        system = SystemAdapter(
+            backend: AppleSystemRuntimeBackend(
+                controller: .production(workloads: workloads),
+                workloads: workloads
+            ),
+            coordinator: coordinator
+        )
         dns = DNSAdapter(backend: dnsBackend, coordinator: coordinator)
         kernel = KernelAdapter(
             backend: AppleKernelBackend(),
@@ -48,7 +104,10 @@ public struct AppleRuntimeBridge: RuntimeBridge, Sendable {
         )
         configuration = ConfigurationAdapter(
             storage: AtomicConfigurationStorage.production(),
-            runtime: AppleConfigurationRuntime(),
+            runtime: AppleConfigurationRuntime(
+                controller: .production(workloads: workloads),
+                workloads: workloads
+            ),
             codec: AppleContainerConfigurationCodec(),
             coordinator: coordinator
         )

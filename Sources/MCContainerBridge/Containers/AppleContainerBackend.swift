@@ -17,13 +17,22 @@ public enum AppleContainerBackendError: Error, Equatable, Sendable {
 }
 
 public struct AppleContainerBackend: ContainerBackend, Sendable {
-    private let client: ContainerClient
+    private let makeClient: @Sendable () -> ContainerClient
 
-    public init(client: ContainerClient = ContainerClient()) {
-        self.client = client
+    public init() {
+        makeClient = { ContainerClient() }
+    }
+
+    public init(client: ContainerClient) {
+        makeClient = { client }
+    }
+
+    init(makeClient: @escaping @Sendable () -> ContainerClient) {
+        self.makeClient = makeClient
     }
 
     public func create(_ plan: ContainerCreatePlan) async throws -> ContainerDetail {
+        let client = makeClient()
         guard plan.resources.cpuCount > 0,
               plan.resources.memoryBytes > 0,
               plan.resources.diskBytes.map({ $0 > 0 }) ?? true
@@ -104,14 +113,17 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func list() async throws -> [ContainerDetail] {
-        try await client.list(filters: ContainerListFilters.all.withoutMachines()).map(detail)
+        let client = makeClient()
+        return try await client.list(filters: ContainerListFilters.all.withoutMachines()).map(detail)
     }
 
     public func get(id: String) async throws -> ContainerDetail {
-        try await detail(client.get(id: id))
+        let client = makeClient()
+        return try await detail(client.get(id: id))
     }
 
     public func bootstrap(id: String, attach: Bool) async throws -> any ContainerProcessTransport {
+        let client = makeClient()
         let snapshot = try await client.get(id: id)
         let io = DirectProcessIO(
             terminal: snapshot.configuration.initProcess.terminal,
@@ -129,6 +141,7 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func stop(id: String, timeout: Duration?) async throws {
+        let client = makeClient()
         let seconds = timeout.map(timeoutSeconds) ?? ContainerStopOptions.default.timeoutInSeconds
         try await client.stop(
             id: id,
@@ -137,14 +150,17 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func kill(id: String, signal: String) async throws {
+        let client = makeClient()
         try await client.kill(id: id, signal: signal)
     }
 
     public func delete(id: String, force: Bool) async throws {
+        let client = makeClient()
         try await client.delete(id: id, force: force)
     }
 
     public func createProcess(_ plan: ContainerProcessPlan) async throws -> any ContainerProcessTransport {
+        let client = makeClient()
         guard let executable = plan.arguments.first else {
             throw AppleContainerBackendError.missingProcessArguments
         }
@@ -192,6 +208,7 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
         id: String,
         options: LogOptions
     ) async throws -> AsyncThrowingStream<LogRecord, any Error> {
+        let client = makeClient()
         guard options.since == nil else {
             throw AppleContainerBackendError.unsupportedLogSinceFilter
         }
@@ -206,6 +223,7 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func stats(id: String) async throws -> BackendContainerStats {
+        let client = makeClient()
         let stats = try await client.stats(id: id)
         return BackendContainerStats(
             id: id,
@@ -218,6 +236,7 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func copyIn(id: String, source: URL, destination: String) async throws {
+        let client = makeClient()
         try await client.copyIn(
             id: id,
             source: source.path,
@@ -227,6 +246,7 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func copyOut(id: String, source: String, destination: URL) async throws {
+        let client = makeClient()
         try await client.copyOut(
             id: id,
             source: source,
@@ -236,11 +256,13 @@ public struct AppleContainerBackend: ContainerBackend, Sendable {
     }
 
     public func export(id: String, destination: URL) async throws {
+        let client = makeClient()
         try await client.export(id: id, archive: destination)
     }
 
     public func diskUsage(id: String) async throws -> Int64 {
-        try await Int64(clamping: client.diskUsage(id: id))
+        let client = makeClient()
+        return try await Int64(clamping: client.diskUsage(id: id))
     }
 
     private func directMounts(_ plan: ContainerCreatePlan) throws -> [Filesystem] {

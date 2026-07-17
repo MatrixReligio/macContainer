@@ -4,10 +4,18 @@ import Foundation
 import MCModel
 
 public struct AppleVolumeBackend: VolumeBackend, Sendable {
-    private let containerClient: ContainerClient
+    private let makeContainerClient: @Sendable () -> ContainerClient
 
-    public init(containerClient: ContainerClient = ContainerClient()) {
-        self.containerClient = containerClient
+    public init() {
+        makeContainerClient = { ContainerClient() }
+    }
+
+    public init(containerClient: ContainerClient) {
+        makeContainerClient = { containerClient }
+    }
+
+    init(makeContainerClient: @escaping @Sendable () -> ContainerClient) {
+        self.makeContainerClient = makeContainerClient
     }
 
     public func create(_ request: VolumeCreateRequest) async throws -> VolumeDetail {
@@ -24,6 +32,7 @@ public struct AppleVolumeBackend: VolumeBackend, Sendable {
     }
 
     public func prune() async throws -> PruneResult {
+        let containerClient = makeContainerClient()
         let volumes = try await ClientVolume.list()
         let containers = try await containerClient.list()
         let inUse = Set(

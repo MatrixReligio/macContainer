@@ -13,18 +13,29 @@ public enum AppleMachineBackendError: Error, Equatable, Sendable {
 }
 
 public struct AppleMachineBackend: MachineBackend, Sendable {
-    private let machineClient: MachineClient
-    private let containerClient: ContainerClient
+    private let makeMachineClient: @Sendable () -> MachineClient
+    private let makeContainerClient: @Sendable () -> ContainerClient
 
-    public init(
-        machineClient: MachineClient = MachineClient(),
-        containerClient: ContainerClient = ContainerClient()
+    public init() {
+        makeMachineClient = { MachineClient() }
+        makeContainerClient = { ContainerClient() }
+    }
+
+    public init(machineClient: MachineClient, containerClient: ContainerClient) {
+        makeMachineClient = { machineClient }
+        makeContainerClient = { containerClient }
+    }
+
+    init(
+        makeMachineClient: @escaping @Sendable () -> MachineClient,
+        makeContainerClient: @escaping @Sendable () -> ContainerClient
     ) {
-        self.machineClient = machineClient
-        self.containerClient = containerClient
+        self.makeMachineClient = makeMachineClient
+        self.makeContainerClient = makeContainerClient
     }
 
     public func create(_ plan: MachineCreatePlan) async throws -> MachineDetail {
+        let machineClient = makeMachineClient()
         let configuration: ContainerSystemConfig = try await ConfigurationLoader.load()
         var management = Flags.MachineManagement()
         management.arch = Arch.hostArchitecture().rawValue
@@ -54,10 +65,12 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
     }
 
     public func boot(id: String) async throws -> MachineDetail {
-        try await detail(machineClient.boot(id: id))
+        let machineClient = makeMachineClient()
+        return try await detail(machineClient.boot(id: id))
     }
 
     public func list() async throws -> [MachineDetail] {
+        let machineClient = makeMachineClient()
         let snapshots = try await machineClient.list()
         let defaultID = try await machineClient.getDefault()
         return snapshots.map {
@@ -66,10 +79,12 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
     }
 
     public func inspect(id: String) async throws -> MachineDetail {
-        try await detail(machineClient.inspect(id: id))
+        let machineClient = makeMachineClient()
+        return try await detail(machineClient.inspect(id: id))
     }
 
     public func set(id: String, plan: MachineSetPlan) async throws -> MachineDetail {
+        let machineClient = makeMachineClient()
         let snapshot = try await machineClient.inspect(id: id)
         var updates: [String: String] = [:]
         if let resources = plan.resources {
@@ -90,6 +105,7 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
     }
 
     public func setDefault(id: String) async throws {
+        let machineClient = makeMachineClient()
         try await machineClient.setDefault(id: id)
     }
 
@@ -97,6 +113,7 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
         id: String,
         options: LogOptions
     ) async throws -> AsyncThrowingStream<LogRecord, any Error> {
+        let machineClient = makeMachineClient()
         guard options.since == nil else {
             throw AppleMachineBackendError.unsupportedLogSinceFilter
         }
@@ -111,10 +128,12 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
     }
 
     public func stop(id: String, force _: Bool) async throws {
+        let machineClient = makeMachineClient()
         try await machineClient.stop(id: id)
     }
 
     public func delete(id: String, force: Bool) async throws {
+        let machineClient = makeMachineClient()
         if force {
             let snapshot = try await machineClient.inspect(id: id)
             if snapshot.status != .stopped {
@@ -125,6 +144,8 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
     }
 
     public func createProcess(_ plan: MachineProcessPlan) async throws -> any ContainerProcessTransport {
+        let machineClient = makeMachineClient()
+        let containerClient = makeContainerClient()
         let snapshot = try await machineClient.inspect(id: plan.machineID)
         guard snapshot.status == .running else {
             throw AppleMachineBackendError.machineNotRunning(plan.machineID)
@@ -173,6 +194,7 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
     }
 
     private func detail(_ snapshot: MachineSnapshot) async -> MachineDetail {
+        let machineClient = makeMachineClient()
         let defaultID = try? await machineClient.getDefault()
         return Self.detail(snapshot, defaultID: defaultID)
     }

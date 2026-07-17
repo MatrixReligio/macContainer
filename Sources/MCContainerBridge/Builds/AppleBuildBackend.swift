@@ -19,16 +19,32 @@ public enum AppleBuildBackendError: Error, Equatable, Sendable {
 }
 
 public struct AppleBuildBackend: BuildBackend, Sendable {
-    private let client: ContainerClient
+    private let makeClient: @Sendable () -> ContainerClient
     private let builder: any BuilderBackend
     private let port: UInt32
 
+    public init() {
+        makeClient = { ContainerClient() }
+        builder = AppleBuilderBackend()
+        port = 8088
+    }
+
     public init(
-        client: ContainerClient = ContainerClient(),
+        client: ContainerClient,
         builder: any BuilderBackend = AppleBuilderBackend(),
         port: UInt32 = 8088
     ) {
-        self.client = client
+        makeClient = { client }
+        self.builder = builder
+        self.port = port
+    }
+
+    init(
+        makeClient: @escaping @Sendable () -> ContainerClient,
+        builder: any BuilderBackend,
+        port: UInt32 = 8088
+    ) {
+        self.makeClient = makeClient
         self.builder = builder
         self.port = port
     }
@@ -117,6 +133,7 @@ public struct AppleBuildBackend: BuildBackend, Sendable {
         repeat {
             try Task.checkCancellation()
             do {
+                let client = makeClient()
                 let socket = try await client.dial(id: AppleBuilderBackend.identifier, port: port)
                 let group = MultiThreadedEventLoopGroup(numberOfThreads: max(1, System.coreCount))
                 do {

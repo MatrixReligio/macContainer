@@ -11,18 +11,29 @@ public enum AppleNetworkBackendError: Error, Equatable, Sendable {
 }
 
 public struct AppleNetworkBackend: NetworkBackend, Sendable {
-    private let networkClient: NetworkClient
-    private let containerClient: ContainerClient
+    private let makeNetworkClient: @Sendable () -> NetworkClient
+    private let makeContainerClient: @Sendable () -> ContainerClient
 
-    public init(
-        networkClient: NetworkClient = NetworkClient(),
-        containerClient: ContainerClient = ContainerClient()
+    public init() {
+        makeNetworkClient = { NetworkClient() }
+        makeContainerClient = { ContainerClient() }
+    }
+
+    public init(networkClient: NetworkClient, containerClient: ContainerClient) {
+        makeNetworkClient = { networkClient }
+        makeContainerClient = { containerClient }
+    }
+
+    init(
+        makeNetworkClient: @escaping @Sendable () -> NetworkClient,
+        makeContainerClient: @escaping @Sendable () -> ContainerClient
     ) {
-        self.networkClient = networkClient
-        self.containerClient = containerClient
+        self.makeNetworkClient = makeNetworkClient
+        self.makeContainerClient = makeContainerClient
     }
 
     public func create(_ request: NetworkCreateRequest) async throws -> NetworkDetail {
+        let networkClient = makeNetworkClient()
         guard request.gateway == nil else {
             throw AppleNetworkBackendError.customGatewayUnsupported
         }
@@ -40,6 +51,7 @@ public struct AppleNetworkBackend: NetworkBackend, Sendable {
     }
 
     public func delete(id: String) async throws {
+        let networkClient = makeNetworkClient()
         let network = try await networkClient.get(id: id)
         guard !network.isBuiltin else {
             throw AppleNetworkBackendError.protectedBuiltInNetwork
@@ -48,6 +60,8 @@ public struct AppleNetworkBackend: NetworkBackend, Sendable {
     }
 
     public func prune() async throws -> PruneResult {
+        let networkClient = makeNetworkClient()
+        let containerClient = makeContainerClient()
         let containers = try await containerClient.list()
         let networks = try await networkClient.list()
         let inUse = Set(
@@ -72,11 +86,13 @@ public struct AppleNetworkBackend: NetworkBackend, Sendable {
     }
 
     public func list() async throws -> [NetworkDetail] {
-        try await networkClient.list().map(Self.detail)
+        let networkClient = makeNetworkClient()
+        return try await networkClient.list().map(Self.detail)
     }
 
     public func inspect(id: String) async throws -> NetworkDetail {
-        try await Self.detail(networkClient.get(id: id))
+        let networkClient = makeNetworkClient()
+        return try await Self.detail(networkClient.get(id: id))
     }
 
     private static func detail(_ network: NetworkResource) -> NetworkDetail {
