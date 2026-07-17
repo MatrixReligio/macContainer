@@ -78,7 +78,7 @@ public protocol RuntimeReleaseDiscovering: Sendable {
 }
 
 public protocol RuntimeUpdateCoordinating: Sendable {
-    func process(_ candidate: RuntimeReleaseCandidate) async -> RuntimeUpdateState
+    func process(_ candidate: RuntimeReleaseCandidate) async throws -> RuntimeUpdateState
 }
 
 public protocol UpdateAgentPresenting: Sendable {
@@ -159,7 +159,7 @@ public actor UpdateAgentService {
             persisted.consecutiveOfflineFailures = 0
             persisted.nextAllowedCheck = nil
             try await stateStore.save(persisted)
-            let state = await coordinator.process(candidate)
+            let state = try await coordinator.process(candidate)
             try Task.checkCancellation()
             await present(state)
             return .state(state)

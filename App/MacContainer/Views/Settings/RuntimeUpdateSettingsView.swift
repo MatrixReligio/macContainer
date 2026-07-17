@@ -1,15 +1,10 @@
 import MCAppCore
+import MCCompatibility
+import MCSystemLifecycle
 import SwiftUI
 
 struct RuntimeUpdateSettingsView: View {
-    private enum UpdatePhase {
-        case ready
-        case postflightPending
-        case rolledBack
-    }
-
     @Environment(AppState.self) private var state
-    @State private var phase: UpdatePhase = .ready
 
     let isAuditMode: Bool
 
@@ -39,13 +34,7 @@ struct RuntimeUpdateSettingsView: View {
                 .foregroundStyle(Color(nsColor: .labelColor))
 
                 Divider()
-                Label {
-                    Text("Compatible update: 1.1.0")
-                        .foregroundStyle(Color(nsColor: .labelColor))
-                } icon: {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
-                }
+                updateStatus
                 Label {
                     Text("Unknown version 1.2.0 is held — no automatic install")
                         .foregroundStyle(Color(nsColor: .labelColor))
@@ -57,32 +46,47 @@ struct RuntimeUpdateSettingsView: View {
                     .font(.caption.monospaced())
 
                 HStack {
-                    Button("Check now") {}
-                        .accessibilityIdentifier("check-runtime-update")
-                    Button("Install compatible update") {
-                        phase = .postflightPending
+                    Button("Check now") {
+                        state.runtimeUpdateState = .checking
                     }
-                    .accessibilityIdentifier("install-compatible-update")
+                        .accessibilityIdentifier("check-runtime-update")
+                    if case .available = state.runtimeUpdateState {
+                        Button("Install compatible update") {
+                            state.runtimeUpdateState = .installing(.targetProbes)
+                        }
+                        .accessibilityIdentifier("install-compatible-update")
+                    }
                 }
 
-                if phase == .postflightPending {
-                    Label("Upgrade installed; full compatibility postflight pending", systemImage: "hourglass")
-                    if isAuditMode {
+                if isAuditMode {
+                    switch state.runtimeUpdateState {
+                    case .checking:
+                        Button("Complete update check") {
+                            state.runtimeUpdateState = .available(version: "1.1.0")
+                        }
+                        .accessibilityIdentifier("complete-update-check")
+                    case .installing:
                         Button("Simulate failed postflight") {
-                            phase = .rolledBack
+                            state.runtimeUpdateState = .rolledBack(
+                                previousVersion: "1.0.0",
+                                failedProbeID: .images
+                            )
                         }
                         .accessibilityIdentifier("simulate-upgrade-failure")
+                        Button("Simulate rollback failure") {
+                            state.runtimeUpdateState = .recoveryRequired(
+                                code: "rollback.previous-probes.run"
+                            )
+                        }
+                        .accessibilityIdentifier("simulate-update-recovery")
+                    case .rolledBack, .recoveryRequired, .held, .pending:
+                        Button("Retry after review") {
+                            state.runtimeUpdateState = .available(version: "1.1.0")
+                        }
+                        .accessibilityIdentifier("retry-runtime-update")
+                    case .available, .downloading, .upToDate:
+                        EmptyView()
                     }
-                } else if phase == .rolledBack {
-                    Label(
-                        "Compatibility failed — rolled back to 1.0.0",
-                        systemImage: "arrow.uturn.backward.circle.fill"
-                    )
-                    .foregroundStyle(Color(nsColor: .labelColor))
-                    Button("Retry after review") {
-                        phase = .ready
-                    }
-                    .accessibilityIdentifier("retry-runtime-update")
                 }
 
                 Text("Administrator approval appears only after download, signature verification, and review.")
@@ -91,6 +95,82 @@ struct RuntimeUpdateSettingsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatus: some View {
+        switch state.runtimeUpdateState {
+        case .checking:
+            status("Checking for reviewed runtime updates", symbol: "arrow.triangle.2.circlepath")
+        case let .available(version):
+            status("Compatible update: \(version)", symbol: "checkmark.seal.fill", color: .green)
+        case let .downloading(version):
+            status("Downloading verified runtime \(version)", symbol: "arrow.down.circle")
+        case let .pending(reason):
+            status(pendingText(reason), symbol: "clock.badge.exclamationmark", color: .orange)
+        case let .installing(stage):
+            if stage == .targetProbes {
+                status("Upgrade installed; full compatibility postflight pending", symbol: "hourglass")
+            } else {
+                status("Installing approved runtime — \(stage.rawValue)", symbol: "gearshape.2")
+            }
+        case let .held(reason):
+            status(heldText(reason), symbol: "pause.circle.fill", color: .orange)
+        case let .rolledBack(previousVersion, failedProbeID):
+            VStack(alignment: .leading, spacing: 4) {
+                status(
+                    "Compatibility failed — rolled back to \(previousVersion)",
+                    symbol: "arrow.uturn.backward.circle.fill"
+                )
+                if let failedProbeID {
+                    Text("Failed compatibility probe: \(failedProbeID.rawValue)")
+                        .font(.caption.monospaced())
+                }
+            }
+        case let .recoveryRequired(code):
+            status(
+                "Rollback could not restore a verified runtime — recovery required (\(code))",
+                symbol: "exclamationmark.triangle.fill",
+                color: .red
+            )
+        case .upToDate:
+            status("Runtime is up to date and compatibility verified", symbol: "checkmark.circle.fill", color: .green)
+        }
+    }
+
+    private func status(
+        _ text: String,
+        symbol: String,
+        color: Color = Color(nsColor: .labelColor)
+    ) -> some View {
+        Label {
+            Text(text).foregroundStyle(Color(nsColor: .labelColor))
+        } icon: {
+            Image(systemName: symbol).foregroundStyle(color)
+        }
+        .accessibilityIdentifier("runtime-update-status")
+    }
+
+    private func pendingText(_ reason: PendingReason) -> String {
+        switch reason {
+        case .workActive: "Update pending until containers, machines, and builds are idle"
+        case .authorizationRequired: "Update pending administrator authorization"
+        }
+    }
+
+    private func heldText(_ reason: HoldReason) -> String {
+        switch reason {
+        case .unknownRuntime: "Update held — runtime version has not been reviewed"
+        case .appVersionOutsideRange: "Update held — this app version is outside the reviewed range"
+        case .unsupportedHost: "Update held — this Mac does not meet the reviewed host requirements"
+        case .packageIdentityMismatch: "Update held — package identity verification failed"
+        case .previousRollback: "Update held — this runtime previously failed compatibility checks"
+        case .explicitConsentRequired: "Update held — storage migration requires explicit consent"
+        case .missingPhysicalAttestation: "Update held — physical compatibility proof is missing"
+        case .catalogInvalid: "Update held — embedded compatibility catalog is invalid"
+        case .rollbackUnavailable: "Update held — a verified rollback point cannot be created"
+        case .preflightFailed: "Update held — compatibility preflight failed"
         }
     }
 }

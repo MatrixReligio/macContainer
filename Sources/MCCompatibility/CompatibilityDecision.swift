@@ -15,6 +15,8 @@ public enum HoldReason: String, Codable, Equatable, Sendable {
     case explicitConsentRequired
     case missingPhysicalAttestation
     case catalogInvalid
+    case rollbackUnavailable
+    case preflightFailed
 }
 
 public struct CompatibilityDecisionInput: Sendable {

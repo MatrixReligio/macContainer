@@ -343,21 +343,21 @@ git commit -m "feat: check and stage compatible runtime updates"
 - Test: `Tests/MCSystemLifecycleTests/AutomaticUpgradeTests.swift`
 - Test: `Tests/MacContainerUITests/AutomaticUpdateUITests.swift`
 
-- [ ] **Step 1: Write failing end-to-end fake transaction tests**
+- [x] **Step 1: Write failing end-to-end fake transaction tests**
 
 Scenarios: compatible idle success, busy pending then idle, unknown hold, incompatible host hold, bad package rejection, preflight failure, work appears at final check, install failure rollback, postflight domain failure rollback, rollback-probe failure recovery-required, user cancellation before stop, and no cancellation after irreversible installer stage.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter AutomaticUpgradeTests`
 
 Expected: FAIL because the coordinator does not yet compose all components.
 
-- [ ] **Step 3: Implement the guarded composition**
+- [x] **Step 3: Implement the guarded composition**
 
 Order is immutable: metadata → catalog decision → package verification → policy → rollback availability → baseline → all preflight probes → final idle check → upgrade transaction → all postflight probes → success. A failed target is persisted blocked before notifying. UI state exposes `checking`, `available`, `downloading`, `pending(reason)`, `installing(phase)`, `held(reason)`, `rolledBack(report)`, `recoveryRequired(report)`, and `upToDate`; it never reduces these to a misleading boolean.
 
-- [ ] **Step 4: Run automatic update unit/UI tests**
+- [x] **Step 4: Run automatic update unit/UI tests**
 
 Run:
 
@@ -368,7 +368,7 @@ xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:Ma
 
 Expected: PASS for every state/transition and accessible localized status.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Updates Sources/MCSystemLifecycle/Upgrade Sources/MCAppCore Tests/MCSystemLifecycleTests/AutomaticUpgradeTests.swift Tests/MacContainerUITests/AutomaticUpdateUITests.swift

@@ -1,4 +1,5 @@
 import Observation
+import MCSystemLifecycle
 import SwiftUI
 
 public enum AppRoute: String, CaseIterable, Codable, Sendable {
@@ -49,6 +50,7 @@ public final class AppState {
     public var activityCenterPresented = false
     public var simpleModePresented = false
     public var health: HealthState = .checking
+    public var runtimeUpdateState: RuntimeUpdateState
     public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter
     public let environment: AppEnvironment
@@ -57,5 +59,8 @@ public final class AppState {
         self.environment = environment
         activities = ActivityCenter(now: environment.now, makeID: environment.makeID)
         health = environment.mode == .fakeRuntime ? .healthy : .checking
+        runtimeUpdateState = environment.mode == .fakeRuntime
+            ? .available(version: "1.1.0")
+            : .checking
     }
 }
