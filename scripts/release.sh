@@ -77,7 +77,8 @@ dist="$REPO_ROOT/dist"
 /bin/mkdir -p "$artifacts" "$dist"
 
 xcodebuild -quiet -project MacContainer.xcodeproj -scheme MacContainer -configuration Release \
-    -archivePath "$archive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual \
+    -archivePath "$archive" -derivedDataPath "$artifacts/DerivedData" \
+    DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY" archive
 app="$archive/Products/Applications/MacContainer.app"
 "$SCRIPT_DIR/sign.sh" "$app"
