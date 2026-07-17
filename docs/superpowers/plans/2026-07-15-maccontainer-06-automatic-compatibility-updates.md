@@ -190,7 +190,7 @@ git commit -m "feat: hold unverified runtime versions"
 - Create: one focused probe file for Health, Containers, Images, Builder, Networks, Volumes, Registries, Machines, DiskUsage, Configuration, Capabilities
 - Test: `Tests/MCCompatibilityTests/ProbeRegistryTests.swift`
 
-- [ ] **Step 1: Write failing probe parity/aggregation tests**
+- [x] **Step 1: Write failing probe parity/aggregation tests**
 
 ```swift
 @Test func baselineContainsEveryRequiredDomainExactlyOnce() {
@@ -206,13 +206,13 @@ git commit -m "feat: hold unverified runtime versions"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ProbeRegistryTests`
 
 Expected: FAIL because probe types are undefined.
 
-- [ ] **Step 3: Implement the eleven-probe registry**
+- [x] **Step 3: Implement the eleven-probe registry**
 
 ```swift
 public enum ProbeID: String, Codable, CaseIterable, Sendable {
@@ -228,13 +228,13 @@ public protocol CompatibilityProbe: Sendable {
 
 Each production probe uses only its direct bridge protocol and performs a bounded read/decode/invariant check. Registries enumerate metadata without secret material. Capabilities compares the embedded contract/capability set with enabled UI operation IDs. The registry runs independent read probes concurrently with a 20-second global timeout, returns every result in stable enum order, cancels remaining tasks at timeout, and treats skipped/unverifiable as incompatible.
 
-- [ ] **Step 4: Run probe tests including malformed upstream fixtures**
+- [x] **Step 4: Run probe tests including malformed upstream fixtures**
 
 Run: `swift test --filter ProbeRegistryTests`
 
 Expected: PASS for success, one/multiple failures, timeout, cancellation, malformed data, missing capability, and secret-redaction cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCCompatibility/Probes Tests/MCCompatibilityTests/ProbeRegistryTests.swift
