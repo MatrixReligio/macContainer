@@ -6,7 +6,10 @@ source "${0:A:h}/release-common.sh"
 mode="$1"
 artifact="${2:A}"
 profile="${MACCONTAINER_NOTARY_PROFILE:-maccontainer-notary}"
-[[ "$profile" == "maccontainer-notary" ]] || die "notary profile must be maccontainer-notary"
+if [[ "$profile" != "maccontainer-notary" ]]; then
+    [[ "${MC_ALLOW_SHARED_LOCAL_NOTARY_PROFILE:-0}" == "1" && "$profile" == "gamemaster-notary" ]] || \
+        die "notary profile must be maccontainer-notary"
+fi
 notary_arguments=(--keychain-profile "$profile")
 if [[ -n "${MACCONTAINER_NOTARY_KEYCHAIN:-}" ]]; then
     require_file "$MACCONTAINER_NOTARY_KEYCHAIN"
