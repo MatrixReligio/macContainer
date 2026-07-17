@@ -364,81 +364,6 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
         }
     }
 
-    private static func resolverText(for request: DNSDomainRequest) -> String {
-        let port = request.redirectIPv4 == nil ? "2053" : "1053"
-        let options = request.redirectIPv4.map { "options localhost:\($0)" } ?? ""
-        return [
-            "domain \(request.name)",
-            "search \(request.name)",
-            "nameserver 127.0.0.1",
-            "port \(port)",
-            options
-        ].joined(separator: "\n")
-    }
-
-    private static func redirectAddress(in resolver: String) -> String? {
-        let prefix = "options localhost:"
-        return resolver.components(separatedBy: .newlines).lazy.compactMap { line in
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard trimmed.hasPrefix(prefix) else { return nil }
-            return String(trimmed.dropFirst(prefix.count))
-        }.first
-    }
-
-    private static func addingAppleAnchor(to content: String, anchorPath: String) -> String {
-        let keywords = ["scrub-anchor", "nat-anchor", "rdr-anchor", "dummynet-anchor", "anchor", "load anchor"]
-        var lines = content.components(separatedBy: .newlines)
-        for index in 0 ..< keywords.count - 1 {
-            let required = "\(keywords[index]) \"com.apple.container\""
-            guard !lines.contains(required) else { continue }
-            let insertion = lines.firstIndex { line in
-                keywords[index...].contains { line.hasPrefix($0) }
-            } ?? max(0, lines.endIndex - 1)
-            lines.insert(required, at: insertion)
-        }
-        let load = "load anchor \"com.apple.container\" from \"\(anchorPath)\""
-        if !lines.contains(load) {
-            lines.insert(load, at: max(0, lines.endIndex - 1))
-        }
-        return lines.joined(separator: "\n")
-    }
-
-    private static func removingAppleAnchor(from content: String, anchorPath: String) -> String {
-        let exact = Set([
-            "scrub-anchor \"com.apple.container\"",
-            "nat-anchor \"com.apple.container\"",
-            "rdr-anchor \"com.apple.container\"",
-            "dummynet-anchor \"com.apple.container\"",
-            "anchor \"com.apple.container\"",
-            "load anchor \"com.apple.container\" from \"\(anchorPath)\""
-        ])
-        return content.components(separatedBy: .newlines)
-            .filter { !exact.contains($0) }
-            .joined(separator: "\n")
-    }
-
-    private func openTrustedDirectory(_ directory: URL) throws -> Int32 {
-        let resolved = Self.trustedDirectoryURL(directory)
-        let descriptor = Darwin.open(resolved.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
-        guard descriptor >= 0 else { throw posixError() }
-        do {
-            try validateDirectory(descriptor, owner: requiredOwner)
-            return descriptor
-        } catch {
-            Darwin.close(descriptor)
-            throw error
-        }
-    }
-
-    static func trustedDirectoryURL(_ directory: URL) -> URL {
-        let standardized = directory.standardizedFileURL
-        let path = standardized.path
-        if path == "/etc" || path.hasPrefix("/etc/") {
-            return URL(fileURLWithPath: "/private\(path)", isDirectory: true)
-        }
-        return standardized.resolvingSymlinksInPath()
-    }
-
     private func readManagedFile(named name: String, in directory: Int32) throws -> String? {
         guard try validateManagedFile(name, in: directory) else { return nil }
         let descriptor = Darwin.openat(directory, name, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
@@ -605,6 +530,114 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
 
     private func posixError() -> NSError {
         NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+    }
+}
+
+extension SystemPrivilegedHostMutator {
+    private func openTrustedDirectory(_ directory: URL) throws -> Int32 {
+        let resolved = Self.trustedDirectoryURL(directory)
+        let descriptor = Darwin.open(resolved.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        guard descriptor >= 0 else { throw posixError() }
+        do {
+            try validateDirectory(descriptor, owner: requiredOwner)
+            return descriptor
+        } catch {
+            Darwin.close(descriptor)
+            throw error
+        }
+    }
+
+    static func trustedDirectoryURL(_ directory: URL) -> URL {
+        let standardized = directory.standardizedFileURL
+        let path = standardized.path
+        if path == "/etc" || path.hasPrefix("/etc/") {
+            return URL(fileURLWithPath: "/private\(path)", isDirectory: true)
+        }
+        return standardized.resolvingSymlinksInPath()
+    }
+}
+
+private extension SystemPrivilegedHostMutator {
+    static func resolverText(for request: DNSDomainRequest) -> String {
+        let port = request.redirectIPv4 == nil ? "2053" : "1053"
+        let options = request.redirectIPv4.map { "options localhost:\($0)" } ?? ""
+        return [
+            "domain \(request.name)",
+            "search \(request.name)",
+            "nameserver 127.0.0.1",
+            "port \(port)",
+            options
+        ].joined(separator: "\n")
+    }
+
+    static func redirectAddress(in resolver: String) -> String? {
+        let prefix = "options localhost:"
+        return resolver.components(separatedBy: .newlines).lazy.compactMap { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix(prefix) else { return nil }
+            return String(trimmed.dropFirst(prefix.count))
+        }.first
+    }
+
+    static func addingAppleAnchor(to content: String, anchorPath: String) -> String {
+        let keywords = ["scrub-anchor", "nat-anchor", "rdr-anchor", "dummynet-anchor", "anchor", "load anchor"]
+        var lines = content.components(separatedBy: .newlines)
+        for index in 0 ..< keywords.count - 1 {
+            let required = "\(keywords[index]) \"com.apple.container\""
+            guard !lines.contains(required) else { continue }
+            let insertion = lines.firstIndex { line in
+                keywords[index...].contains { line.hasPrefix($0) }
+            } ?? max(0, lines.endIndex - 1)
+            lines.insert(required, at: insertion)
+        }
+        let load = "load anchor \"com.apple.container\" from \"\(anchorPath)\""
+        if !lines.contains(load) {
+            lines.insert(load, at: max(0, lines.endIndex - 1))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    static func removingAppleAnchor(from content: String, anchorPath: String) -> String {
+        let exact = Set([
+            "scrub-anchor \"com.apple.container\"",
+            "nat-anchor \"com.apple.container\"",
+            "rdr-anchor \"com.apple.container\"",
+            "dummynet-anchor \"com.apple.container\"",
+            "anchor \"com.apple.container\"",
+            "load anchor \"com.apple.container\" from \"\(anchorPath)\""
+        ])
+        return content.components(separatedBy: .newlines)
+            .filter { !exact.contains($0) }
+            .joined(separator: "\n")
+    }
+}
+
+public extension SystemPrivilegedHostMutator {
+    func removeEmptyResolverDirectory() throws {
+        let parentURL = Self.trustedDirectoryURL(resolverDirectory.deletingLastPathComponent())
+        let parent = Darwin.open(parentURL.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        guard parent >= 0 else { throw posixError() }
+        defer { Darwin.close(parent) }
+        try validateDirectory(parent, owner: requiredOwner)
+
+        let name = resolverDirectory.lastPathComponent
+        let directory = Darwin.openat(parent, name, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        if directory < 0, errno == ENOENT {
+            return
+        }
+        guard directory >= 0 else { throw posixError() }
+        defer { Darwin.close(directory) }
+        try validateDirectory(directory, owner: requiredOwner)
+        let names = try directoryEntryNames(directory).filter { $0 != "." && $0 != ".." }
+        guard names.isEmpty else { return }
+
+        guard Darwin.unlinkat(parent, name, AT_REMOVEDIR) == 0 else {
+            if errno == ENOTEMPTY || errno == EEXIST {
+                return
+            }
+            throw posixError()
+        }
+        guard Darwin.fsync(parent) == 0 else { throw posixError() }
     }
 }
 

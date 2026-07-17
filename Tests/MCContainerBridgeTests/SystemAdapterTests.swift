@@ -53,14 +53,14 @@ struct SystemAdapterTests {
         #expect(try await adapter.status() == .init(state: .stopped))
     }
 
-    @Test func `Apple runtime version normalizes the upstream release description`() throws {
+    @Test func `apple runtime version normalizes the upstream release description`() throws {
         #expect(try AppleSystemRuntimeBackend.semanticVersion(
             from: "container-apiserver version 1.1.0 (build: release, commit: abc123)"
         ) == "1.1.0")
         #expect(try AppleSystemRuntimeBackend.semanticVersion(from: "1.1.0") == "1.1.0")
     }
 
-    @Test func `Apple runtime version rejects malformed upstream output`() {
+    @Test func `apple runtime version rejects malformed upstream output`() {
         #expect(throws: SystemAdapterError.invalidRuntimeVersion("container-apiserver is current")) {
             try AppleSystemRuntimeBackend.semanticVersion(from: "container-apiserver is current")
         }

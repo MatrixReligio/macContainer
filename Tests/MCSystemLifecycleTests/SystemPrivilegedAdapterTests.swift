@@ -139,6 +139,7 @@ struct SystemPrivilegedAdapterTests {
         try adapter.forgetReceipt(identifier: "com.apple.container-installer")
         try adapter.writeResolver(.init(name: "default", nameservers: ["192.168.64.1"]))
         try adapter.removeResolver(name: "default")
+        try adapter.removeEmptyResolverDirectory()
         try adapter.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
         try adapter.deleteDNSDomain(name: "dev.example")
         try adapter.applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24"))
@@ -147,7 +148,7 @@ struct SystemPrivilegedAdapterTests {
         try adapter.removeKnownEmptyDirectories(manifestID: "apple-container-1.1.0")
 
         #expect(host.actions == [
-            "removePayload", "forgetReceipt", "writeResolver", "removeResolver",
+            "removePayload", "forgetReceipt", "writeResolver", "removeResolver", "removeEmptyResolverDirectory",
             "createDNSDomain", "deleteDNSDomain",
             "applyPacketFilter", "removePacketFilter", "auditPacketFilter", "removeKnownEmptyDirectories"
         ])
@@ -198,6 +199,10 @@ private final class RecordingPrivilegedHostMutator: PrivilegedHostMutating, @unc
 
     func removeResolver(name _: String) throws {
         actions.append("removeResolver")
+    }
+
+    func removeEmptyResolverDirectory() throws {
+        actions.append("removeEmptyResolverDirectory")
     }
 
     func createDNSDomain(_: DNSDomainRequest) throws {

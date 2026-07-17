@@ -21,6 +21,7 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
     case forgetReceipt(identifier: String)
     case writeResolver(ResolverRequest)
     case removeResolver(name: String)
+    case removeEmptyResolverDirectory
     case createDNSDomain(DNSDomainRequest)
     case deleteDNSDomain(name: String)
     case applyPacketFilter(PacketFilterRequest)
@@ -28,6 +29,8 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
     case auditPacketFilter(anchor: String)
     case removeKnownEmptyDirectories(manifestID: String)
 
+    // The switch is the complete serialized privileged-request allowlist.
+    // swiftlint:disable:next cyclomatic_complexity
     public func validate(policy: PathPolicy) throws {
         switch self {
         case let .installVerifiedPackage(token):
@@ -40,6 +43,8 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
             try Self.validate(request, policy: policy)
         case let .removeResolver(name):
             try Self.validateResolverName(name, policy: policy)
+        case .removeEmptyResolverDirectory:
+            break
         case let .createDNSDomain(request):
             try Self.validateDNSDomain(request, policy: policy)
         case let .deleteDNSDomain(name):

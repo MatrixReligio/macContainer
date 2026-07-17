@@ -15,6 +15,7 @@ struct UninstallTransactionTests {
         #expect(result.audit.isEmpty)
         #expect(await fixture.state.artifacts.isEmpty)
         #expect(fixture.actions.values == UninstallStage.allCases.map(\.rawValue))
+        #expect(fixture.helper.emptyResolverDirectoryRemovalCount == 1)
     }
 
     @Test(arguments: UninstallStage.allCases)
@@ -90,6 +91,7 @@ private final class UninstallFixture {
     let state: UninstallArtifactState
     let actions: LockedUninstallActions
     let services: RecordingUninstallServices
+    let helper: RecordingUninstallHelper
     let transaction: UninstallTransaction
 
     init(
@@ -102,6 +104,7 @@ private final class UninstallFixture {
         )
         actions = LockedUninstallActions(failingAt: failingAt)
         services = RecordingUninstallServices(state: state, actions: actions)
+        helper = RecordingUninstallHelper(state: state, actions: actions)
         let auditor = ResidueAuditor(checker: StatefulResidueChecker(state: state))
         transaction = UninstallTransaction(
             target: .reviewedRuntime110,
@@ -111,7 +114,7 @@ private final class UninstallFixture {
             services: services,
             processes: RecordingUninstallProcesses(actions: actions),
             credentials: RecordingUninstallCredentials(state: state, actions: actions),
-            helper: RecordingUninstallHelper(state: state, actions: actions),
+            helper: helper,
             userArtifacts: RecordingUserArtifactRemover(state: state, actions: actions),
             auditor: RecordingUninstallAuditor(auditor: auditor, actions: actions),
             journal: RecordingUninstallJournal(actions: actions)
@@ -240,6 +243,7 @@ private final class RecordingUninstallHelper: UninstallPrivilegedHelping, @unche
     let state: UninstallArtifactState
     let actions: LockedUninstallActions
     private var recordedNetworkStage = false
+    private(set) var emptyResolverDirectoryRemovalCount = 0
 
     init(state: UninstallArtifactState, actions: LockedUninstallActions) {
         self.state = state
@@ -250,6 +254,10 @@ private final class RecordingUninstallHelper: UninstallPrivilegedHelping, @unche
         _ = name
         try recordNetworkStageOnce()
         await state.remove([.resolver])
+    }
+
+    func removeEmptyResolverDirectory() async throws {
+        emptyResolverDirectoryRemovalCount += 1
     }
 
     func removePacketFilter(anchor: String) async throws {

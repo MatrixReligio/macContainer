@@ -157,6 +157,7 @@ public protocol UninstallCredentialRemoving: Sendable {
 
 public protocol UninstallPrivilegedHelping: Sendable {
     func removeResolver(name: String) async throws
+    func removeEmptyResolverDirectory() async throws
     func removePacketFilter(anchor: String) async throws
     func removePayload(manifestID: String, manifestSHA256: String) async throws
     func forgetReceipt(identifier: String) async throws
@@ -245,6 +246,10 @@ public struct LifecycleUninstallJournalWriter: UninstallJournalWriting {
 extension HelperClient: UninstallPrivilegedHelping {
     public func removeResolver(name: String) async throws {
         _ = try await perform(.removeResolver(name: name))
+    }
+
+    public func removeEmptyResolverDirectory() async throws {
+        _ = try await perform(.removeEmptyResolverDirectory)
     }
 
     public func removePacketFilter(anchor: String) async throws {
@@ -443,6 +448,9 @@ public struct UninstallTransaction: Sendable {
             try await apply(.removeUserArtifact(kind: .resolver), transactionID: transactionID) {
                 try await helper.removeResolver(name: name)
             }
+        }
+        try await apply(.removeUserArtifact(kind: .resolver), transactionID: transactionID) {
+            try await helper.removeEmptyResolverDirectory()
         }
         try await apply(.removeUserArtifact(kind: .packetFilter), transactionID: transactionID) {
             try await helper.removePacketFilter(anchor: target.packetFilterAnchor)

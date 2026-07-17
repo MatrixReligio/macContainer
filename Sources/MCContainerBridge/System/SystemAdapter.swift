@@ -138,9 +138,10 @@ public struct AppleSystemRuntimeBackend: SystemRuntimeBackend, Sendable {
         let candidate: String
         if Self.isSemanticVersion(value) {
             candidate = value
-        } else if value.hasPrefix(prefix),
-                  let version = value.dropFirst(prefix.count).split(whereSeparator: { $0.isWhitespace }).first
-        {
+        } else if value.hasPrefix(prefix) {
+            guard let version = value.dropFirst(prefix.count).split(whereSeparator: { $0.isWhitespace }).first else {
+                throw SystemAdapterError.invalidRuntimeVersion(releaseDescription)
+            }
             candidate = String(version)
         } else {
             throw SystemAdapterError.invalidRuntimeVersion(releaseDescription)

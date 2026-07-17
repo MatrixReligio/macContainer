@@ -74,7 +74,7 @@ struct PathPolicyTests {
         }
     }
 
-    @Test func `all eleven requests round trip through versioned bounded codec`() throws {
+    @Test func `all twelve requests round trip through versioned bounded codec`() throws {
         let requests: [PrivilegedRequest] = [
             .installVerifiedPackage(.init(runtimeVersion: "1.1.0", sha256: String(repeating: "a", count: 64))),
             .removePayload(.init(
@@ -84,6 +84,7 @@ struct PathPolicyTests {
             .forgetReceipt(identifier: "com.apple.container-installer"),
             .writeResolver(.init(name: "default", nameservers: ["192.168.64.1"])),
             .removeResolver(name: "default"),
+            .removeEmptyResolverDirectory,
             .createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10")),
             .deleteDNSDomain(name: "dev.example"),
             .applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24")),

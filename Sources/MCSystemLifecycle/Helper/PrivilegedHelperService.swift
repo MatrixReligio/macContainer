@@ -7,6 +7,7 @@ public protocol PrivilegedSystemAdapting: Sendable {
     func forgetReceipt(identifier: String) throws
     func writeResolver(_ request: ResolverRequest) throws
     func removeResolver(name: String) throws
+    func removeEmptyResolverDirectory() throws
     func createDNSDomain(_ request: DNSDomainRequest) throws
     func deleteDNSDomain(name: String) throws
     func applyPacketFilter(_ request: PacketFilterRequest) throws
@@ -72,6 +73,9 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         case let .removeResolver(name):
             try rejectSmuggledPackage(packageFile)
             try system.removeResolver(name: name)
+        case .removeEmptyResolverDirectory:
+            try rejectSmuggledPackage(packageFile)
+            try system.removeEmptyResolverDirectory()
         case let .createDNSDomain(request):
             try rejectSmuggledPackage(packageFile)
             try system.createDNSDomain(request)

@@ -83,6 +83,29 @@ struct SystemPrivilegedHostMutatorTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.resolverDirectory.path).isEmpty)
     }
 
+    @Test func `removes an unmarked resolver directory only when it is empty`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        let host = fixture.makeHost(runner: HostRecordingCommandRunner())
+
+        try host.removeEmptyResolverDirectory()
+
+        #expect(!FileManager.default.fileExists(atPath: fixture.resolverDirectory.path))
+    }
+
+    @Test func `preserves a nonempty unmarked resolver directory`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        let userResolver = fixture.resolverDirectory.appendingPathComponent("corp.example")
+        try Data("nameserver 203.0.113.53\n".utf8).write(to: userResolver)
+        let host = fixture.makeHost(runner: HostRecordingCommandRunner())
+
+        try host.removeEmptyResolverDirectory()
+
+        #expect(FileManager.default.fileExists(atPath: fixture.resolverDirectory.path))
+        #expect(try String(contentsOf: userResolver, encoding: .utf8) == "nameserver 203.0.113.53\n")
+    }
+
     @Test func `rejects resolver symlink and uses fixed receipt and packet filter commands`() throws {
         let fixture = try HostMutationFixture()
         defer { fixture.cleanup() }
