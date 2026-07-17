@@ -154,7 +154,7 @@ git commit -m "feat: localize app and parameter help"
 - Create: `scripts/check-doc-parity.swift`
 - Test: `Tests/ToolingTests/document-parity.bats`
 
-- [ ] **Step 1: Add a failing document parity checker**
+- [x] **Step 1: Add a failing document parity checker**
 
 The checker requires six key docs per language (README plus five guides), reads YAML front matter `source_revision`, `language`, `document_id`, compares stable heading IDs, validates local/internal/external link syntax, checks command-free UI instructions, and rejects a translation whose source revision differs from English.
 
@@ -162,21 +162,21 @@ Run: `zsh Tests/ToolingTests/document-parity.bats`
 
 Expected: FAIL listing absent translated documents.
 
-- [ ] **Step 2: Write complete authoritative English documents**
+- [x] **Step 2: Write complete authoritative English documents**
 
 Every guide explains UI workflows without requiring Terminal. Installation documents signer/digest/admin approval. Runtime Updates explains three modes, embedded allowlist, idle checks, probes, unknown holds, rollback. Complete Uninstallation enumerates all residue categories and the Unified Logging exclusion. Troubleshooting maps error/recovery IDs and diagnostic redaction. User Guide covers every domain, Simple/Advanced modes, keyboard shortcuts, accessibility, templates, terminal, settings, export, and support.
 
-- [ ] **Step 3: Translate and link the complete corpus**
+- [x] **Step 3: Translate and link the complete corpus**
 
 Each translation links to English, displays the exact English source commit, retains stable heading IDs through explicit anchors, and uses the glossary. Root README links all languages and clearly states platform/early version/security/support/repository/license status.
 
-- [ ] **Step 4: Run document parity and link checks**
+- [x] **Step 4: Run document parity and link checks**
 
 Run: `swift scripts/check-doc-parity.swift docs README.md README.*.md`
 
 Expected: `Document parity PASS: 30 localized documents, 0 stale revisions, 0 broken links`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md README.*.md docs scripts/check-doc-parity.swift Tests/ToolingTests/document-parity.bats
