@@ -46,7 +46,15 @@ struct PhysicalUpgradeTests {
             helper: helper
         ))
 
-        let first = try await context.transaction(probes: context.probes).upgrade(to: target)
+        let first: UpgradeReport
+        do {
+            first = try await context.transaction(probes: context.probes).upgrade(to: target)
+        } catch {
+            throw await PhysicalUpgradeFailure.unexpectedUpgrade(
+                phase: "initial",
+                failureCode: context.diagnostics.lastFailureCode ?? "none"
+            )
+        }
         #expect(first.previousRuntimeVersion == "1.0.0")
         #expect(first.runtimeVersion == "1.1.0")
         try await verifyInstalled(
@@ -80,7 +88,15 @@ struct PhysicalUpgradeTests {
         )
         try PhysicalTestGate.record("upgrade.rollback-1.0.0")
 
-        let final = try await context.transaction(probes: context.probes).upgrade(to: target)
+        let final: UpgradeReport
+        do {
+            final = try await context.transaction(probes: context.probes).upgrade(to: target)
+        } catch {
+            throw await PhysicalUpgradeFailure.unexpectedUpgrade(
+                phase: "final",
+                failureCode: context.diagnostics.lastFailureCode ?? "none"
+            )
+        }
         #expect(final.runtimeVersion == "1.1.0")
         try await verifyInstalled(
             manifest: ReviewedRuntime110Manifest.package,
@@ -258,7 +274,11 @@ private actor PhysicalUpgradeBlocker: UpgradeTargetBlocking {
 }
 
 private actor PhysicalUpgradeDiagnostics: UpgradeDiagnosticPersisting {
-    func persist(_: RedactedLifecycleFailure) {}
+    private(set) var lastFailureCode: String?
+
+    func persist(_ failure: RedactedLifecycleFailure) {
+        lastFailureCode = failure.code
+    }
 }
 
 private struct PhysicalDowngradeConsent: UpgradeDowngradeConsentProviding {
@@ -270,4 +290,5 @@ private struct PhysicalDowngradeConsent: UpgradeDowngradeConsentProviding {
 private enum PhysicalUpgradeFailure: Error {
     case injectedPostflight
     case targetMismatch
+    case unexpectedUpgrade(phase: String, failureCode: String)
 }
