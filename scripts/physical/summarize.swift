@@ -47,6 +47,21 @@ private struct ApplicationIdentity {
     let designatedRequirementHash: String
 }
 
+private struct AttestationExpectations: Encodable {
+    let sourceCommit: String
+    let appBundleIdentifier: String
+    let appVersion: String
+    let appBuild: String
+    let appDesignatedRequirementHash: String
+    let runtimeVersion: String
+    let runtimePackageSHA256: String
+    let testPlanVersion: String
+    let requiredOperationIDs: [String]
+    let verificationNow: Date
+    let maximumAge: TimeInterval
+    let futureTolerance: TimeInterval
+}
+
 private enum SummaryError: Error, CustomStringConvertible {
     case usage
     case invalidPlan
@@ -190,7 +205,9 @@ do {
     }
 
     let output = try URL(fileURLWithPath: argument("--output", in: arguments)).standardizedFileURL
+    let expectationsOutput = output.deletingPathExtension().appendingPathExtension("expectations.json")
     try? FileManager.default.removeItem(at: output)
+    try? FileManager.default.removeItem(at: expectationsOutput)
     let plan = try JSONDecoder().decode(
         Plan.self,
         from: Data(contentsOf: URL(fileURLWithPath: argument("--plan", in: arguments)))
@@ -251,6 +268,21 @@ do {
     encoder.dateEncodingStrategy = .iso8601
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
     try encoder.encode(summary).write(to: output, options: [.atomic])
+    let expectations = AttestationExpectations(
+        sourceCommit: summary.sourceCommit,
+        appBundleIdentifier: summary.appBundleIdentifier,
+        appVersion: summary.appVersion,
+        appBuild: summary.appBuild,
+        appDesignatedRequirementHash: summary.appDesignatedRequirementHash,
+        runtimeVersion: summary.runtimeVersion,
+        runtimePackageSHA256: summary.runtimePackageSHA256,
+        testPlanVersion: summary.testPlanVersion,
+        requiredOperationIDs: results.keys.sorted(),
+        verificationNow: summary.issuedAt,
+        maximumAge: 366 * 24 * 60 * 60,
+        futureTolerance: 300
+    )
+    try encoder.encode(expectations).write(to: expectationsOutput, options: [.atomic])
     print("PHYSICAL_SUMMARY_PASS: \(results.count) exact operations")
 } catch {
     FileHandle.standardError.write(Data("physical summary error: \(error)\n".utf8))

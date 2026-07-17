@@ -43,6 +43,8 @@ zsh Tests/ToolingTests/check-app-icon.bats
 zsh Tests/ToolingTests/check-workflow-policy.bats
 zsh Tests/ToolingTests/upstream-monitor-policy.bats
 zsh Tests/ToolingTests/check-open-source-baseline.bats
+zsh Tests/ToolingTests/physical-runner-policy.bats
+zsh Tests/ToolingTests/physical-summary.bats
 scripts/check-no-container-cli.sh
 scripts/check-workflow-policy.sh
 scripts/check-open-source-baseline.sh

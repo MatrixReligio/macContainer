@@ -81,6 +81,7 @@ summary_copy_preserved=0
 package_100=""
 package_110=""
 upgrade_state=""
+swiftpm_scratch=""
 
 cleanup() {
     local original_status=$?
@@ -298,7 +299,23 @@ run_physical_package_tests() {
         PHYSICAL_PACKAGE_100="$package_100" \
         PHYSICAL_PACKAGE_110="$package_110" \
         PHYSICAL_UPGRADE_STATE="$upgrade_state" \
-        /usr/bin/swift test --package-path "$repo_root" --filter "$selected_filter"
+        /usr/bin/swift test --package-path "$repo_root" --scratch-path "$swiftpm_scratch" \
+        --skip-build --filter "$selected_filter"
+}
+
+prepare_signed_physical_test_harness() {
+    /usr/bin/swift build --package-path "$repo_root" --scratch-path "$swiftpm_scratch" --build-tests
+    local binary_root
+    binary_root="$(/usr/bin/swift build --package-path "$repo_root" --scratch-path "$swiftpm_scratch" --show-bin-path)"
+    local executable="$binary_root/MacContainerCorePackageTests.xctest/Contents/MacOS/MacContainerCorePackageTests"
+    [[ -x "$executable" ]] || die "physical test executable missing"
+    /usr/bin/codesign --force \
+        --sign "Developer ID Application: MatrixReligio LLC (4DUQGD879H)" \
+        --options runtime --timestamp --identifier container.matrixreligio.com "$executable"
+    /usr/bin/codesign --verify --strict \
+        --test-requirement '=anchor apple generic and identifier "container.matrixreligio.com" and certificate leaf[subject.OU] = "4DUQGD879H"' \
+        "$executable"
+    print -r -- "Signed physical test harness PASS"
 }
 
 ledger_transition() {
@@ -340,7 +357,7 @@ summarize_results() {
         --results "$summary_results_copy" \
         --app "$physical_audit_app" \
         --output "$output" \
-        --source-commit 5973b938ea064986e7e115ab3f9d0cff5ec88812 \
+        --source-commit 5973b9cc626a3e7a499bb316a958237ebe14e2ed \
         --runtime-version 1.1.0 \
         --runtime-sha256 "$digest_110" \
         --signer-key-id matrixreligio-physical-2026-07-r1 \
@@ -434,6 +451,12 @@ derived_data="$run_root/DerivedData"
 ledger_transition temporary-directory "$derived_data" planned
 /bin/mkdir -- "$derived_data"
 ledger_transition temporary-directory "$derived_data" created
+
+swiftpm_scratch="$run_root/SwiftPM"
+ledger_transition temporary-directory "$swiftpm_scratch" planned
+/bin/mkdir -- "$swiftpm_scratch"
+ledger_transition temporary-directory "$swiftpm_scratch" created
+prepare_signed_physical_test_harness
 
 downloads="$run_root/downloads"
 ledger_transition temporary-directory "$downloads" planned

@@ -22,7 +22,7 @@ arguments=(
     --results "$fixture/results"
     --app "$app"
     --output "$fixture/summary.json"
-    --source-commit 5973b938ea064986e7e115ab3f9d0cff5ec88812
+    --source-commit 5973b9cc626a3e7a499bb316a958237ebe14e2ed
     --runtime-version 1.1.0
     --runtime-sha256 0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714
     --signer-key-id matrixreligio-physical-2026-07-r1
@@ -47,5 +47,8 @@ print -r -- '{"id":"two","passed":true}' > "$fixture/results/two.json"
 [[ "$(/usr/bin/plutil -extract baselineRestored raw -o - "$fixture/summary.json")" == true ]]
 [[ "$(/usr/bin/plutil -extract cleanupLedgerEmpty raw -o - "$fixture/summary.json")" == true ]]
 [[ "$(/usr/bin/plutil -extract signature raw -o - "$fixture/summary.json")" == "" ]]
+[[ "$(/usr/bin/plutil -extract requiredOperationIDs.0 raw -o - "$fixture/summary.expectations.json")" == one ]]
+[[ "$(/usr/bin/plutil -extract requiredOperationIDs.1 raw -o - "$fixture/summary.expectations.json")" == two ]]
+[[ "$(/usr/bin/plutil -extract appBundleIdentifier raw -o - "$fixture/summary.expectations.json")" == container.matrixreligio.com ]]
 
 print -r -- "Physical summary completeness tests PASS"

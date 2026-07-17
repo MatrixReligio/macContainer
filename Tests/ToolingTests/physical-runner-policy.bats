@@ -9,6 +9,20 @@ plan="$repo_root/Config/physical-test-plan-v1.json"
 [[ -f "$plan" ]] || { print -u2 -- "missing physical test plan"; exit 1; }
 /usr/bin/ruby -rjson -e 'JSON.parse(File.read(ARGV.fetch(0)))' "$plan"
 
+result_sources=(
+    "$runner"
+    "$repo_root/Tests/PhysicalHostTests/PhysicalOperationTests.swift"
+    "$repo_root/Tests/PhysicalHostTests/PhysicalUpgradeTests.swift"
+    "$repo_root/Tests/PhysicalHostTests/PhysicalUninstallTests.swift"
+    "$repo_root/Tests/MacContainerUITests/PhysicalRuntimeUITests.swift"
+)
+while IFS= read -r test_id; do
+    /usr/bin/grep -Fq -- "$test_id" $result_sources || {
+        print -u2 -- "physical plan ID has no result recorder: $test_id"
+        exit 1
+    }
+done < <(/usr/bin/ruby -rjson -e 'JSON.parse(File.read(ARGV.fetch(0))).fetch("tests").each { |test| puts test.fetch("id") }' "$plan")
+
 require_text() {
     local text="$1"
     /usr/bin/grep -Fq -- "$text" "$runner" || {
@@ -46,6 +60,11 @@ require_text 'PHYSICAL_PACKAGE_100="$package_100"'
 require_text 'PHYSICAL_PACKAGE_110="$package_110"'
 require_text 'ledger_transition temporary-directory "$upgrade_state" planned'
 require_text 'run_physical_package_tests'
+require_text 'prepare_signed_physical_test_harness'
+require_text 'swift build --package-path "$repo_root" --scratch-path "$swiftpm_scratch" --build-tests'
+require_text '--identifier container.matrixreligio.com'
+require_text '--skip-build'
+require_text 'certificate leaf[subject.OU] = "4DUQGD879H"'
 require_text 'run_physical_package_tests PhysicalOperationTests'
 require_text 'run_physical_package_tests PhysicalUninstallTests'
 require_text '"$phase" == "install-and-operations"'

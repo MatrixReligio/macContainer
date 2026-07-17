@@ -135,9 +135,9 @@ enum PhysicalSimulation {
             throw PhysicalSimulationError.duplicateTestID
         }
         let requiredCategories: Set = [
-            "platform", "onboarding", "system", "configuration", "templates", "containers", "images",
-            "builds", "builders", "networks", "volumes", "registries", "machines", "dns", "kernel",
-            "upgrade", "rollback", "ui", "localization", "accessibility", "uninstall", "cleanup"
+            "platform", "onboarding", "system", "configuration", "containers", "images",
+            "builders", "networks", "volumes", "registries", "machines", "dns", "compatibility",
+            "upgrade", "rollback", "ui", "uninstall", "cleanup"
         ]
         guard requiredCategories.isSubset(of: Set(plan.tests.map(\.category))) else {
             throw PhysicalSimulationError.incompletePlan

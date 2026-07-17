@@ -33,5 +33,21 @@ final class PhysicalRuntimeUITests: XCTestCase {
             )
             XCTAssertTrue(app.buttons["refresh-resources.\(route)"].exists)
         }
+        try recordPhysicalResult("ui.production-resource-navigation", environment: environment)
+    }
+
+    private func recordPhysicalResult(_ id: String, environment: [String: String]) throws {
+        let runRoot = try URL(fileURLWithPath: XCTUnwrap(environment["PHYSICAL_RUN_ROOT"]), isDirectory: true)
+            .standardizedFileURL
+        let resultsRoot = runRoot.appendingPathComponent("results", isDirectory: true)
+        XCTAssertEqual(resultsRoot.path, environment["PHYSICAL_RESULTS_ROOT"])
+        let destination = resultsRoot.appendingPathComponent("\(id).json")
+        let data = Data("{\"id\":\"\(id)\",\"passed\":true}\n".utf8)
+        if FileManager.default.fileExists(atPath: destination.path) {
+            XCTAssertEqual(try Data(contentsOf: destination), data)
+        } else {
+            try data.write(to: destination, options: [.withoutOverwriting])
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+        }
     }
 }
