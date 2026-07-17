@@ -189,11 +189,12 @@ git commit -m "docs: publish five-language user documentation"
 - Create: `ThirdPartyLicenses/`
 - Create: `Config/dependencies.json`
 - Create: `scripts/check-licenses.swift`
+- Create: `scripts/import-dependency-licenses.swift`
 - Create: `scripts/generate-sbom.swift`
 - Modify: `THIRD_PARTY_NOTICES`
 - Test: `Tests/ToolingTests/license-policy.bats`
 
-- [ ] **Step 1: Add failing dependency-to-license parity tests**
+- [x] **Step 1: Add failing dependency-to-license parity tests**
 
 The test resolves `Package.resolved`, recursively inspects shipped package products, requires exact name/version/source/revision/license/SPDX/license-file hash for each, requires a copied license text, rejects unreviewed copyleft/network-copyleft/unknown licenses, and verifies notices include direct shipped dependencies.
 
@@ -201,20 +202,20 @@ Run: `zsh Tests/ToolingTests/license-policy.bats`
 
 Expected: FAIL until inventory and license texts are complete.
 
-- [ ] **Step 2: Populate reviewed dependency inventory and exact license texts**
+- [x] **Step 2: Populate reviewed dependency inventory and exact license texts**
 
 Inventory includes Apple container 1.1.0 and all transitively shipped products, Sparkle 2.9.4, SwiftTerm 1.13.0, with source URLs, immutable revision, license ID, copyright notice, and SHA-256 of copied license text. Never invent a license classification; resolve conflicts from authoritative upstream license files.
 
-- [ ] **Step 3: Generate deterministic CycloneDX and SPDX SBOMs**
+- [x] **Step 3: Generate deterministic CycloneDX and SPDX SBOMs**
 
 `generate-sbom.swift` sorts components by package URL, includes exact resolved revision, package/product relationship, license, checksums, source URL, app version/build/commit, and emits `dist/MacContainer.cdx.json` and `dist/MacContainer.spdx.json` with `SOURCE_DATE_EPOCH` controlling timestamps.
 
-- [ ] **Step 4: Run license/SBOM reproducibility checks**
+- [x] **Step 4: Run license/SBOM reproducibility checks**
 
 Run:
 
 ```bash
-swift scripts/check-licenses.swift Package.resolved Config/dependencies.json ThirdPartyLicenses THIRD_PARTY_NOTICES
+swift scripts/check-licenses.swift MacContainer.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved Config/dependencies.json ThirdPartyLicenses THIRD_PARTY_NOTICES
 SOURCE_DATE_EPOCH=1784044800 swift scripts/generate-sbom.swift
 shasum -a 256 dist/MacContainer.cdx.json dist/MacContainer.spdx.json
 SOURCE_DATE_EPOCH=1784044800 swift scripts/generate-sbom.swift
@@ -223,10 +224,10 @@ shasum -a 256 -c dist/sbom-checksums.txt
 
 Expected: PASS and identical hashes across regeneration.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
-git add ThirdPartyLicenses Config/dependencies.json THIRD_PARTY_NOTICES scripts/check-licenses.swift scripts/generate-sbom.swift Tests/ToolingTests/license-policy.bats
+git add ThirdPartyLicenses Config/dependencies.json THIRD_PARTY_NOTICES scripts/check-licenses.swift scripts/import-dependency-licenses.swift scripts/generate-sbom.swift Tests/ToolingTests/license-policy.bats
 git commit -m "docs: account for shipped dependencies"
 ```
 
@@ -380,7 +381,7 @@ scripts/check-repository.sh
 swift scripts/check-localizations.swift App/MacContainer/Resources
 swift scripts/check-parameter-help.swift Sources/MCContracts/Resources/apple-container-1.1.0.json App/MacContainer/Resources/Localizable.xcstrings
 swift scripts/check-doc-parity.swift docs README.md README.*.md
-swift scripts/check-licenses.swift Package.resolved Config/dependencies.json ThirdPartyLicenses THIRD_PARTY_NOTICES
+swift scripts/check-licenses.swift MacContainer.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved Config/dependencies.json ThirdPartyLicenses THIRD_PARTY_NOTICES
 zsh Tests/ToolingTests/release-script-policy.bats
 zsh Tests/ToolingTests/release-workflow-policy.bats
 git diff --check
