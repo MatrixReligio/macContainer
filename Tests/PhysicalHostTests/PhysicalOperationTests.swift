@@ -61,24 +61,7 @@ struct PhysicalOperationTests {
         _ = try await bridge.dns.list()
         try PhysicalTestGate.record("inventory.dns")
 
-        let privilegedDNS = PrivilegedDNSBackend()
-        let domain = "\(PhysicalTestGate.namespace).test"
-        var domainCreated = false
-        do {
-            let created = try await privilegedDNS.create(name: domain, redirectIPv4: "192.0.2.10")
-            domainCreated = true
-            #expect(created == .init(name: domain, addresses: ["192.0.2.10"]))
-            #expect(try await privilegedDNS.list().contains(created))
-            try await privilegedDNS.delete(name: domain)
-            domainCreated = false
-            let remainingDomains = try await privilegedDNS.list()
-            #expect(!remainingDomains.contains { $0.name == domain })
-        } catch {
-            if domainCreated {
-                try? await privilegedDNS.delete(name: domain)
-            }
-            throw error
-        }
+        try await PhysicalSignedAppOperations.roundTripDNS()
         try PhysicalTestGate.record("dns.production-create-delete")
 
         let entry = try #require(try CompatibilityCatalog.bundled().entries.first)
@@ -105,7 +88,7 @@ struct PhysicalOperationTests {
                 packageAt: package,
                 against: ReviewedRuntime110Manifest.package
             )
-            _ = try await HelperClient().install(verified)
+            try await PhysicalSignedAppInstallHelper().install(verified)
             _ = try await SystemInstalledReceiptVerifier().verify(expected: ReviewedRuntime110Manifest.package)
             try await SystemInstalledPayloadVerifier().verify(expected: ReviewedRuntime110Manifest.package)
         }

@@ -187,6 +187,84 @@ struct PhysicalPacketFilterAuditCommandTests {
         #expect(await registrar.unregisterCalls == 1)
         #expect(await registrar.ensureCalls == 0)
     }
+
+    @Test func `signed app physical operations are fixed to the authorized run root`() async throws {
+        let runID = UUID()
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-physical-operation-\(UUID().uuidString)", isDirectory: true)
+        let runRoot = root.appendingPathComponent(runID.uuidString.lowercased(), isDirectory: true)
+        let downloads = runRoot.appendingPathComponent("downloads", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: downloads,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: runRoot.path)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let package = downloads.appendingPathComponent("container-1.1.0-installer-signed.pkg")
+        try Data("reviewed-package".utf8).write(to: package)
+        let executor = FixturePhysicalOperationExecutor()
+        let invocationID = UUID()
+        let output = root.appendingPathComponent(
+            "helper-operation-\(invocationID.uuidString.lowercased()).json"
+        )
+        let environment = [
+            "PHYSICAL_AUDIT_AUTHORIZATION": invocationID.uuidString.lowercased(),
+            "PHYSICAL_AUDIT_ROOT": root.path,
+            "PHYSICAL_RUN_ID": runID.uuidString.lowercased(),
+            "PHYSICAL_RUN_ROOT": runRoot.path
+        ]
+        let command = try #require(PhysicalPrivilegedOperationCommand(
+            arguments: [
+                "--physical-helper-operation=install-1.1.0",
+                "--physical-helper-operation-output=\(output.path)"
+            ],
+            environment: environment,
+            executor: executor
+        ))
+
+        try await command.execute()
+
+        #expect(await executor.installations == ["1.1.0|\(package.path)"])
+        #expect(try JSONDecoder().decode(
+            PhysicalPrivilegedOperationResult.self,
+            from: Data(contentsOf: output)
+        ) == .init(operation: "install-1.1.0", succeeded: true))
+        #expect(PhysicalPrivilegedOperationCommand(
+            arguments: [
+                "--physical-helper-operation=install-9.9.9",
+                "--physical-helper-operation-output=\(output.path)"
+            ],
+            environment: environment,
+            executor: executor
+        ) == nil)
+    }
+
+    @Test func `signed app DNS and uninstall operations return independently auditable results`() async throws {
+        let fixture = try PhysicalOperationFixture()
+        defer { fixture.cleanup() }
+        let executor = FixturePhysicalOperationExecutor()
+
+        let dns = try #require(fixture.command(operation: "dns-round-trip", executor: executor))
+        try await dns.command.execute()
+        #expect(await executor.domains == ["mct-e2e-\(fixture.runID.uuidString.lowercased()).test"])
+        #expect(try fixture.result(at: dns.output) == .init(
+            operation: "dns-round-trip",
+            succeeded: true
+        ))
+
+        let uninstall = try #require(fixture.command(operation: "complete-uninstall", executor: executor))
+        try await uninstall.command.execute()
+        #expect(try fixture.result(at: uninstall.output) == .init(
+            operation: "complete-uninstall",
+            succeeded: true,
+            completion: "complete",
+            auditEmpty: true,
+            auditComplete: true,
+            preservedCount: 0
+        ))
+    }
 }
 
 private struct FixturePacketFilterAuditor: PacketFilterAuditing {
@@ -248,5 +326,77 @@ private enum PhysicalHelperBootstrapFailure: Int, CustomNSError {
     static let errorDomain = "MCAppCoreTests.PhysicalHelperBootstrapFailure"
     var errorCode: Int {
         rawValue
+    }
+}
+
+private actor FixturePhysicalOperationExecutor: PhysicalPrivilegedOperationExecuting {
+    private(set) var installations: [String] = []
+    private(set) var domains: [String] = []
+
+    func install(version: String, packageURL: URL) {
+        installations.append("\(version)|\(packageURL.path)")
+    }
+
+    func roundTripDNS(domain: String) {
+        domains.append(domain)
+    }
+
+    func completeUninstall() -> PhysicalCompleteUninstallResult {
+        .init(completion: "complete", auditEmpty: true, auditComplete: true, preservedCount: 0)
+    }
+}
+
+private struct PhysicalOperationFixture {
+    let root: URL
+    let runRoot: URL
+    let runID: UUID
+
+    init() throws {
+        runID = UUID()
+        root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-physical-operation-\(UUID().uuidString)", isDirectory: true)
+        runRoot = root.appendingPathComponent(runID.uuidString.lowercased(), isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: runRoot,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: runRoot.path)
+    }
+
+    func command(
+        operation: String,
+        executor: any PhysicalPrivilegedOperationExecuting
+    ) -> (command: PhysicalPrivilegedOperationCommand, output: URL)? {
+        let invocationID = UUID()
+        let output = root.appendingPathComponent(
+            "helper-operation-\(invocationID.uuidString.lowercased()).json"
+        )
+        let command = PhysicalPrivilegedOperationCommand(
+            arguments: [
+                "--physical-helper-operation=\(operation)",
+                "--physical-helper-operation-output=\(output.path)"
+            ],
+            environment: [
+                "PHYSICAL_AUDIT_AUTHORIZATION": invocationID.uuidString.lowercased(),
+                "PHYSICAL_AUDIT_ROOT": root.path,
+                "PHYSICAL_RUN_ID": runID.uuidString.lowercased(),
+                "PHYSICAL_RUN_ROOT": runRoot.path
+            ],
+            executor: executor
+        )
+        return command.map { ($0, output) }
+    }
+
+    func result(at output: URL) throws -> PhysicalPrivilegedOperationResult {
+        try JSONDecoder().decode(
+            PhysicalPrivilegedOperationResult.self,
+            from: Data(contentsOf: output)
+        )
+    }
+
+    func cleanup() {
+        try? FileManager.default.removeItem(at: root)
     }
 }

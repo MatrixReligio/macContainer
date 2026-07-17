@@ -313,6 +313,7 @@ run_physical_package_tests() {
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
         PHYSICAL_RESULTS_ROOT="$run_root/results" \
         PHYSICAL_TEST_PHASE="$selected_phase" \
+        PHYSICAL_TEST_APP="$physical_audit_app" \
         PHYSICAL_PACKAGE_100="$package_100" \
         PHYSICAL_PACKAGE_110="$package_110" \
         PHYSICAL_UPGRADE_STATE="$upgrade_state" \

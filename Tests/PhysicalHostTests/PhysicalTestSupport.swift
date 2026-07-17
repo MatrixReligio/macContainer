@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import MCContainerBridge
+import MCSystemLifecycle
 
 enum PhysicalTestGate {
     static let environment = ProcessInfo.processInfo.environment
@@ -128,4 +129,112 @@ enum PhysicalTestGateError: Error {
     case duplicateOrUnsafeResult
     case resultWriteFailed
     case unreviewedPackageVersion
+}
+
+struct PhysicalSignedAppInstallHelper: InstallPrivilegedHelping, UpgradePrivilegedHelping {
+    func install(_ package: VerifiedRuntimePackage) async throws {
+        try package.openFile.revalidateIdentity()
+        let expected = try PhysicalTestGate.packageURL(version: package.runtimeVersion)
+        guard package.openFile.sourceURL.standardizedFileURL == expected else {
+            throw PhysicalSignedAppOperationError.packageIdentityMismatch
+        }
+        _ = try await PhysicalSignedAppOperations.invoke("install-\(package.runtimeVersion)")
+    }
+}
+
+struct PhysicalSignedAppOperationResult: Decodable, Equatable, Sendable {
+    let operation: String
+    let succeeded: Bool
+    let completion: String?
+    let auditEmpty: Bool?
+    let auditComplete: Bool?
+    let preservedCount: Int?
+    let errorDomain: String?
+    let errorCode: Int?
+}
+
+enum PhysicalSignedAppOperations {
+    static func roundTripDNS() async throws {
+        _ = try await invoke("dns-round-trip")
+    }
+
+    static func completeUninstall() async throws -> PhysicalSignedAppOperationResult {
+        try await invoke("complete-uninstall")
+    }
+
+    static func invoke(_ operation: String) async throws -> PhysicalSignedAppOperationResult {
+        guard PhysicalTestGate.isAuthorized,
+              let runID = PhysicalTestGate.runID,
+              let runRoot = PhysicalTestGate.runRoot,
+              let appPath = PhysicalTestGate.environment["PHYSICAL_TEST_APP"]
+        else {
+            throw PhysicalSignedAppOperationError.authorizationMissing
+        }
+        let app = URL(fileURLWithPath: appPath, isDirectory: true).standardizedFileURL
+        guard app.pathExtension == "app",
+              FileManager.default.isExecutableFile(
+                  atPath: app.appendingPathComponent("Contents/MacOS/MacContainer").path
+              )
+        else {
+            throw PhysicalSignedAppOperationError.appUnavailable
+        }
+
+        let invocationID = UUID().uuidString.lowercased()
+        let temporaryRoot = FileManager.default.temporaryDirectory.standardizedFileURL
+        let output = temporaryRoot.appendingPathComponent(
+            "helper-operation-\(invocationID).json",
+            isDirectory: false
+        )
+        defer { try? FileManager.default.removeItem(at: output) }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = [
+            "-n", "-W",
+            "--env", "PHYSICAL_AUDIT_AUTHORIZATION=\(invocationID)",
+            "--env", "PHYSICAL_AUDIT_ROOT=\(temporaryRoot.path)",
+            "--env", "PHYSICAL_RUN_ID=\(runID.uuidString.lowercased())",
+            "--env", "PHYSICAL_RUN_ROOT=\(runRoot.path)",
+            app.path,
+            "--args",
+            "--physical-helper-operation=\(operation)",
+            "--physical-helper-operation-output=\(output.path)"
+        ]
+        let terminationStatus: Int32 = try await withCheckedThrowingContinuation { continuation in
+            process.terminationHandler = { process in
+                continuation.resume(returning: process.terminationStatus)
+            }
+            do {
+                try process.run()
+            } catch {
+                process.terminationHandler = nil
+                continuation.resume(throwing: error)
+            }
+        }
+        guard terminationStatus == 0, FileManager.default.fileExists(atPath: output.path) else {
+            throw PhysicalSignedAppOperationError.appInvocationFailed
+        }
+        let result = try JSONDecoder().decode(
+            PhysicalSignedAppOperationResult.self,
+            from: Data(contentsOf: output, options: [.uncached])
+        )
+        guard result.operation == operation else {
+            throw PhysicalSignedAppOperationError.resultMismatch
+        }
+        guard result.succeeded else {
+            throw PhysicalSignedAppOperationError.operationFailed(
+                domain: result.errorDomain ?? "unknown",
+                code: result.errorCode ?? -1
+            )
+        }
+        return result
+    }
+}
+
+enum PhysicalSignedAppOperationError: Error, Equatable {
+    case appInvocationFailed
+    case appUnavailable
+    case authorizationMissing
+    case operationFailed(domain: String, code: Int)
+    case packageIdentityMismatch
+    case resultMismatch
 }

@@ -58,6 +58,7 @@ require_text '--env "PHYSICAL_AUDIT_AUTHORIZATION=$RUN_UUID"'
 require_text 'PHYSICAL_RUN_ID="$RUN_UUID"'
 require_text 'PHYSICAL_RUN_ROOT="$run_root"'
 require_text 'PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID"'
+require_text 'PHYSICAL_TEST_APP="$physical_audit_app"'
 require_text 'PHYSICAL_PACKAGE_100="$package_100"'
 require_text 'PHYSICAL_PACKAGE_110="$package_110"'
 require_text 'ledger_transition temporary-directory "$upgrade_state" planned'
@@ -95,6 +96,19 @@ require_text '--source-commit "$runtime_source_commit"'
 require_text 'tracked worktree must be clean for physical attestation'
 require_text 'recover.swift'
 require_text 'cleanup ledger contains only verifiedAbsent states'
+
+if /usr/bin/grep -Fq -- 'HelperClient()' \
+    "$repo_root/Tests/PhysicalHostTests/PhysicalOperationTests.swift" \
+    "$repo_root/Tests/PhysicalHostTests/PhysicalUpgradeTests.swift" \
+    "$repo_root/Tests/PhysicalHostTests/PhysicalUninstallTests.swift"; then
+    print -u2 -- "physical XCTest host must not call the privileged helper directly"
+    exit 1
+fi
+/usr/bin/grep -Fq -- 'PhysicalPrivilegedOperationCommand' \
+    "$repo_root/App/MacContainer/MacContainerApp.swift" || {
+    print -u2 -- "signed app physical privileged-operation bridge is missing"
+    exit 1
+}
 
 if /usr/bin/grep -Fq -- "=designated =>" "$runner"; then
     print -u2 -- "physical runner uses invalid codesign test-requirement syntax"

@@ -18,7 +18,7 @@ struct PhysicalUpgradeTests {
         let package110 = try PhysicalTestGate.packageURL(version: "1.1.0")
         let stateRoot = try PhysicalTestGate.upgradeStateRoot()
         let bridge = try PhysicalTestGate.productionBridge()
-        let helper = HelperClient()
+        let helper = PhysicalSignedAppInstallHelper()
         let verifier = RuntimePackageVerifier.system
         let verified100 = try await verifier.verify(
             packageAt: package100,
@@ -187,7 +187,7 @@ private struct PhysicalUpgradeInput {
     let package110: URL
     let configuration: URL
     let bridge: AppleRuntimeBridge
-    let helper: HelperClient
+    let helper: any UpgradePrivilegedHelping
 }
 
 private struct PhysicalUpgradeContext: Sendable {
@@ -197,7 +197,7 @@ private struct PhysicalUpgradeContext: Sendable {
     let rollback: RollbackStore
     let workloads: BridgeUpgradeWorkObserver
     let services: BridgeUpgradeServiceController
-    let helper: HelperClient
+    let helper: any UpgradePrivilegedHelping
     let installedVerifier: SystemUpgradeInstalledRuntimeVerifier
     let probes: BridgeUpgradeProbeRunner
     let journal: LifecycleUpgradeJournalWriter

@@ -8,6 +8,7 @@ struct MacContainerApp: App {
     private let sparkleUpdater: SparkleAppUpdater?
     private let physicalHelperBootstrap: PhysicalHelperBootstrapCommand?
     private let physicalPacketFilterAudit: PhysicalPacketFilterAuditCommand?
+    private let physicalPrivilegedOperation: PhysicalPrivilegedOperationCommand?
     private let isPhysicalRuntimeUITest: Bool
 
     init() {
@@ -48,6 +49,12 @@ struct MacContainerApp: App {
                 environment: environment
             )
             : nil
+        physicalPrivilegedOperation = mode == .production
+            ? PhysicalPrivilegedOperationCommand(
+                arguments: arguments,
+                environment: environment
+            )
+            : nil
         if (mode == .production && !physicalRuntimeUITest) || SparkleAppUpdater.hasValidatedTestFeed {
             let updater = SparkleAppUpdater(state: state)
             state.appUpdates.attach(driver: updater)
@@ -70,6 +77,8 @@ struct MacContainerApp: App {
                         try? await physicalHelperBootstrap.execute()
                     } else if let physicalPacketFilterAudit {
                         try? await physicalPacketFilterAudit.execute()
+                    } else if let physicalPrivilegedOperation {
+                        try? await physicalPrivilegedOperation.execute()
                     } else if isPhysicalRuntimeUITest {
                         await state.runtimeUpdates.restoreLatestStatus()
                         return
