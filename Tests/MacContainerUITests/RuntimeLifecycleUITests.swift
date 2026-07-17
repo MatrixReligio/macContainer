@@ -8,7 +8,10 @@ final class RuntimeLifecycleUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--fake-runtime", "--reset-test-state", "--lifecycle-audit"]
+        app.launchArguments = [
+            "--fake-runtime", "--reset-test-state", "--lifecycle-audit",
+            "--fake-runtime-language=en"
+        ]
         app.launch()
         XCTAssertTrue(app.windows["main-window"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.descendants(matching: .any)["runtime-lifecycle"].waitForExistence(timeout: 5))

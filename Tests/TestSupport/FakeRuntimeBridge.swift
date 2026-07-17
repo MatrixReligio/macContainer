@@ -18,7 +18,11 @@ public final class FakeRuntimeBridge: RuntimeBridge, @unchecked Sendable {
     public let kernel: any KernelOperations
     public let configuration: any ConfigurationOperations
 
-    public init() {
+    public init(
+        runtimeVersion: String = "1.1.0",
+        apiVersion: String? = nil,
+        systemState: RuntimeResourceState = .stopped
+    ) {
         let recorder = InvocationRecorder()
         let support = FakeRuntimeSupport(recorder: recorder)
         self.recorder = recorder
@@ -30,7 +34,12 @@ public final class FakeRuntimeBridge: RuntimeBridge, @unchecked Sendable {
         volumes = FakeVolumeOperations(support: support)
         registries = FakeRegistryOperations(support: support)
         machines = FakeMachineOperations(support: support)
-        system = FakeSystemOperations(support: support)
+        system = FakeSystemOperations(
+            support: support,
+            runtimeVersion: runtimeVersion,
+            apiVersion: apiVersion,
+            systemState: systemState
+        )
         dns = FakeDNSOperations(support: support)
         kernel = FakeKernelOperations(support: support)
         configuration = FakeConfigurationOperations(support: support)
@@ -382,6 +391,9 @@ private struct FakeMachineOperations: MachineOperations {
 
 private struct FakeSystemOperations: SystemOperations {
     let support: FakeRuntimeSupport
+    let runtimeVersion: String
+    let apiVersion: String?
+    let systemState: RuntimeResourceState
 
     func start(_ request: SystemStartRequest) async throws -> SystemSummary {
         try await support.record("system.start", arguments: ["timeout": String(request.healthTimeoutSeconds)])
@@ -395,12 +407,12 @@ private struct FakeSystemOperations: SystemOperations {
 
     func status() async throws -> SystemSummary {
         try await support.record("system.status")
-        return SystemSummary(state: .stopped)
+        return SystemSummary(state: systemState)
     }
 
     func version() async throws -> RuntimeVersionSummary {
         try await support.record("system.version")
-        return RuntimeVersionSummary(version: "1.1.0")
+        return RuntimeVersionSummary(version: runtimeVersion, apiVersion: apiVersion)
     }
 
     func logs(_: LogOptions) async throws -> AsyncThrowingStream<LogRecord, any Error> {

@@ -7,10 +7,20 @@ struct MacContainerApp: App {
     private let sparkleUpdater: SparkleAppUpdater?
 
     init() {
-        let mode: AppEnvironmentMode = ProcessInfo.processInfo.arguments.contains("--fake-runtime")
+        let arguments = ProcessInfo.processInfo.arguments
+        let mode: AppEnvironmentMode = arguments.contains("--fake-runtime")
             ? .fakeRuntime
             : .production
-        let state = AppState(environment: AppEnvironment(mode: mode))
+        let forcedLanguage = arguments.compactMap(Self.fakeRuntimeLanguage).first
+        let languageController = if mode == .fakeRuntime, let forcedLanguage {
+            LanguageController(storage: FixedLanguageSelectionStore(selection: forcedLanguage))
+        } else {
+            LanguageController()
+        }
+        let state = AppState(environment: AppEnvironment(
+            mode: mode,
+            languageController: languageController
+        ))
         _state = State(initialValue: state)
         if mode == .production || SparkleAppUpdater.hasValidatedTestFeed {
             let updater = SparkleAppUpdater(state: state)
@@ -49,5 +59,29 @@ struct MacContainerApp: App {
                     Locale(identifier: state.environment.languageController.resolvedIdentifier)
                 )
         }
+    }
+
+    private static func fakeRuntimeLanguage(_ argument: String) -> AppLanguage? {
+        let prefix = "--fake-runtime-language="
+        guard argument.hasPrefix(prefix) else { return nil }
+        return AppLanguage(rawValue: String(argument.dropFirst(prefix.count)))
+    }
+}
+
+@MainActor
+private final class FixedLanguageSelectionStore: LanguageSelectionStoring {
+    private var selection: AppLanguage
+
+    init(selection: AppLanguage) {
+        self.selection = selection
+    }
+
+    func load() -> String? {
+        selection.rawValue
+    }
+
+    func save(_ rawValue: String) throws {
+        guard let selection = AppLanguage(rawValue: rawValue) else { return }
+        self.selection = selection
     }
 }

@@ -37,6 +37,40 @@ struct SystemPrivilegedAdapterTests {
         ])
     }
 
+    @Test func `accepts only the two exact reviewed upgrade path packages`() throws {
+        let package = try AdapterPackageFixture()
+        defer { package.cleanup() }
+        let verifier = RecordingPrivilegedPackageVerifier(openFile: package.openFile)
+        let commands = RecordingFixedCommandRunner()
+        let adapter = SystemPrivilegedAdapter(
+            manifests: [
+                .init(manifest: .adapterFixture100, manifestID: "apple-container-1.0.0", sourceSHA256: "a"),
+                .init(manifest: .adapterFixture, manifestID: "apple-container-1.1.0", sourceSHA256: "b")
+            ],
+            packageVerifier: verifier,
+            commandRunner: commands,
+            host: RecordingPrivilegedHostMutator()
+        )
+
+        try adapter.installVerifiedPackage(
+            package.handle,
+            token: .init(runtimeVersion: "1.0.0", sha256: RuntimePackageManifest.adapterFixture100.sha256)
+        )
+        try adapter.installVerifiedPackage(
+            package.handle,
+            token: .init(runtimeVersion: "1.1.0", sha256: RuntimePackageManifest.adapterFixture.sha256)
+        )
+        #expect(verifier.verificationCount == 2)
+        #expect(commands.invocations.map(\.command) == [.installPackage, .installPackage])
+
+        #expect(throws: SystemPrivilegedAdapterError.packageTokenMismatch) {
+            try adapter.installVerifiedPackage(
+                package.handle,
+                token: .init(runtimeVersion: "9.9.9", sha256: String(repeating: "9", count: 64))
+            )
+        }
+    }
+
     @Test(arguments: [
         PackageInstallToken(runtimeVersion: "9.9.9", sha256: RuntimePackageManifest.adapterFixture.sha256),
         PackageInstallToken(runtimeVersion: "1.1.0", sha256: String(repeating: "0", count: 64))
@@ -170,6 +204,17 @@ private final class AdapterPackageFixture {
 }
 
 private extension RuntimePackageManifest {
+    static let adapterFixture100 = Self(
+        runtimeVersion: "1.0.0",
+        assetName: "container-1.0.0-installer-signed.pkg",
+        sha256: "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d",
+        installerTeamID: "UPBK2H6LZM",
+        signerCommonName: "Developer ID Installer: Apple Inc. - Containerization (UPBK2H6LZM)",
+        receiptIdentifier: "com.apple.container-installer",
+        installLocation: "/usr/local",
+        payload: [.init(relativePath: "bin", kind: .directory)]
+    )
+
     static let adapterFixture = Self(
         runtimeVersion: "1.1.0",
         assetName: "container-1.1.0-installer-signed.pkg",

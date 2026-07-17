@@ -55,6 +55,7 @@ public final class AppState {
     public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter
     public let appUpdates: AppUpdateController
+    public let runtimeLifecycle: RuntimeLifecycleController
     public let environment: AppEnvironment
 
     public init(environment: AppEnvironment = AppEnvironment()) {
@@ -63,6 +64,7 @@ public final class AppState {
         appUpdates = AppUpdateController(
             automaticallyChecksForUpdates: environment.mode == .production
         )
+        runtimeLifecycle = RuntimeLifecycleController(service: environment.runtimeLifecycleService)
         health = environment.mode == .fakeRuntime ? .healthy : .checking
         runtimeUpdateState = environment.mode == .fakeRuntime
             ? .available(version: "1.1.0")

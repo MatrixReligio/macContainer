@@ -28,10 +28,20 @@ public protocol PrivilegedHostMutating: Sendable {
     func removeKnownEmptyDirectories(manifest: RuntimePackageManifest) throws
 }
 
+public struct PrivilegedRuntimeManifest: Sendable {
+    public let manifest: RuntimePackageManifest
+    public let manifestID: String
+    public let sourceSHA256: String
+
+    public init(manifest: RuntimePackageManifest, manifestID: String, sourceSHA256: String) {
+        self.manifest = manifest
+        self.manifestID = manifestID
+        self.sourceSHA256 = sourceSHA256
+    }
+}
+
 public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
-    private let manifest: RuntimePackageManifest
-    private let manifestID: String
-    private let manifestSHA256: String
+    private let manifests: [PrivilegedRuntimeManifest]
     private let packageVerifier: any PrivilegedPackageVerifying
     private let commandRunner: any FixedPrivilegedCommandRunning
     private let host: any PrivilegedHostMutating
@@ -40,9 +50,18 @@ public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
         let runner = PosixSpawnFixedPrivilegedCommandRunner()
         let manifest = ReviewedRuntime110Manifest.package
         self.init(
-            manifest: manifest,
-            manifestID: ReviewedRuntime110Manifest.identifier,
-            manifestSHA256: ReviewedRuntime110Manifest.sourceSHA256,
+            manifests: [
+                .init(
+                    manifest: ReviewedRuntime100Manifest.package,
+                    manifestID: ReviewedRuntime100Manifest.identifier,
+                    sourceSHA256: ReviewedRuntime100Manifest.sourceSHA256
+                ),
+                .init(
+                    manifest: ReviewedRuntime110Manifest.package,
+                    manifestID: ReviewedRuntime110Manifest.identifier,
+                    sourceSHA256: ReviewedRuntime110Manifest.sourceSHA256
+                )
+            ],
             packageVerifier: SystemPrivilegedPackageVerifier(allowedOwner: packageOwner),
             commandRunner: runner,
             host: SystemPrivilegedHostMutator(
@@ -60,18 +79,38 @@ public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
         commandRunner: any FixedPrivilegedCommandRunning,
         host: any PrivilegedHostMutating
     ) {
-        self.manifest = manifest
-        self.manifestID = manifestID
-        self.manifestSHA256 = manifestSHA256
+        self.init(
+            manifests: [.init(
+                manifest: manifest,
+                manifestID: manifestID,
+                sourceSHA256: manifestSHA256
+            )],
+            packageVerifier: packageVerifier,
+            commandRunner: commandRunner,
+            host: host
+        )
+    }
+
+    public init(
+        manifests: [PrivilegedRuntimeManifest],
+        packageVerifier: any PrivilegedPackageVerifying,
+        commandRunner: any FixedPrivilegedCommandRunning,
+        host: any PrivilegedHostMutating
+    ) {
+        self.manifests = manifests
         self.packageVerifier = packageVerifier
         self.commandRunner = commandRunner
         self.host = host
     }
 
     public func installVerifiedPackage(_ package: FileHandle, token: PackageInstallToken) throws {
-        guard token.runtimeVersion == manifest.runtimeVersion, token.sha256 == manifest.sha256 else {
+        let matches = manifests.filter {
+            token.runtimeVersion == $0.manifest.runtimeVersion && token.sha256 == $0.manifest.sha256
+        }
+        guard matches.count == 1, let reviewed = matches.first else {
             throw SystemPrivilegedAdapterError.packageTokenMismatch
         }
+        let manifest = reviewed.manifest
         let verified = try packageVerifier.verify(package, against: manifest)
         guard verified.runtimeVersion == manifest.runtimeVersion, verified.sha256 == manifest.sha256 else {
             throw SystemPrivilegedAdapterError.verificationReportMismatch
@@ -81,12 +120,12 @@ public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
     }
 
     public func removePayload(_ request: RemovePayloadRequest) throws {
-        try validateManifest(request.manifestID, sha256: request.manifestSHA256)
-        try host.removePayload(manifest: manifest)
+        let reviewed = try reviewedManifest(request.manifestID, sha256: request.manifestSHA256)
+        try host.removePayload(manifest: reviewed.manifest)
     }
 
     public func forgetReceipt(identifier: String) throws {
-        guard identifier == manifest.receiptIdentifier else {
+        guard manifests.map(\.manifest.receiptIdentifier).contains(identifier) else {
             throw SystemPrivilegedAdapterError.receiptMismatch
         }
         try host.forgetReceipt()
@@ -118,14 +157,19 @@ public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
     }
 
     public func removeKnownEmptyDirectories(manifestID: String) throws {
-        guard manifestID == self.manifestID else { throw SystemPrivilegedAdapterError.manifestMismatch }
-        try host.removeKnownEmptyDirectories(manifest: manifest)
-    }
-
-    private func validateManifest(_ identifier: String, sha256: String) throws {
-        guard identifier == manifestID, sha256 == manifestSHA256 else {
+        let matches = manifests.filter { $0.manifestID == manifestID }
+        guard matches.count == 1, let reviewed = matches.first else {
             throw SystemPrivilegedAdapterError.manifestMismatch
         }
+        try host.removeKnownEmptyDirectories(manifest: reviewed.manifest)
+    }
+
+    private func reviewedManifest(_ identifier: String, sha256: String) throws -> PrivilegedRuntimeManifest {
+        let matches = manifests.filter { $0.manifestID == identifier && $0.sourceSHA256 == sha256 }
+        guard matches.count == 1, let reviewed = matches.first else {
+            throw SystemPrivilegedAdapterError.manifestMismatch
+        }
+        return reviewed
     }
 }
 

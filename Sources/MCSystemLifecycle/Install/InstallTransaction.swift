@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import MCCompatibility
 
 public enum InstallStage: String, CaseIterable, Codable, Sendable {
     case platformPreflight = "platform.preflight"
@@ -45,10 +46,7 @@ public struct RuntimeInstallTarget: Equatable, Sendable {
     public static let appleContainer110 = Self(
         manifest: ReviewedRuntime110Manifest.package,
         releaseAPIURL: reviewedReleaseURL(),
-        requiredProbes: [
-            "api.version", "service.health", "images.list", "images.decode",
-            "network.list", "container.lifecycle", "build.smoke", "logs.stream"
-        ]
+        requiredProbes: ProbeID.baselineAllCases.map(\.rawValue)
     )
 
     private static func reviewedReleaseURL() -> URL {

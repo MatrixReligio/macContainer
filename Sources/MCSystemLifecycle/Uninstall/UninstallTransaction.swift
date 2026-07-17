@@ -49,6 +49,13 @@ public struct RuntimeUninstallTarget: Equatable, Sendable {
         manifestSHA256: ReviewedRuntime110Manifest.sourceSHA256,
         packetFilterAnchor: "com.apple.container"
     )
+
+    public static let reviewedRuntime100 = Self(
+        manifest: ReviewedRuntime100Manifest.package,
+        manifestID: ReviewedRuntime100Manifest.identifier,
+        manifestSHA256: ReviewedRuntime100Manifest.sourceSHA256,
+        packetFilterAnchor: "com.apple.container"
+    )
 }
 
 public struct UninstallInventory: Equatable, Sendable {

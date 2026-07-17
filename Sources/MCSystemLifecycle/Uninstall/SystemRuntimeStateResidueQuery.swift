@@ -77,8 +77,12 @@ public struct SystemRuntimeStateResidueQuery: RuntimeStateResidueQuerying {
     }
 
     public static var live: Self {
+        live(manifest: ReviewedRuntime110Manifest.package)
+    }
+
+    public static func live(manifest: RuntimePackageManifest) -> Self {
         .init(
-            manifest: ReviewedRuntime110Manifest.package,
+            manifest: manifest,
             launchServices: AppleLaunchServiceResidueInspector(),
             processes: SystemOwnedProcessResidueInspector(),
             credentials: KeychainCredentialResidueInspector(),

@@ -1,3 +1,4 @@
+import MCAppCore
 import SwiftUI
 
 struct InstallRuntimeView: View {
@@ -7,6 +8,7 @@ struct InstallRuntimeView: View {
         case complete
     }
 
+    @Environment(AppState.self) private var appState
     @State private var phase: InstallPhase = .ready
     let isAuditMode: Bool
 
@@ -37,20 +39,23 @@ struct InstallRuntimeView: View {
                     .foregroundStyle(Color(nsColor: .labelColor))
 
                 Button("Review and install") {
-                    phase = .postflightPending
+                    if isAuditMode {
+                        phase = .postflightPending
+                    } else {
+                        Task { await appState.runtimeLifecycle.install() }
+                    }
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!isAuditMode && appState.runtimeLifecycle.isBusy)
                 .accessibilityIdentifier("install-runtime")
 
-                if phase == .postflightPending {
+                if isAuditMode, phase == .postflightPending {
                     Label("Installing — compatibility postflight pending", systemImage: "hourglass")
-                    if isAuditMode {
-                        Button("Complete simulated postflight") {
-                            phase = .complete
-                        }
-                        .accessibilityIdentifier("simulate-install-postflight")
+                    Button("Complete simulated postflight") {
+                        phase = .complete
                     }
-                } else if phase == .complete {
+                    .accessibilityIdentifier("simulate-install-postflight")
+                } else if isAuditMode, phase == .complete {
                     Label {
                         Text("Runtime ready")
                             .foregroundStyle(Color(nsColor: .labelColor))
@@ -58,10 +63,55 @@ struct InstallRuntimeView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                     }
+                } else if !isAuditMode {
+                    productionState
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
+        }
+        .task {
+            guard !isAuditMode else { return }
+            await appState.runtimeLifecycle.refreshHelperStatus()
+        }
+    }
+
+    @ViewBuilder
+    private var productionState: some View {
+        switch appState.runtimeLifecycle.state {
+        case .ready:
+            EmptyView()
+        case .authorizingHelper:
+            ProgressView("Checking administrator approval…")
+        case .helperApprovalRequired:
+            Label("Administrator approval required", systemImage: "lock.shield")
+            Text("Allow MacContainer in System Settings > General > Login Items, then check again.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button("Open Login Items Settings") {
+                    Task { await appState.runtimeLifecycle.openHelperApprovalSettings() }
+                }
+                Button("Check approval") {
+                    Task { await appState.runtimeLifecycle.authorizeHelper() }
+                }
+            }
+        case .installing:
+            ProgressView("Installing — compatibility postflight pending")
+        case let .installed(version):
+            Label("Runtime ready", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+            Text("Apple container \(version) passed receipt, payload, kernel, and compatibility checks.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        case let .failed(code):
+            Label("Installation stopped safely", systemImage: "xmark.octagon.fill")
+                .foregroundStyle(.red)
+            Text(code)
+                .font(.caption.monospaced())
+                .textSelection(.enabled)
+        case .preparingUninstall, .readyToUninstall, .uninstalling, .uninstalled:
+            EmptyView()
         }
     }
 }

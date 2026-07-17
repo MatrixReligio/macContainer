@@ -230,7 +230,7 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
         }
         let report = await probeRegistry.runAll(context: .init(
             bridge: reviewed.context.bridge,
-            expectedRuntimeVersion: reviewed.entry.runtimeVersion,
+            expectedRuntimeVersion: reviewed.context.installedRuntimeVersion,
             expectedCapabilityIDs: reviewed.entry.capabilityIDs,
             enabledCapabilityIDs: reviewed.context.enabledCapabilityIDs,
             phase: .preflight

@@ -34,7 +34,10 @@ public struct SystemResidueAuditConfiguration: Sendable {
     }
 
     public static var live: Self {
-        let manifest = ReviewedRuntime110Manifest.package
+        live(manifest: ReviewedRuntime110Manifest.package)
+    }
+
+    public static func live(manifest: RuntimePackageManifest) -> Self {
         let installRoot = URL(fileURLWithPath: manifest.installLocation, isDirectory: true)
         return .init(
             userArtifacts: .live,

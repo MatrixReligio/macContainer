@@ -34,6 +34,30 @@ struct AutomaticUpgradeTests {
         #expect(busy.actions.values == ["context", "package"])
     }
 
+    @Test func `production package gate builds only the exact catalog target`() async throws {
+        let entry = try #require(try CompatibilityCatalog.bundled().entries.first)
+        let verifier = ReviewedAutomaticUpdatePackageVerifier()
+        let candidate = try RuntimeReleaseCandidate(
+            version: entry.runtimeVersion,
+            packageURL: #require(URL(string:
+                "https://github.com/apple/container/releases/download/1.1.0/\(entry.package.assetName)")),
+            packageSHA256: entry.package.sha256
+        )
+
+        let target = try await verifier.verify(candidate: candidate, entry: entry)
+        #expect(target.installTarget.manifest == ReviewedRuntime110Manifest.package)
+        #expect(target.installTarget.releaseAPIURL == candidate.packageURL)
+
+        let drifted = RuntimeReleaseCandidate(
+            version: candidate.version,
+            packageURL: candidate.packageURL,
+            packageSHA256: String(repeating: "0", count: 64)
+        )
+        await #expect(throws: ProductionUpgradeComponentError.packageIdentityMismatch) {
+            try await verifier.verify(candidate: drifted, entry: entry)
+        }
+    }
+
     @Test func `package rollback and preflight failures hold before mutation`() async throws {
         let badPackage = try AutomaticFixture(packageFails: true)
         #expect(try await badPackage.coordinator.process(.fixture) == .held(.packageIdentityMismatch))
@@ -53,6 +77,16 @@ struct AutomaticUpgradeTests {
 
         #expect(try await fixture.coordinator.process(.fixture) == .pending(.workActive))
         #expect(fixture.actions.values == ["context", "package", "rollback", "final-idle"])
+    }
+
+    @Test func `preflight probes validate the installed reviewed source before mutation`() async throws {
+        let probe = CapturingAutomaticProbe(id: .health)
+        let fixture = try AutomaticFixture(probeRegistry: ProbeRegistry(probes: [probe]))
+
+        #expect(try await fixture.coordinator.process(.fixture) == .upToDate)
+        let context = try #require(await probe.contexts.first)
+        #expect(context.phase == .preflight)
+        #expect(context.expectedRuntimeVersion == "1.0.0")
     }
 
     @Test func `transaction rollback and recovery requirement persist target block`() async throws {
@@ -183,7 +217,7 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
             consentVersion: RuntimeUpdatePolicy.currentConsentVersion,
             helperAuthorized: true,
             activity: initialActivity,
-            bridge: FakeRuntimeBridge(),
+            bridge: FakeRuntimeBridge(runtimeVersion: "1.0.0"),
             enabledCapabilityIDs: entry.capabilityIDs
         )
     }
@@ -295,6 +329,20 @@ private struct FakeAutomaticProbe: CompatibilityProbe {
     let outcome: ProbeOutcome
     func run(context _: ProbeContext) async -> ProbeResult {
         .init(id: id, outcome: outcome)
+    }
+}
+
+private actor CapturingAutomaticProbe: CompatibilityProbe {
+    nonisolated let id: ProbeID
+    private(set) var contexts: [ProbeContext] = []
+
+    init(id: ProbeID) {
+        self.id = id
+    }
+
+    func run(context: ProbeContext) -> ProbeResult {
+        contexts.append(context)
+        return .init(id: id, outcome: .passed)
     }
 }
 
