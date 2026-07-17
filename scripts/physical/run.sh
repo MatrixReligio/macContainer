@@ -5,6 +5,8 @@ script_dir="${0:A:h}"
 repo_root="${script_dir:h:h}"
 policy_root="${MC_PHYSICAL_POLICY_ROOT:-$repo_root}"
 plan="$repo_root/Config/physical-test-plan-v1.json"
+catalog="$repo_root/Config/compatibility/catalog-v1.json"
+contract="$repo_root/Config/contracts/apple-container-1.1.0-acceptance.json"
 physical_root="$repo_root/.artifacts/physical"
 derived_data="$repo_root/.artifacts/DerivedData"
 expected_team_id="UPBK2H6LZM"
@@ -64,8 +66,11 @@ case "$mode" in
     *) die "usage: run.sh --simulated-host | --all | --phase <name> | --policy-check" ;;
 esac
 
-source_commit="$(git -C "$repo_root" rev-parse HEAD)"
-[[ "$source_commit" =~ '^[0-9a-f]{40}$' ]] || die "physical source commit is invalid"
+runtime_source_commit="$(/usr/bin/plutil -extract entries.0.attestation.sourceCommit raw -o - "$catalog")"
+contract_source_commit="$(/usr/bin/plutil -extract sourceCommit raw -o - "$contract")"
+[[ "$runtime_source_commit" =~ '^[0-9a-f]{40}$' && \
+   "$runtime_source_commit" == "$contract_source_commit" ]] || \
+    die "physical runtime source commit is invalid or inconsistent"
 if [[ "$mode" != "--simulated-host" ]]; then
     git -C "$repo_root" diff --quiet -- && git -C "$repo_root" diff --cached --quiet -- || \
         die "tracked worktree must be clean for physical attestation"
@@ -364,7 +369,7 @@ summarize_results() {
         --results "$summary_results_copy" \
         --app "$physical_audit_app" \
         --output "$output" \
-        --source-commit "$source_commit" \
+        --source-commit "$runtime_source_commit" \
         --runtime-version 1.1.0 \
         --runtime-sha256 "$digest_110" \
         --signer-key-id matrixreligio-physical-2026-07-r1 \
