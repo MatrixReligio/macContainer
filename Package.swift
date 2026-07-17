@@ -13,7 +13,8 @@ let package = Package(
         .library(name: "MCSystemLifecycle", targets: ["MCSystemLifecycle"]),
         .library(name: "MCAppCore", targets: ["MCAppCore"]),
         .executable(name: "mc-verify-package", targets: ["MCVerifyPackage"]),
-        .executable(name: "mc-attestation", targets: ["MCAttestationTool"])
+        .executable(name: "mc-attestation", targets: ["MCAttestationTool"]),
+        .executable(name: "mc-physical", targets: ["MCPhysicalTool"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/container.git", exact: "1.1.0"),
@@ -76,6 +77,11 @@ let package = Package(
             name: "MCAttestationTool",
             dependencies: ["MCCompatibility"],
             path: "Tools/MCAttestationTool"
+        ),
+        .executableTarget(
+            name: "MCPhysicalTool",
+            dependencies: ["MCSystemLifecycle"],
+            path: "Tools/MCPhysicalTool"
         ),
         .target(
             name: "TestSupport",
