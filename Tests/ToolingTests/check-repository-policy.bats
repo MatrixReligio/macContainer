@@ -42,4 +42,14 @@ done
     exit 1
 }
 
+/usr/bin/grep -Fq -- 'skip_package_tests="${MC_SKIP_PACKAGE_TESTS:-0}"' "$gate" || {
+    print -u2 -- "repository gate must expose an explicit CI-only package-test split"
+    exit 1
+}
+
+/usr/bin/grep -Fq -- 'if [[ "$skip_package_tests" != "1" ]]; then' "$gate" || {
+    print -u2 -- "repository gate must run package tests unless explicitly split by CI"
+    exit 1
+}
+
 print -r -- "Repository gate composition policy PASS"

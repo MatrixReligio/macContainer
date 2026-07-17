@@ -76,28 +76,22 @@ RUBY
     fi
 done
 
-if ! /usr/bin/grep -Eq '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' "$ci"; then
-    errors+=("ci.yml must build on the 14 GB macos-26-intel runner")
-fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' "$ci"; then
-    errors+=("ci.yml must run UI tests on native Apple Silicon macos-26")
+    errors+=("ci.yml must build on native Apple Silicon macos-26")
 fi
 if /usr/bin/grep -E '^[[:space:]]*runs-on:' "$ci" | \
-   /usr/bin/grep -Evq '(macos-26(-intel)?|ubuntu-24\.04)[[:space:]]*$'; then
+   /usr/bin/grep -Evq 'macos-26[[:space:]]*$'; then
     errors+=("ci.yml contains an unapproved runner")
 fi
 if ! /usr/bin/grep -Fq 'scripts/check-repository.sh' "$ci"; then
     errors+=("ci.yml must run scripts/check-repository.sh")
 fi
 arm64_build_count="$(/usr/bin/grep -cF 'ARCHS=arm64' "$ci" || true)"
-if [[ "$arm64_build_count" != "4" ]]; then
-    errors+=("ci.yml must restrict all four application build/test invocations to arm64")
+if [[ "$arm64_build_count" != "1" ]]; then
+    errors+=("ci.yml must restrict the application build invocation to arm64")
 fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "$ci"; then
     errors+=("ci.yml must grant only read access to repository contents")
-fi
-if ! /usr/bin/grep -Fq "actions/upload-artifact@$approved_upload_artifact_sha" "$ci"; then
-    errors+=("ci.yml must use the reviewed Node 24 upload-artifact release")
 fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*issues:[[:space:]]*write([[:space:]]|$)' "$upstream"; then
     errors+=("upstream-monitor.yml must grant issue write access at job scope")
@@ -168,4 +162,4 @@ if (( ${#errors} > 0 )); then
     exit 1
 fi
 
-print -r -- "Workflow policy PASS: macOS 26 Intel builds, Apple Silicon UI, least privilege, reviewed action SHAs"
+print -r -- "Workflow policy PASS: three native macOS 26 gates, no daily UI, least privilege, reviewed action SHAs"

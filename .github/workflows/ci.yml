@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Secret-free verification on macOS 26
-    runs-on: macos-26-intel
-    timeout-minutes: 60
+    name: Lint & Policy
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Check out the reviewed revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -26,7 +26,7 @@ jobs:
         run: scripts/bootstrap-tools.sh
 
       - name: Run the deterministic repository gate
-        run: MC_REQUIRE_CLEAN_WORKTREE=1 MC_SWIFTPM_JOBS=1 scripts/check-repository.sh
+        run: MC_REQUIRE_CLEAN_WORKTREE=1 MC_SKIP_PACKAGE_TESTS=1 scripts/check-repository.sh
 
       - name: Enforce release script and workflow supply-chain policy
         run: |
@@ -34,9 +34,9 @@ jobs:
           zsh Tests/ToolingTests/release-workflow-policy.bats
 
   coverage:
-    name: Package tests with coverage
-    runs-on: macos-26-intel
-    timeout-minutes: 60
+    name: Build & Test
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Check out the reviewed revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -45,9 +45,9 @@ jobs:
         run: swift test --jobs 1 --enable-code-coverage --parallel
 
   app-build:
-    name: Unsigned Debug and Release application builds
-    runs-on: macos-26-intel
-    timeout-minutes: 60
+    name: Build App Target
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Check out the reviewed revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -61,103 +61,3 @@ jobs:
           -configuration Debug -derivedDataPath .build/ci-debug
           -clonedSourcePackagesDirPath .build/xcode-packages
           ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
-
-      - name: Reclaim Debug build storage
-        run: rm -rf .build/ci-debug
-
-      - name: Build unsigned Release application
-        run: >-
-          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
-          -configuration Release -derivedDataPath .build/ci-release
-          -clonedSourcePackagesDirPath .build/xcode-packages
-          ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
-
-  ui-shards:
-    name: ${{ matrix.name }} with ephemeral signing
-    runs-on: macos-26
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - id: accessibility
-            name: Native accessibility audits
-            test-selection: -only-testing:MacContainerUITests/AccessibilityAuditTests
-          - id: functional
-            name: Integration and functional UI tests
-            test-selection: -skip-testing:MacContainerUITests/AccessibilityAuditTests
-    permissions:
-      contents: read
-    steps:
-      - name: Check out the verified revision
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Install the Xcode Metal toolchain component
-        run: xcodebuild -downloadComponent MetalToolchain
-
-      - name: Build integration and UI tests with ephemeral ad hoc signing
-        run: >-
-          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
-          -configuration Debug -derivedDataPath .build/ci-tests
-          -clonedSourcePackagesDirPath .build/xcode-packages
-          ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
-          build-for-testing
-
-      - name: Run the isolated UI test shard in fake-runtime mode
-        run: >-
-          xcodebuild -project MacContainer.xcodeproj -scheme MacContainer
-          -configuration Debug -derivedDataPath .build/ci-tests
-          -clonedSourcePackagesDirPath .build/xcode-packages
-          -resultBundlePath .build/TestResults-${{ matrix.id }}.xcresult
-          -test-timeouts-enabled YES
-          -default-test-execution-time-allowance 180
-          -maximum-test-execution-time-allowance 300
-          ${{ matrix.test-selection }}
-          ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
-          test-without-building
-
-      - name: Export the test summary
-        if: always()
-        run: |
-          if [[ -d .build/TestResults-${{ matrix.id }}.xcresult ]]; then
-            xcrun xcresulttool get test-results summary \
-              --path .build/TestResults-${{ matrix.id }}.xcresult \
-              > .build/test-summary-${{ matrix.id }}.json
-          else
-            printf '%s\n' '{"result":"Tests did not produce an xcresult bundle"}' \
-              > .build/test-summary-${{ matrix.id }}.json
-          fi
-
-      - name: Upload the test summary only
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: maccontainer-test-summary-${{ matrix.id }}
-          path: .build/test-summary-${{ matrix.id }}.json
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Remove test process state
-        if: always()
-        run: rm -rf "${TMPDIR%/}/container.matrixreligio.com.savedState"
-
-  ui-tests:
-    name: Integration and UI tests with ephemeral signing
-    if: always()
-    needs: [verify, coverage, app-build, ui-shards]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - name: Require every build, test, and UI shard to pass
-        env:
-          VERIFY_RESULT: ${{ needs.verify.result }}
-          COVERAGE_RESULT: ${{ needs.coverage.result }}
-          APP_BUILD_RESULT: ${{ needs.app-build.result }}
-          UI_SHARDS_RESULT: ${{ needs.ui-shards.result }}
-        run: |
-          test "$VERIFY_RESULT" = success
-          test "$COVERAGE_RESULT" = success
-          test "$APP_BUILD_RESULT" = success
-          test "$UI_SHARDS_RESULT" = success

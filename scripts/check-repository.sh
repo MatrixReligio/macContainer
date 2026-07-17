@@ -10,9 +10,14 @@ swiftpm_cache="$repo_root/.build/check-repository-swiftpm/cache"
 swiftpm_config="$repo_root/.build/check-repository-swiftpm/configuration"
 swiftpm_security="$repo_root/.build/check-repository-swiftpm/security"
 swiftpm_jobs="${MC_SWIFTPM_JOBS:-2}"
+skip_package_tests="${MC_SKIP_PACKAGE_TESTS:-0}"
 
 if ! print -r -- "$swiftpm_jobs" | /usr/bin/grep -Eq '^[1-9][0-9]*$'; then
     print -u2 -- "Repository check FAIL: MC_SWIFTPM_JOBS must be a positive integer"
+    exit 1
+fi
+if [[ "$skip_package_tests" != "0" && "$skip_package_tests" != "1" ]]; then
+    print -u2 -- "Repository check FAIL: MC_SKIP_PACKAGE_TESTS must be 0 or 1"
     exit 1
 fi
 
@@ -85,14 +90,16 @@ require_version "SwiftLint" "$expected_swiftlint" "$($swiftlint version)"
 
 "$swiftformat" App Sources Tests scripts --lint --cache ignore --config .swiftformat
 "$swiftlint" lint --strict --no-cache --config .swiftlint.yml
-HOME="$swiftpm_home" swift test \
-    --cache-path "$swiftpm_cache" \
-    --config-path "$swiftpm_config" \
-    --security-path "$swiftpm_security" \
-    --scratch-path "$repo_root/.build" \
-    --disable-sandbox \
-    --jobs "$swiftpm_jobs" \
-    --parallel
+if [[ "$skip_package_tests" != "1" ]]; then
+    HOME="$swiftpm_home" swift test \
+        --cache-path "$swiftpm_cache" \
+        --config-path "$swiftpm_config" \
+        --security-path "$swiftpm_security" \
+        --scratch-path "$repo_root/.build" \
+        --disable-sandbox \
+        --jobs "$swiftpm_jobs" \
+        --parallel
+fi
 git diff --check
 
 if [[ "${MC_REQUIRE_CLEAN_WORKTREE:-0}" == "1" ]] && [[ -n "$(git status --short)" ]]; then

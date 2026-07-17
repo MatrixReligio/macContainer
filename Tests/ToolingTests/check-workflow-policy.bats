@@ -13,12 +13,6 @@ cp "$repo_root/.github/workflows/verify-compatibility-pr.yml" "$fixture/.github/
 cp "$repo_root/.github/workflows/release.yml" "$fixture/.github/workflows/"
 cp "$repo_root/.github/workflows/release-verify.yml" "$fixture/.github/workflows/"
 
-approved_upload_artifact='actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1'
-if ! /usr/bin/grep -Fq "$approved_upload_artifact" "$fixture/.github/workflows/ci.yml"; then
-    print -u2 -- "expected the reviewed Node 24 upload-artifact release"
-    exit 1
-fi
-
 if ! /usr/bin/grep -Fq -- 'swift test --jobs 1 --enable-code-coverage --parallel' \
     "$fixture/.github/workflows/ci.yml"; then
     print -u2 -- "expected coverage compilation to respect the macOS runner resource limit"
@@ -26,9 +20,9 @@ if ! /usr/bin/grep -Fq -- 'swift test --jobs 1 --enable-code-coverage --parallel
 fi
 
 if ! /usr/bin/grep -Fq -- \
-    'MC_REQUIRE_CLEAN_WORKTREE=1 MC_SWIFTPM_JOBS=1 scripts/check-repository.sh' \
+    'MC_REQUIRE_CLEAN_WORKTREE=1 MC_SKIP_PACKAGE_TESTS=1 scripts/check-repository.sh' \
     "$fixture/.github/workflows/ci.yml"; then
-    print -u2 -- "expected the repository gate to use one build job on hosted macOS"
+    print -u2 -- "expected lint and policy CI to leave package tests to Build & Test"
     exit 1
 fi
 
@@ -45,41 +39,33 @@ intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-
     "$fixture/.github/workflows/ci.yml" || true)"
 arm_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' \
     "$fixture/.github/workflows/ci.yml" || true)"
-linux_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*ubuntu-24.04[[:space:]]*$' \
-    "$fixture/.github/workflows/ci.yml" || true)"
-if [[ "$intel_runner_count" != 3 || "$arm_runner_count" != 1 || "$linux_runner_count" != 1 ]]; then
-    print -u2 -- "expected three Intel gates, one Apple Silicon matrix, and one lightweight aggregator"
+if [[ "$intel_runner_count" != 0 || "$arm_runner_count" != 3 ]]; then
+    print -u2 -- "expected exactly three native Apple Silicon macOS 26 gates"
     exit 1
 fi
 
 /usr/bin/ruby -e '
     require "yaml"
-    jobs = YAML.load_file(ARGV.fetch(0)).fetch("jobs")
-    %w[verify coverage app-build ui-shards ui-tests].each { |name| jobs.fetch(name) }
-
-    shards = jobs.fetch("ui-shards")
-    abort "UI shards must start independently" if shards.key?("needs")
-    abort "UI shards need a measured 45 minute budget" unless shards.fetch("timeout-minutes") >= 45
-    include_rows = shards.fetch("strategy").fetch("matrix").fetch("include")
-    abort "UI shards must split accessibility and functional coverage" unless
-      include_rows.map { |row| row.fetch("id") } == %w[accessibility functional]
-    selections = include_rows.map { |row| row.fetch("test-selection") }
-    abort "UI shard selectors are incomplete" unless
-      selections.any? { |value| value.include?("-only-testing:MacContainerUITests/AccessibilityAuditTests") } &&
-      selections.any? { |value| value.include?("-skip-testing:MacContainerUITests/AccessibilityAuditTests") }
-    shard_runs = shards.fetch("steps").map { |step| step["run"] }.compact.join("\n")
-    abort "UI tests need realistic per-test allowances" unless
-      shard_runs.include?("-default-test-execution-time-allowance 180") &&
-      shard_runs.include?("-maximum-test-execution-time-allowance 300")
-
-    aggregate = jobs.fetch("ui-tests")
-    needs = aggregate.fetch("needs")
-    abort "UI result must wait for every parallel gate and shard" unless
-      needs == %w[verify coverage app-build ui-shards]
-    abort "UI result must always evaluate dependencies" unless aggregate.fetch("if") == "always()"
-    abort "UI result must use the lightweight pinned Linux image" unless
-      aggregate.fetch("runs-on") == "ubuntu-24.04"
-    abort "UI result should finish quickly" unless aggregate.fetch("timeout-minutes") <= 5
+    path = ARGV.fetch(0)
+    jobs = YAML.load_file(path).fetch("jobs")
+    abort "daily CI must contain only verification, coverage, and app build" unless
+      jobs.keys == %w[verify coverage app-build]
+    expected_names = {
+      "verify" => "Lint & Policy",
+      "coverage" => "Build & Test",
+      "app-build" => "Build App Target"
+    }
+    abort "daily CI names must mirror macGameMaster responsibilities" unless
+      expected_names.all? { |id, name| jobs.fetch(id).fetch("name") == name }
+    text = File.read(path)
+    abort "daily CI must not run one-time marketing or UI automation" if
+      text.include?("MarketingScreenshotTests") ||
+      text.include?("MacContainerUITests") ||
+      text.include?("test-without-building")
+    app_runs = jobs.fetch("app-build").fetch("steps").map { |step| step["run"] }.compact.join("\n")
+    abort "daily CI must compile the Debug app target" unless app_runs.include?("-configuration Debug")
+    abort "daily CI must leave Release packaging to the release workflow" if
+      app_runs.include?("-configuration Release")
 ' "$fixture/.github/workflows/ci.yml"
 
 "$fixture/scripts/check-workflow-policy.sh"
@@ -99,7 +85,7 @@ fi
 
 cp "$repo_root/.github/workflows/ci.yml" "$fixture/.github/workflows/ci.yml"
 /usr/bin/sed -i '' \
-    's/actions\/upload-artifact@[0-9a-f]*/actions\/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4/' \
+    's/actions\/checkout@[0-9a-f]*/actions\/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4/' \
     "$fixture/.github/workflows/ci.yml"
 if "$fixture/scripts/check-workflow-policy.sh"; then
     print -u2 -- "expected a stale Node 20 upload-artifact release to fail"
