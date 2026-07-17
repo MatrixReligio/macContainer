@@ -49,7 +49,7 @@ struct RuntimeUpdateSettingsView: View {
                     Button("Check now") {
                         state.runtimeUpdateState = .checking
                     }
-                        .accessibilityIdentifier("check-runtime-update")
+                    .accessibilityIdentifier("check-runtime-update")
                     if case .available = state.runtimeUpdateState {
                         Button("Install compatible update") {
                             state.runtimeUpdateState = .installing(.targetProbes)

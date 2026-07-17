@@ -2,8 +2,8 @@ import Foundation
 import MCCompatibility
 import MCModel
 @testable import MCSystemLifecycle
-import TestSupport
 import Testing
+import TestSupport
 
 @Suite("Guarded automatic runtime upgrade")
 struct AutomaticUpgradeTests {
@@ -133,8 +133,13 @@ private final class AutomaticFixture {
 private final class LockedAutomaticActions: @unchecked Sendable {
     private let lock = NSLock()
     private var storage: [String] = []
-    var values: [String] { lock.withLock { storage } }
-    func append(_ value: String) { lock.withLock { storage.append(value) } }
+    var values: [String] {
+        lock.withLock { storage }
+    }
+
+    func append(_ value: String) {
+        lock.withLock { storage.append(value) }
+    }
 }
 
 private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding {
@@ -198,7 +203,9 @@ private struct RecordingAutomaticPackageVerifier: AutomaticUpdatePackageVerifyin
         entry: CompatibilityEntry
     ) async throws -> RuntimeUpgradeTarget {
         actions.append("package")
-        if fails { throw AutomaticFixtureError.injected }
+        if fails {
+            throw AutomaticFixtureError.injected
+        }
         let install = RuntimeInstallTarget(
             manifest: ReviewedRuntime110Manifest.package,
             releaseAPIURL: candidate.packageURL,
@@ -228,11 +235,15 @@ private actor RecordingRollbackAvailability: AutomaticRollbackAvailabilityChecki
         actions.append("rollback")
         requested = true
         try await ContinuousClock().sleep(for: delay)
-        if fails { throw AutomaticFixtureError.injected }
+        if fails {
+            throw AutomaticFixtureError.injected
+        }
     }
 
     func waitUntilRequested() async {
-        while !requested { await Task.yield() }
+        while !requested {
+            await Task.yield()
+        }
     }
 }
 
@@ -242,7 +253,9 @@ private struct RecordingAutomaticExecutor: AutomaticUpgradeExecuting {
 
     func upgrade(to target: RuntimeUpgradeTarget) async throws -> UpgradeReport {
         actions.append("upgrade")
-        if let error { throw error }
+        if let error {
+            throw error
+        }
         return UpgradeReport(previousRuntimeVersion: "1.0.0", runtimeVersion: target.version, kind: .upgrade)
     }
 }
@@ -266,13 +279,17 @@ private actor RecordingAutomaticBlocker: AutomaticUpdateBlocking {
 
 private actor RecordingAutomaticSink: RuntimeUpdateStateSink {
     var states: [RuntimeUpdateState] = []
-    func publish(_ state: RuntimeUpdateState) { states.append(state) }
+    func publish(_ state: RuntimeUpdateState) {
+        states.append(state)
+    }
 }
 
 private struct FakeAutomaticProbe: CompatibilityProbe {
     let id: ProbeID
     let outcome: ProbeOutcome
-    func run(context _: ProbeContext) async -> ProbeResult { .init(id: id, outcome: outcome) }
+    func run(context _: ProbeContext) async -> ProbeResult {
+        .init(id: id, outcome: outcome)
+    }
 }
 
 private enum AutomaticFixtureError: Error {

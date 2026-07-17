@@ -9,11 +9,11 @@ struct RootScene: View {
     var body: some View {
         @Bindable var state = state
         let arguments = ProcessInfo.processInfo.arguments
+        let showsSparkleTestAbout = arguments.contains("--sparkle-test-about") &&
+            arguments.contains("--fake-runtime") && SparkleAppUpdater.hasValidatedTestFeed
 
         Group {
-            if arguments.contains("--sparkle-test-about"),
-               arguments.contains("--fake-runtime"),
-               SparkleAppUpdater.hasValidatedTestFeed {
+            if showsSparkleTestAbout {
                 AboutSettingsView()
                     .accessibilityIdentifier("sparkle-test-about")
             } else if let fixture = MarketingFixture.from(arguments: arguments), arguments.contains("--fake-runtime") {
