@@ -9,6 +9,12 @@ swiftpm_home="$repo_root/.build/check-repository-home"
 swiftpm_cache="$repo_root/.build/check-repository-swiftpm/cache"
 swiftpm_config="$repo_root/.build/check-repository-swiftpm/configuration"
 swiftpm_security="$repo_root/.build/check-repository-swiftpm/security"
+swiftpm_jobs="${MC_SWIFTPM_JOBS:-2}"
+
+if ! print -r -- "$swiftpm_jobs" | /usr/bin/grep -Eq '^[1-9][0-9]*$'; then
+    print -u2 -- "Repository check FAIL: MC_SWIFTPM_JOBS must be a positive integer"
+    exit 1
+fi
 
 cd "$repo_root"
 /bin/mkdir -p "$module_cache" "$swiftpm_home" "$swiftpm_cache" "$swiftpm_config" "$swiftpm_security"
@@ -85,6 +91,7 @@ HOME="$swiftpm_home" swift test \
     --security-path "$swiftpm_security" \
     --scratch-path "$repo_root/.build" \
     --disable-sandbox \
+    --jobs "$swiftpm_jobs" \
     --parallel
 git diff --check
 

@@ -37,7 +37,7 @@ jobs:
           zsh Tests/ToolingTests/release-workflow-policy.bats
 
       - name: Run package tests with coverage
-        run: swift test --enable-code-coverage --parallel
+        run: swift test --jobs 2 --enable-code-coverage --parallel
 
       - name: Build unsigned Debug application
         run: >-

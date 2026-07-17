@@ -19,6 +19,12 @@ if ! /usr/bin/grep -Fq "$approved_upload_artifact" "$fixture/.github/workflows/c
     exit 1
 fi
 
+if ! /usr/bin/grep -Fq -- 'swift test --jobs 2 --enable-code-coverage --parallel' \
+    "$fixture/.github/workflows/ci.yml"; then
+    print -u2 -- "expected coverage compilation to respect the macOS runner resource limit"
+    exit 1
+fi
+
 "$fixture/scripts/check-workflow-policy.sh"
 
 printf '\nenv:\n  UNSAFE: ${{ secrets.TEST_ONLY }}\n' >> "$fixture/.github/workflows/ci.yml"

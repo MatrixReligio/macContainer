@@ -32,4 +32,14 @@ done
     exit 1
 }
 
+/usr/bin/grep -Fq -- 'swiftpm_jobs="${MC_SWIFTPM_JOBS:-2}"' "$gate" || {
+    print -u2 -- "repository gate must default SwiftPM builds to two jobs"
+    exit 1
+}
+
+/usr/bin/grep -Fq -- '--jobs "$swiftpm_jobs"' "$gate" || {
+    print -u2 -- "repository gate must apply its SwiftPM job limit"
+    exit 1
+}
+
 print -r -- "Repository gate composition policy PASS"
