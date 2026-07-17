@@ -74,6 +74,7 @@ fi
 
 markdown_files=("${(@f)$(/usr/bin/find "$repo_root" -type f -name '*.md' \
     -not -path "$repo_root/.git/*" \
+    -not -path "$repo_root/.artifacts/*" \
     -not -path "$repo_root/.build/*" \
     -not -path "$repo_root/.tools/*" \
     -not -path "$repo_root/.worktrees/*" | /usr/bin/sort)}")

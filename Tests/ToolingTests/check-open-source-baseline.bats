@@ -37,12 +37,16 @@ while IFS= read -r markdown; do
     cp "$markdown" "$fixture/$relative"
 done < <(find "$repo_root" -type f -name '*.md' \
     -not -path "$repo_root/.git/*" \
+    -not -path "$repo_root/.artifacts/*" \
     -not -path "$repo_root/.build/*" \
     -not -path "$repo_root/.tools/*" \
     -not -path "$repo_root/.worktrees/*" | sort)
 for required_file in "${policy_documents[@]}" "${community_templates[@]}"; do
     cp "$repo_root/$required_file" "$fixture/$required_file"
 done
+
+mkdir -p "$fixture/.artifacts/vendor"
+print -r -- '[generated dependency link](missing.md)' > "$fixture/.artifacts/vendor/README.md"
 
 "$fixture/scripts/check-open-source-baseline.sh"
 
