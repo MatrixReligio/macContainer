@@ -15,6 +15,7 @@ policy_check() {
         'notarize.sh|stapler staple'
         'notarize.sh|spctl --assess --type execute'
         'generate-appcast.sh|--ed-key-file'
+        'release.sh|CODE_SIGNING_ALLOWED=NO'
         'release.sh|generate-sbom.swift'
         'verify-release.sh|verify-sparkle-signature.swift'
         'verify-release.sh|codesign --verify --deep --strict'
@@ -78,8 +79,7 @@ dist="$REPO_ROOT/dist"
 
 xcodebuild -quiet -project MacContainer.xcodeproj -scheme MacContainer -configuration Release \
     -archivePath "$archive" -derivedDataPath "$artifacts/DerivedData" \
-    DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual \
-    CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY" archive
+    CODE_SIGNING_ALLOWED=NO archive
 app="$archive/Products/Applications/MacContainer.app"
 "$SCRIPT_DIR/sign.sh" "$app"
 "$SCRIPT_DIR/notarize.sh" --app "$app"
