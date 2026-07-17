@@ -46,8 +46,9 @@ scripts/check-no-container-cli.sh
 scripts/check-workflow-policy.sh
 scripts/check-open-source-baseline.sh
 swift scripts/check-contract-coverage.swift \
-    Config/contracts/apple-container-1.1.0-acceptance.json \
-    Sources/MCContracts/Resources/apple-container-1.1.0.json
+  Config/contracts/apple-container-1.1.0-acceptance.json \
+  Sources/MCContracts/Resources/apple-container-1.1.0.json
+swift scripts/check-compatibility-catalog.swift Config/compatibility/catalog-v1.json
 scripts/check-generated-project.sh
 
 swiftformat="$(resolve_tool swiftformat || true)"

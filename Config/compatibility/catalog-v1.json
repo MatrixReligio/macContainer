@@ -1,0 +1,57 @@
+{
+  "entries": [
+    {
+      "adapterPackageVersion": "1.1.0",
+      "allowedUpgradeSources": [
+        {
+          "packageSHA256": "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d",
+          "runtimeVersion": "1.0.0"
+        }
+      ],
+      "attestation": {
+        "id": "apple-container-1.1.0-physical-v1",
+        "source": "embeddedPhysicalGate",
+        "sourceCommit": "5973b9cc626a3e7a499bb316a958237ebe14e2ed",
+        "testPlanVersion": "physical-v1"
+      },
+      "capabilityIDs": [
+        "builder.delete", "builder.start", "builder.status", "builder.stop", "configuration.manage",
+        "containers.copy", "containers.create", "containers.delete", "containers.exec", "containers.export",
+        "containers.inspect", "containers.kill", "containers.list", "containers.logs", "containers.prune",
+        "containers.start", "containers.stats", "containers.stop", "core.build", "core.run", "dns.create",
+        "dns.delete", "dns.list", "images.delete", "images.inspect", "images.list", "images.load",
+        "images.prune", "images.pull", "images.push", "images.save", "images.tag", "kernel.set",
+        "machines.create", "machines.delete", "machines.inspect", "machines.list", "machines.logs",
+        "machines.run", "machines.set", "machines.set-default", "machines.stop", "networks.create",
+        "networks.delete", "networks.inspect", "networks.list", "networks.prune", "registries.list",
+        "registries.login", "registries.logout", "system.disk-usage", "system.logs", "system.start",
+        "system.status", "system.stop", "system.version", "volumes.create", "volumes.delete",
+        "volumes.inspect", "volumes.list", "volumes.prune"
+      ],
+      "maximumAppVersion": "0.1.999",
+      "minimumAppVersion": "0.1.0",
+      "minimumMacOSMajor": 26,
+      "package": {
+        "assetName": "container-1.1.0-installer-signed.pkg",
+        "installerTeamID": "UPBK2H6LZM",
+        "receiptIdentifier": "com.apple.container-installer",
+        "runtimeVersion": "1.1.0",
+        "sha256": "0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714",
+        "signerCommonName": "Developer ID Installer: Apple Inc. - Containerization (UPBK2H6LZM)"
+      },
+      "requiredHardwareCapabilities": [],
+      "requiredProbeIDs": [
+        "health", "containers", "images", "builder", "networks", "volumes", "registries", "machines",
+        "diskUsage", "configuration", "capabilities"
+      ],
+      "rollback": "configurationAndMetadata",
+      "runtimeVersion": "1.1.0",
+      "storageMigration": "metadataOnly",
+      "supersedesBlockedAttestationIDs": []
+    }
+  ],
+  "generatedAt": "2026-07-16T00:00:00Z",
+  "revision": "apple-container-1.1.0-physical-v1",
+  "schemaVersion": 1,
+  "updateURL": null
+}

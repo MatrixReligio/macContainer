@@ -32,7 +32,7 @@
 - Create: `Config/compatibility/catalog-v1.json`
 - Test: `Tests/MCCompatibilityTests/CompatibilityCatalogTests.swift`
 
-- [ ] **Step 1: Write failing catalog invariants tests**
+- [x] **Step 1: Write failing catalog invariants tests**
 
 ```swift
 import Testing
@@ -61,13 +61,13 @@ struct CompatibilityCatalogTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter CompatibilityCatalogTests`
 
 Expected: FAIL because catalog types are undefined.
 
-- [ ] **Step 3: Implement immutable catalog types**
+- [x] **Step 3: Implement immutable catalog types**
 
 ```swift
 public struct CompatibilityCatalog: Codable, Equatable, Sendable {
@@ -108,13 +108,13 @@ public enum RollbackClassification: String, Codable, Sendable { case packageOnly
 
 The loader reads only a resource bundled into the signed app/module, rejects duplicate/unsorted semantic versions, missing capability/operation IDs, unknown probe IDs, invalid version intervals, package-manifest mismatch, attestation mismatch, and an unexpected non-nil `updateURL`.
 
-- [ ] **Step 4: Run schema and catalog checks**
+- [x] **Step 4: Run schema and catalog checks**
 
 Run: `swift test --filter CompatibilityCatalogTests && swift scripts/check-compatibility-catalog.swift Config/compatibility/catalog-v1.json`
 
 Expected: `Compatibility catalog PASS: 1 reviewed runtime, 61 capabilities, 11 baseline probes`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCCompatibility Config/compatibility Tests/MCCompatibilityTests/CompatibilityCatalogTests.swift scripts/check-compatibility-catalog.swift

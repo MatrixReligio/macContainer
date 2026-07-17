@@ -12,12 +12,12 @@ let package = Package(
         .library(name: "MCCompatibility", targets: ["MCCompatibility"]),
         .library(name: "MCSystemLifecycle", targets: ["MCSystemLifecycle"]),
         .library(name: "MCAppCore", targets: ["MCAppCore"]),
-        .executable(name: "mc-verify-package", targets: ["MCVerifyPackage"]),
+        .executable(name: "mc-verify-package", targets: ["MCVerifyPackage"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/container.git", exact: "1.1.0"),
         .package(url: "https://github.com/apple/containerization.git", exact: "0.35.0"),
-        .package(url: "https://github.com/mattt/swift-toml.git", exact: "2.0.0"),
+        .package(url: "https://github.com/mattt/swift-toml.git", exact: "2.0.0")
     ],
     targets: [
         .target(name: "MCModel"),
@@ -43,12 +43,13 @@ let package = Package(
                 .product(name: "TerminalProgress", package: "container"),
                 .product(name: "Containerization", package: "containerization"),
                 .product(name: "ContainerizationArchive", package: "containerization"),
-                .product(name: "TOML", package: "swift-toml"),
+                .product(name: "TOML", package: "swift-toml")
             ]
         ),
         .target(
             name: "MCCompatibility",
-            dependencies: ["MCModel", "MCContracts", "MCContainerBridge"]
+            dependencies: ["MCModel", "MCContracts", "MCContainerBridge"],
+            resources: [.process("Resources")]
         ),
         .target(
             name: "MCSystemLifecycle",
@@ -62,7 +63,7 @@ let package = Package(
                 "MCTemplates",
                 "MCContainerBridge",
                 "MCCompatibility",
-                "MCSystemLifecycle",
+                "MCSystemLifecycle"
             ]
         ),
         .executableTarget(
@@ -84,6 +85,6 @@ let package = Package(
         ),
         .testTarget(name: "MCCompatibilityTests", dependencies: ["MCCompatibility", "TestSupport"]),
         .testTarget(name: "MCSystemLifecycleTests", dependencies: ["MCSystemLifecycle", "TestSupport"]),
-        .testTarget(name: "MCAppCoreTests", dependencies: ["MCAppCore", "TestSupport"]),
+        .testTarget(name: "MCAppCoreTests", dependencies: ["MCAppCore", "TestSupport"])
     ]
 )
