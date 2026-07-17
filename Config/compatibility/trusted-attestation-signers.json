@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "signers": [
+    {
+      "keyID": "matrixreligio-physical-2026-07",
+      "publicKeyDERBase64": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWqfzCgEJOdmUSGZPfMliSuisY6lFBa43UVfZCxvWXPq6SmhS4rKi2oA5Bl6IjRVHhLzNyp+YglKvuuwpssIbhg==",
+      "publicKeySHA256": "c96804ae121499931af70d5e8085ee3db40b7e8adf25ff71087621034652f7f4"
+    }
+  ]
+}

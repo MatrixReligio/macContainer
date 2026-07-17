@@ -49,6 +49,10 @@ swift scripts/check-contract-coverage.swift \
   Config/contracts/apple-container-1.1.0-acceptance.json \
   Sources/MCContracts/Resources/apple-container-1.1.0.json
 swift scripts/check-compatibility-catalog.swift Config/compatibility/catalog-v1.json
+/usr/bin/cmp \
+  Config/compatibility/trusted-attestation-signers.json \
+  Sources/MCCompatibility/Resources/trusted-attestation-signers.json
+swift scripts/verify-physical-attestation.swift Tests/Fixtures/attestations/valid-1.1.0.json
 scripts/check-generated-project.sh
 
 swiftformat="$(resolve_tool swiftformat || true)"

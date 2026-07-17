@@ -385,17 +385,17 @@ git commit -m "feat: automatically upgrade only proven runtimes"
 - Create: `scripts/verify-physical-attestation.swift`
 - Test: `Tests/MCCompatibilityTests/AttestationVerifierTests.swift`
 
-- [ ] **Step 1: Write failing identity/content/replay tests**
+- [x] **Step 1: Write failing identity/content/replay tests**
 
 Test a valid local physical attestation and reject wrong signer, altered source commit, altered app build identity, runtime digest mismatch, test-plan mismatch, cleanup false, residue count nonzero, failed operation, expired timestamp, and replayed nonce.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter AttestationVerifierTests`
 
 Expected: FAIL because attestation types are undefined.
 
-- [ ] **Step 3: Implement canonical signed attestations**
+- [x] **Step 3: Implement canonical signed attestations**
 
 ```swift
 public struct PhysicalTestAttestation: Codable, Equatable, Sendable {
@@ -423,13 +423,13 @@ public struct PhysicalTestAttestation: Codable, Equatable, Sendable {
 
 Signing serializes canonical sorted-key JSON with empty signature, hashes SHA-256, and signs using a dedicated local code-signing identity/key kept outside the repository. The trusted public key hash is embedded. Verification requires all operation results true, residue zero, baseline/ledger true, exact commit/build/package/test plan, trusted signer, nonce not previously accepted, and issue time within the configured promotion window.
 
-- [ ] **Step 4: Run verifier tests and fixture CLI**
+- [x] **Step 4: Run verifier tests and fixture CLI**
 
 Run: `swift test --filter AttestationVerifierTests && swift scripts/verify-physical-attestation.swift Tests/Fixtures/attestations/valid-1.1.0.json`
 
 Expected: PASS for valid fixture and deterministic reason for every invalid fixture.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCCompatibility/Attestation Config/compatibility/trusted-attestation-signers.json scripts Tests/MCCompatibilityTests/AttestationVerifierTests.swift Tests/Fixtures/attestations

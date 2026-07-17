@@ -1,0 +1,31 @@
+{
+  "sourceCommit": "5973b9cc626a3e7a499bb316a958237ebe14e2ed",
+  "appBundleIdentifier": "container.matrixreligio.com",
+  "appVersion": "0.1.0",
+  "appBuild": "1",
+  "appDesignatedRequirementHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "runtimeVersion": "1.1.0",
+  "runtimePackageSHA256": "0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714",
+  "testPlanVersion": "physical-v1",
+  "requiredOperationIDs": [
+    "automaticUpgrade",
+    "builder",
+    "capabilities",
+    "completeUninstall",
+    "configuration",
+    "containers",
+    "diskUsage",
+    "health",
+    "images",
+    "install",
+    "machines",
+    "networks",
+    "registries",
+    "residueAudit",
+    "rollback",
+    "volumes"
+  ],
+  "verificationNow": "2026-07-16T08:10:00Z",
+  "maximumAge": 3600,
+  "futureTolerance": 300
+}
