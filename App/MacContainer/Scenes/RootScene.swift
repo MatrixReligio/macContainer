@@ -1,4 +1,5 @@
 import MCAppCore
+import MCContracts
 import SwiftUI
 
 struct RootScene: View {
@@ -8,22 +9,32 @@ struct RootScene: View {
     var body: some View {
         @Bindable var state = state
 
-        NavigationSplitView(columnVisibility: $state.columnVisibility) {
-            Sidebar(selection: $state.selection)
-                .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
-        } content: {
-            RouteContentView(route: state.selection)
-                .navigationSplitViewColumnWidth(min: 420, ideal: 620)
-        } detail: {
-            ResourceInspectorPlaceholder(route: state.selection)
-                .navigationSplitViewColumnWidth(min: 260, ideal: 340)
+        Group {
+            if let contract = Self.contract, ProcessInfo.processInfo.arguments.contains("--contract-audit-mode") {
+                ContractAuditView(contract: contract)
+            } else {
+                NavigationSplitView(columnVisibility: $state.columnVisibility) {
+                    Sidebar(selection: $state.selection)
+                        .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
+                } content: {
+                    RouteContentView(route: state.selection)
+                        .navigationSplitViewColumnWidth(min: 420, ideal: 620)
+                } detail: {
+                    ResourceInspectorPlaceholder(route: state.selection)
+                        .navigationSplitViewColumnWidth(min: 260, ideal: 340)
+                }
+                .onChange(of: state.activityCenterPresented) {
+                    openWindow(id: "activity-center")
+                }
+            }
         }
         .frame(minWidth: 940, minHeight: 620)
         .background(WindowAccessibilityIdentifier("main-window"))
-        .onChange(of: state.activityCenterPresented) {
-            openWindow(id: "activity-center")
-        }
     }
+
+    private static let contract = try? ContractRepository.bundled(
+        version: RuntimeVersion(major: 1, minor: 1, patch: 0)
+    )
 }
 
 private struct RouteContentView: View {

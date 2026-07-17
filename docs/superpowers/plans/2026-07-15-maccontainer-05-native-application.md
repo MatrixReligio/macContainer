@@ -250,7 +250,7 @@ git commit -m "feat: manage every resource natively"
 - Test: `Tests/MCAppCoreTests/OperationExecutorTests.swift`
 - Test: `Tests/MacContainerUITests/ParameterFormTests.swift`
 
-- [ ] **Step 1: Write failing contract-to-form parity tests**
+- [x] **Step 1: Write failing contract-to-form parity tests**
 
 ```swift
 func testEveryParameterHasFieldAndInformationButton() throws {
@@ -270,13 +270,13 @@ func testEveryParameterHasFieldAndInformationButton() throws {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/ParameterFormTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because form/help views are absent.
 
-- [ ] **Step 3: Implement complete parameter rendering**
+- [x] **Step 3: Implement complete parameter rendering**
 
 ```swift
 struct ParameterHelpButton: View {
@@ -307,7 +307,7 @@ struct ParameterHelpButton: View {
 
 `OperationExecutor` maps each of 61 operation IDs to one typed bridge invocation and rejects unknown/disabled capabilities. List-format/quiet contract metadata maps to native sort/export choices, never terminal strings.
 
-- [ ] **Step 4: Run executor, form parity, keyboard, and help tests**
+- [x] **Step 4: Run executor, form parity, keyboard, and help tests**
 
 Run:
 
@@ -318,7 +318,7 @@ xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:Ma
 
 Expected: PASS; every affecting parameter has exactly one field/help button, invalid input cannot execute, and Full Keyboard Access reaches help popovers.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer/Views/Operations Sources/MCAppCore/OperationExecutor.swift Tests/MCAppCoreTests/OperationExecutorTests.swift Tests/MacContainerUITests/ParameterFormTests.swift
