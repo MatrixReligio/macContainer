@@ -59,6 +59,11 @@ if [[ "${1:-}" == "--policy-check" ]]; then
     exit 0
 fi
 
+swiftpm_jobs="${MC_SWIFTPM_JOBS:-2}"
+if ! print -r -- "$swiftpm_jobs" | /usr/bin/grep -Eq '^[1-9][0-9]*$'; then
+    die "MC_SWIFTPM_JOBS must be a positive integer"
+fi
+
 mode="${1:-}"
 phase=""
 case "$mode" in
@@ -486,7 +491,9 @@ fi
 /bin/chmod 0700 "$run_root"
 
 if [[ "$mode" == "--simulated-host" ]]; then
-    run_with_timeout 180 /usr/bin/swift run --package-path "$repo_root" mc-physical simulate-run \
+    run_with_timeout 1200 /usr/bin/swift build --package-path "$repo_root" \
+        --product mc-physical --jobs "$swiftpm_jobs"
+    run_with_timeout 180 /usr/bin/swift run --package-path "$repo_root" --skip-build mc-physical simulate-run \
         --run-root "$run_root" --run-id "$RUN_UUID" --plan "$plan"
     exit 0
 fi
