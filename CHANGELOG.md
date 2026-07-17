@@ -5,15 +5,39 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.0 - 2026-07-17
+
 ### Added
 
-- Versioned, evidence-backed Apple container 1.1.0 operation contract.
-- Reproducible Swift package and native macOS application target foundation.
-- Deterministic application icon pipeline and supply-chain verification gates.
-- Public project governance, security, support, privacy, and release policies.
+- Native SwiftUI management for the complete reviewed Apple container 1.1.0
+  operation contract, using direct typed APIs instead of CLI automation.
+- Simple Mode scenario templates for common workflows, editable generated
+  values, and Advanced Mode with validated controls and detailed help for every
+  operation-affecting parameter.
+- Container, image, build, builder, network, volume, registry, machine,
+  configuration, log, statistics, and interactive terminal workflows.
+- Guided installation of the official signed runtime and complete uninstall
+  with independent residue auditing and interrupted-operation recovery.
+- Manual and opt-in automatic runtime upgrades with workload-idle gating,
+  package verification, eleven-domain compatibility probes, durable version
+  holds, verified rollback, and recovery-required reporting.
+- A least-privilege background update agent and Sparkle application updates.
+- English, Simplified Chinese, Traditional Chinese, Japanese, and Korean app
+  localization, documentation, parameter help, and explicit language choices.
+- Keyboard navigation, VoiceOver labels, accessibility audits, adaptable native
+  layouts, Activity Center, diagnostics, and English Product Hunt screenshots.
+- Deterministic icon, SBOM, license, signing, notarization, appcast, checksum,
+  and public release verification pipelines.
 
 ### Security
 
-- Production-source scanner prohibits invoking the `container` CLI or upstream
-  update and uninstall scripts.
-- Hosted CI begins with a secret-free verification boundary.
+- The networkless privileged helper authenticates callers and accepts only
+  bounded, typed, allowlisted package, resolver, packet-filter, receipt, and
+  cleanup operations.
+- Production-source scanning prohibits invoking the `container` CLI or upstream
+  update and uninstall scripts, including shell-shaped payload substitutions.
+- Compatibility remains fail-closed unless the app-bundled catalog, signed
+  physical attestation, package identity, host requirements, and runtime probes
+  all agree.
+- Hosted CI verifies source without secrets before ephemeral signing credentials
+  can be used by the release job.
