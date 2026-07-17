@@ -21,7 +21,11 @@ struct RegistryAdapterTests {
         #expect(result == RegistrySummary(server: "registry-1.docker.io", username: "alice"))
         #expect(listed == [RegistrySummary(server: "registry-1.docker.io", username: "alice")])
         #expect(await verifier.events == ["verify:docker.io:alice"])
-        #expect(await store.events == ["save:registry-1.docker.io:alice", "list", "delete:docker.io", "delete:docker.io"])
+        #expect(
+            await store.events == [
+                "save:registry-1.docker.io:alice", "list", "delete:docker.io", "delete:docker.io"
+            ]
+        )
         #expect(await store.savedPassword == password)
     }
 
