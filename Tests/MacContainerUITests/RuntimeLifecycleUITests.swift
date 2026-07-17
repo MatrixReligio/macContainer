@@ -5,7 +5,7 @@ import XCTest
 final class RuntimeLifecycleUITests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = [
@@ -17,7 +17,7 @@ final class RuntimeLifecycleUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["runtime-lifecycle"].waitForExistence(timeout: 5))
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app.terminate()
         app = nil
     }

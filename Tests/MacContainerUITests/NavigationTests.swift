@@ -4,7 +4,7 @@ import XCTest
 final class NavigationTests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["--fake-runtime", "--reset-test-state"]
@@ -12,7 +12,7 @@ final class NavigationTests: XCTestCase {
         XCTAssertTrue(app.windows["main-window"].waitForExistence(timeout: 10))
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app.terminate()
         app = nil
     }
