@@ -138,7 +138,8 @@ done
 for required in '::add-mask::' 'security create-keychain' 'security delete-keychain' \
     'trap cleanup EXIT INT TERM' 'maccontainer-notary' 'scripts/release.sh --release' \
     'scripts/verify-release.sh' 'gh release create' 'Sparkle-2.9.4.tar.xz' \
-    'ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9'; do
+    'ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9' \
+    'dist/release-notes.md dist/THIRD_PARTY_NOTICES'; do
     if ! /usr/bin/grep -Fq -- "$required" "$release"; then
         errors+=("release.yml missing guarded release step: $required")
     fi

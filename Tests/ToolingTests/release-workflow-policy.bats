@@ -37,6 +37,7 @@ required_release_text=(
     'scripts/release.sh --release'
     'scripts/verify-release.sh'
     'gh release create'
+    'dist/release-notes.md dist/THIRD_PARTY_NOTICES'
 )
 for text in $required_release_text; do
     /usr/bin/grep -Fq -- "$text" "$release" || { print -u2 -- "release.yml missing: $text"; exit 1; }

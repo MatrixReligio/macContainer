@@ -164,7 +164,7 @@ jobs:
             "dist/MacContainer-$version.dmg" \
             dist/appcast.xml dist/checksums.txt dist/sbom-checksums.txt \
             dist/MacContainer.cdx.json dist/MacContainer.spdx.json \
-            dist/THIRD_PARTY_NOTICES \
+            dist/release-notes.md dist/THIRD_PARTY_NOTICES \
             --title "MacContainer $version" \
             --notes-file dist/release-notes.md \
             --verify-tag
