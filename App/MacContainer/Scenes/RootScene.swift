@@ -33,27 +33,49 @@ private struct RouteContentView: View {
         if route == .overview {
             OverviewView()
         } else {
-            EmptyStateView(
-                symbol: route.symbol,
-                title: route.title,
-                message: "No \(route.title.lowercased()) are available yet."
-            )
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("\(route.rawValue)-content")
-            .navigationTitle(route.title)
+            ResourceDomainView(route: route)
         }
     }
 }
 
 private struct ResourceInspectorPlaceholder: View {
+    @Environment(AppState.self) private var state
     let route: AppRoute
 
     var body: some View {
-        ContentUnavailableView(
-            "Nothing Selected",
-            systemImage: "sidebar.right",
-            description: Text("Select a \(route.singularTitle.lowercased()) to inspect its details.")
-        )
-        .accessibilityIdentifier("resource-inspector")
+        if let resource = state.selectedResource {
+            Form {
+                Section("Identity") {
+                    LabeledContent("Name", value: resource.name)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("ID")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(resource.id)
+                            .font(.body.monospaced())
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("resource-detail-id")
+                    }
+                    LabeledContent("Kind", value: resource.kind)
+                }
+                Section("State") {
+                    Label(resource.status, systemImage: resource.status == "Running" ? "play.fill" : "circle")
+                }
+                Section("Activity") {
+                    Text("No recent activity")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle(resource.name)
+            .accessibilityIdentifier("resource-inspector")
+        } else {
+            ContentUnavailableView(
+                "Nothing Selected",
+                systemImage: "sidebar.right",
+                description: Text("Select a \(route.singularTitle.lowercased()) to inspect its details.")
+            )
+            .accessibilityIdentifier("resource-inspector")
+        }
     }
 }

@@ -191,17 +191,17 @@ git commit -m "feat: add native MacContainer navigation"
 - Create: `App/MacContainer/Views/Shared/DestructiveConfirmation.swift`
 - Test: `Tests/MacContainerUITests/ResourceManagementTests.swift`
 
-- [ ] **Step 1: Write failing table interaction tests**
+- [x] **Step 1: Write failing table interaction tests**
 
 Test every resource domain for search, sort, selection, detail display, context menu, keyboard delete/refresh, multi-selection where supported, empty state, structured partial failure, and destructive confirmation showing exact affected IDs.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/ResourceManagementTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because resource views are absent.
 
-- [ ] **Step 3: Implement tables and inspectors using standard controls**
+- [x] **Step 3: Implement tables and inspectors using standard controls**
 
 Each domain uses SwiftUI `Table`, native `searchable`, typed `SortOrder`, context menus, `Commands`, and inspectors with state/configuration/activity/log/metrics sections. Status includes text plus symbol, never color alone. Destructive confirmation has:
 
@@ -226,13 +226,13 @@ struct DestructiveConfirmation: View {
 
 No view calls an upstream client directly; all actions enter `OperationExecutor`, acquire appropriate coordinator locks, create Activity records, and map errors.
 
-- [ ] **Step 4: Run all resource tests**
+- [x] **Step 4: Run all resource tests**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/ResourceManagementTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: PASS for every resource domain and partial failure case.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer/Views/Resources App/MacContainer/Views/Shared Tests/MacContainerUITests/ResourceManagementTests.swift Sources/MCAppCore

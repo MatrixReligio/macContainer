@@ -20,13 +20,35 @@ public enum HealthState: String, Codable, Sendable {
     case checking
 }
 
+public struct ResourceSelection: Equatable, Sendable {
+    public let id: String
+    public let name: String
+    public let status: String
+    public let kind: String
+
+    public init(id: String, name: String, status: String, kind: String) {
+        self.id = id
+        self.name = name
+        self.status = status
+        self.kind = kind
+    }
+}
+
 @MainActor
 @Observable
 public final class AppState {
-    public var selection: AppRoute = .overview
+    public var selection: AppRoute = .overview {
+        didSet {
+            if selection != oldValue {
+                selectedResource = nil
+            }
+        }
+    }
+
     public var columnVisibility: NavigationSplitViewVisibility = .all
     public var activityCenterPresented = false
     public var health: HealthState = .checking
+    public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter
     public let environment: AppEnvironment
 
