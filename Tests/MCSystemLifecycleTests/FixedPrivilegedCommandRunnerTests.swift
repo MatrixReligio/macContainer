@@ -4,6 +4,32 @@ import Testing
 
 @Suite("Fixed privileged command runner")
 struct FixedPrivilegedCommandRunnerTests {
+    @Test func `installer failures expose only a stable sanitized category`() throws {
+        let source = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-installer-diagnostic-\(UUID().uuidString).pkg")
+        try Data("diagnostic-package".utf8).write(to: source, options: .withoutOverwriting)
+        defer { try? FileManager.default.removeItem(at: source) }
+        let handle = try FileHandle(forReadingFrom: source)
+        defer { try? handle.close() }
+        let package = try OpenRuntimePackageFile(duplicating: handle.fileDescriptor)
+        let invocation = FixedPrivilegedCommandInvocation(
+            command: .installPackage,
+            packageDescriptor: package.fileDescriptor,
+            executable: "/bin/sh",
+            arguments: ["/bin/sh", "-c", "echo 'installer: Must be run as root to install this package.' >&2; exit 1"],
+            environment: [:],
+            workingDirectory: "/"
+        )
+
+        #expect(throws: FixedPrivilegedCommandError.commandFailed(.installerRequiresRoot)) {
+            try PosixSpawnFixedPrivilegedCommandRunner().run(
+                invocation,
+                standardInput: nil,
+                package: package
+            )
+        }
+    }
+
     @Test func `staged package is immutable to users and readable by the installer service`() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("mc-installer-permissions-\(UUID().uuidString)", isDirectory: true)

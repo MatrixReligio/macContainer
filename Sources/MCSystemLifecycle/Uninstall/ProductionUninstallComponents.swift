@@ -68,16 +68,22 @@ public struct SystemUninstallInventoryRefresher: UninstallInventoryRefreshing, S
             throw ProductionUninstallComponentError.unreviewedRuntime
         }
 
-        async let containers = bridge.containers.list()
-        async let machines = bridge.machines.list()
-        async let serviceLabels = services.labels(prefix: SystemServiceController.servicePrefix)
-        let activeContainers = try await containers.filter { Self.isActive($0.state) }.map(\.id)
-        let activeMachines = try await machines.filter { Self.isActive($0.state) }.map(\.id)
-        let labels = try await serviceLabels.sorted()
+        let labels = try await services.labels(prefix: SystemServiceController.servicePrefix).sorted()
         guard labels.allSatisfy({ $0.hasPrefix(SystemServiceController.servicePrefix) }),
               Set(labels).count == labels.count
         else {
             throw ProductionUninstallComponentError.invalidServiceInventory
+        }
+        let activeContainers: [String]
+        let activeMachines: [String]
+        if labels.contains(SystemServiceController.apiServerLabel) {
+            async let containers = bridge.containers.list()
+            async let machines = bridge.machines.list()
+            activeContainers = try await containers.filter { Self.isActive($0.state) }.map(\.id)
+            activeMachines = try await machines.filter { Self.isActive($0.state) }.map(\.id)
+        } else {
+            activeContainers = []
+            activeMachines = []
         }
         let resolverNames = try resolvers.names().sorted()
         guard Set(resolverNames).count == resolverNames.count else {

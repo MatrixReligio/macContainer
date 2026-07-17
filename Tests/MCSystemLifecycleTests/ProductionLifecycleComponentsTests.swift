@@ -74,7 +74,7 @@ struct ProductionLifecycleComponentsTests {
         let plist: [String: Any] = [
             "pkgid": "com.apple.container-installer",
             "pkg-version": "1.1.0",
-            "install-location": "/usr/local"
+            "install-location": "usr/local"
         ]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
         let backend = SystemPackageReceiptBackend(
@@ -246,6 +246,31 @@ struct ProductionLifecycleComponentsTests {
         #expect(inventory.resolverNames == ["mct.example"])
         #expect(inventory.artifactKinds == [.receipt, .receiptPayload, .launchService])
         #expect(inventory.fingerprint.count == 64)
+    }
+
+    @Test func `uninstall inventory does not query workloads when api server is unregistered`() async throws {
+        let receipt = InstalledPackageReceipt(
+            identifier: "com.apple.container-installer",
+            version: "1.1.0",
+            installLocation: "/usr/local"
+        )
+        let bridge = FakeRuntimeBridge()
+        let refresher = SystemUninstallInventoryRefresher(
+            target: .reviewedRuntime110,
+            receipts: PackageReceiptReader(backend: FixtureReceiptBackend(receipt: receipt)),
+            bridge: bridge,
+            services: FixtureServiceManager(labels: []),
+            resolvers: FixtureResolverInventory(names: []),
+            residue: FixtureResidueChecker(present: [.receipt, .receiptPayload])
+        )
+
+        let inventory = try await refresher.refresh(mode: .complete)
+        let operationIDs = await bridge.recordedInvocations().map(\.operationID)
+
+        #expect(inventory.activeWork.isEmpty)
+        #expect(inventory.serviceLabels.isEmpty)
+        #expect(!operationIDs.contains("containers.list"))
+        #expect(!operationIDs.contains("machines.list"))
     }
 
     @Test func `uninstall target resolver accepts only exact reviewed receipt versions`() async throws {

@@ -4,6 +4,32 @@ import Testing
 
 @Suite("Runtime package verifier")
 struct RuntimePackageVerifierTests {
+    @Test func `package tools receive a stable private copy instead of a process descriptor`() throws {
+        let file = try PackageFileFixture()
+        defer { file.cleanup() }
+        let handle = try FileHandle(forReadingFrom: file.url)
+        defer { try? handle.close() }
+        let package = try OpenRuntimePackageFile(duplicating: handle.fileDescriptor, allowedOwner: geteuid())
+        var workspace: URL?
+        var stagedPackage: URL?
+
+        try PrivatePackageToolWorkspace.withPackage(package) { root, staged in
+            workspace = root
+            stagedPackage = staged
+            let stagedData = try Data(contentsOf: staged)
+            let rootPermissions = try FileManager.default.attributesOfItem(atPath: root.path)[.posixPermissions] as? Int
+            let stagedPermissions = try FileManager.default
+                .attributesOfItem(atPath: staged.path)[.posixPermissions] as? Int
+            #expect(!staged.path.hasPrefix("/dev/fd/"))
+            #expect(stagedData == Data("fixture".utf8))
+            #expect(rootPermissions == 0o700)
+            #expect(stagedPermissions == 0o600)
+        }
+
+        #expect(workspace.map { !FileManager.default.fileExists(atPath: $0.path) } == true)
+        #expect(stagedPackage.map { !FileManager.default.fileExists(atPath: $0.path) } == true)
+    }
+
     @Test func `accepts only the exact reviewed package`() async throws {
         let file = try PackageFileFixture()
         defer { file.cleanup() }

@@ -4,6 +4,20 @@ import Testing
 
 @Suite("System privileged adapter")
 struct SystemPrivilegedAdapterTests {
+    @Test func `helper diagnostics distinguish verification from execution without leaking details`() {
+        #expect(PrivilegedHelperService.sanitizedErrorCode(for: PackageTrustError.unsafePackageFile) == 40)
+        #expect(PrivilegedHelperService.sanitizedErrorCode(for: PackageTrustError.digestMismatch) == 43)
+        #expect(PrivilegedHelperService.sanitizedErrorCode(for: PackageInspectionError.expansionFailed) == 52)
+        #expect(
+            PrivilegedHelperService.sanitizedErrorCode(for: SystemPrivilegedAdapterError.packageTokenMismatch) == 61
+        )
+        #expect(
+            PrivilegedHelperService.sanitizedErrorCode(
+                for: FixedPrivilegedCommandError.commandFailed(.installerRejected)
+            ) == 24
+        )
+    }
+
     @Test func `reverifies inherited descriptor and invokes only fixed installer`() throws {
         let package = try AdapterPackageFixture()
         defer { package.cleanup() }

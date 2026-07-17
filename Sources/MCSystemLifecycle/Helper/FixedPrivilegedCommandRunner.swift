@@ -181,7 +181,11 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
             try check(posix_spawn_file_actions_addchdir(&actions, $0))
         }
         try check(posix_spawn_file_actions_adddup2(&actions, outputPipe[1], STDOUT_FILENO))
-        try check(posix_spawn_file_actions_adddup2(&actions, nullError, STDERR_FILENO))
+        if command == .installPackage {
+            try check(posix_spawn_file_actions_adddup2(&actions, outputPipe[1], STDERR_FILENO))
+        } else {
+            try check(posix_spawn_file_actions_adddup2(&actions, nullError, STDERR_FILENO))
+        }
         try check(posix_spawn_file_actions_addclose(&actions, outputPipe[0]))
         if let package {
             try check(posix_spawn_file_actions_adddup2(&actions, package.fileDescriptor, 198))
@@ -237,9 +241,42 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
         let status = try waitForExit(processID)
         childWasReaped = true
         guard status & 0x7F == 0, (status >> 8) & 0xFF == 0 else {
-            throw FixedPrivilegedCommandError.commandFailed
+            throw FixedPrivilegedCommandError.commandFailed(
+                Self.failureCategory(command: command, diagnostic: output)
+            )
         }
         return output
+    }
+
+    private static func failureCategory(
+        command: FixedPrivilegedCommand,
+        diagnostic: Data
+    ) -> FixedPrivilegedCommandFailure {
+        guard command == .installPackage,
+              let message = String(data: diagnostic, encoding: .utf8)?.lowercased()
+        else {
+            return .unspecified
+        }
+        if message.contains("must be run as root") {
+            return .installerRequiresRoot
+        }
+        if message.contains("package path specified was invalid") {
+            return .installerInvalidPackagePath
+        }
+        let incompatibleHost = message.contains("cannot be installed on this computer") ||
+            message.contains("does not meet the requirements")
+        if incompatibleHost {
+            return .installerIncompatibleHost
+        }
+        let unavailableVolume = message.contains("could not find the specified volume") ||
+            message.contains("error trying to locate volume")
+        if unavailableVolume {
+            return .installerUnavailableVolume
+        }
+        if message.contains("installer:") {
+            return .installerRejected
+        }
+        return .unspecified
     }
 
     private func makeInputSource(hasData: Bool) throws -> ([Int32], Int32) {
@@ -437,12 +474,38 @@ struct PrivatePackageStager: Sendable {
     }
 }
 
+public enum FixedPrivilegedCommandFailure: Equatable, Sendable {
+    case installerIncompatibleHost
+    case installerInvalidPackagePath
+    case installerRejected
+    case installerRequiresRoot
+    case installerUnavailableVolume
+    case unspecified
+}
+
 public enum FixedPrivilegedCommandError: Error, Equatable, Sendable {
-    case commandFailed
+    case commandFailed(FixedPrivilegedCommandFailure)
     case invalidPackageDescriptor
     case launchFailed(Int32)
     case outputTooLarge
     case packageStagingCleanupFailed
     case packageStagingFailed
     case unsafePackageStagingRoot
+
+    var sanitizedCode: Int {
+        switch self {
+        case .commandFailed(.installerInvalidPackagePath): 20
+        case .commandFailed(.installerRequiresRoot): 21
+        case .commandFailed(.installerIncompatibleHost): 22
+        case .commandFailed(.installerUnavailableVolume): 23
+        case .commandFailed(.installerRejected): 24
+        case .commandFailed(.unspecified): 25
+        case .invalidPackageDescriptor: 26
+        case .launchFailed: 27
+        case .outputTooLarge: 28
+        case .packageStagingCleanupFailed: 29
+        case .packageStagingFailed: 30
+        case .unsafePackageStagingRoot: 31
+        }
+    }
 }

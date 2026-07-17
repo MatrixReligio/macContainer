@@ -212,12 +212,12 @@ public struct SystemPackageReceiptBackend: PackageReceiptReading, Sendable {
         guard values["pkgid"] as? String == identifier,
               let version = values["pkg-version"] as? String,
               !version.isEmpty,
-              let installLocation = values["install-location"] as? String,
-              installLocation == "/usr/local"
+              let receiptLocation = values["install-location"] as? String,
+              receiptLocation == "usr/local" || receiptLocation == "/usr/local"
         else {
             throw ProductionLifecycleComponentError.invalidReceipt
         }
-        return .init(identifier: identifier, version: version, installLocation: installLocation)
+        return .init(identifier: identifier, version: version, installLocation: "/usr/local")
     }
 }
 

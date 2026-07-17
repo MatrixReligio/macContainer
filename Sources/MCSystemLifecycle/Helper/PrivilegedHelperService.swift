@@ -98,7 +98,15 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
     }
 
     private static func sanitizedError(for error: Error) -> NSError {
-        let code = switch error {
+        NSError(
+            domain: "container.matrixreligio.com.helper",
+            code: sanitizedErrorCode(for: error),
+            userInfo: [NSLocalizedDescriptionKey: "The privileged operation was rejected."]
+        )
+    }
+
+    static func sanitizedErrorCode(for error: Error) -> Int {
+        switch error {
         case PrivilegedRequestError.messageTooLarge:
             2
         case is PrivilegedRequestError:
@@ -106,14 +114,17 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         case PrivilegedHelperServiceError.packageFileRequired,
              PrivilegedHelperServiceError.unexpectedPackageFile:
             4
+        case let error as FixedPrivilegedCommandError:
+            error.sanitizedCode
+        case let error as PackageTrustError:
+            error.sanitizedCode
+        case let error as PackageInspectionError:
+            error.sanitizedCode
+        case let error as SystemPrivilegedAdapterError:
+            error.sanitizedCode
         default:
             5
         }
-        return NSError(
-            domain: "container.matrixreligio.com.helper",
-            code: code,
-            userInfo: [NSLocalizedDescriptionKey: "The privileged operation was rejected."]
-        )
     }
 }
 

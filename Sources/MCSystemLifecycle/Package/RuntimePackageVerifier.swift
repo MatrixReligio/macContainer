@@ -69,6 +69,23 @@ public enum PackageTrustError: Error, Equatable, Sendable {
     case unsafePackageFile
     case unsignedPackage
     case versionMismatch
+
+    var sanitizedCode: Int {
+        switch self {
+        case .unsafePackageFile: 40
+        case .packageChangedDuringVerification: 41
+        case .invalidManifest: 42
+        case .digestMismatch: 43
+        case .unsignedPackage: 44
+        case .notarizationRejected: 45
+        case .teamIDMismatch: 46
+        case .signerCommonNameMismatch: 47
+        case .versionMismatch: 48
+        case .receiptMismatch: 49
+        case .installLocationMismatch: 50
+        case .payloadMismatch: 51
+        }
+    }
 }
 
 public final class OpenRuntimePackageFile: @unchecked Sendable {

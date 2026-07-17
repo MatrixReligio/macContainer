@@ -231,6 +231,15 @@ public enum SystemPrivilegedAdapterError: Error, Equatable, Sendable {
     case packageTokenMismatch
     case receiptMismatch
     case verificationReportMismatch
+
+    var sanitizedCode: Int {
+        switch self {
+        case .manifestMismatch: 60
+        case .packageTokenMismatch: 61
+        case .receiptMismatch: 62
+        case .verificationReportMismatch: 63
+        }
+    }
 }
 
 private final class VerificationResultBox: @unchecked Sendable {

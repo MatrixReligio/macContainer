@@ -8,7 +8,9 @@ public struct SystemPackageSignatureVerifier: PackageSignatureVerifying {
     public func verifySignature(of file: OpenRuntimePackageFile) async throws -> PackageSignatureReport {
         let result: FixedPackageToolResult
         do {
-            result = try FixedPackageToolRunner.run(.checkSignature, package: file)
+            result = try PrivatePackageToolWorkspace.withPackage(file) { _, stagedPackage in
+                try FixedPackageToolRunner.run(.checkSignature(packagePath: stagedPackage.path))
+            }
         } catch {
             throw PackageTrustError.unsignedPackage
         }
@@ -48,37 +50,28 @@ public struct SystemRuntimePackageInspector: RuntimePackageInspecting {
     public init() {}
 
     public func inspect(_ file: OpenRuntimePackageFile) async throws -> RuntimePackageInspection {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("MacContainerPackageInspection-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: false,
-            attributes: [.posixPermissions: 0o700]
-        )
-        defer { try? FileManager.default.removeItem(at: root) }
-        let stagedPackage = root.appendingPathComponent("reviewed.pkg", isDirectory: false)
-        try Self.copyOpenPackage(file, to: stagedPackage)
-        let expanded = root.appendingPathComponent("expanded", isDirectory: true)
-        let result = try FixedPackageToolRunner.run(
-            .expandFull(packagePath: stagedPackage.path, destination: expanded),
-            package: file
-        )
-        guard result.exitStatus == 0 else { throw PackageInspectionError.expansionFailed }
+        try PrivatePackageToolWorkspace.withPackage(file) { root, stagedPackage in
+            let expanded = root.appendingPathComponent("expanded", isDirectory: true)
+            let result = try FixedPackageToolRunner.run(
+                .expandFull(packagePath: stagedPackage.path, destination: expanded)
+            )
+            guard result.exitStatus == 0 else { throw PackageInspectionError.expansionFailed }
 
-        let metadata = try PackageInfoParser.parse(expanded.appendingPathComponent("PackageInfo"))
-        let payloadRoot = expanded.appendingPathComponent("Payload", isDirectory: true)
-        let payload = try Self.inspectPayload(root: payloadRoot)
-        // PackageInfo counts the shared install root (`.`); the manifest intentionally
-        // excludes `/usr/local` because MacContainer must never remove that shared directory.
-        guard metadata.numberOfFiles == payload.count + 1 else {
-            throw PackageInspectionError.payloadCountMismatch
+            let metadata = try PackageInfoParser.parse(expanded.appendingPathComponent("PackageInfo"))
+            let payloadRoot = expanded.appendingPathComponent("Payload", isDirectory: true)
+            let payload = try Self.inspectPayload(root: payloadRoot)
+            // PackageInfo counts the shared install root (`.`); the manifest intentionally
+            // excludes `/usr/local` because MacContainer must never remove that shared directory.
+            guard metadata.numberOfFiles == payload.count + 1 else {
+                throw PackageInspectionError.payloadCountMismatch
+            }
+            return RuntimePackageInspection(
+                runtimeVersion: metadata.version,
+                receiptIdentifier: metadata.identifier,
+                installLocation: metadata.installLocation,
+                payload: payload
+            )
         }
-        return RuntimePackageInspection(
-            runtimeVersion: metadata.version,
-            receiptIdentifier: metadata.identifier,
-            installLocation: metadata.installLocation,
-            payload: payload
-        )
     }
 
     private static func inspectPayload(root: URL) throws -> [PayloadEntry] {
@@ -126,7 +119,7 @@ public struct SystemRuntimePackageInspector: RuntimePackageInspecting {
         return entries.sorted { $0.relativePath < $1.relativePath }
     }
 
-    private static func copyOpenPackage(_ file: OpenRuntimePackageFile, to destination: URL) throws {
+    fileprivate static func copyOpenPackage(_ file: OpenRuntimePackageFile, to destination: URL) throws {
         let descriptor = Darwin.open(
             destination.path,
             O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
@@ -181,6 +174,27 @@ public struct SystemRuntimePackageInspector: RuntimePackageInspecting {
     }
 }
 
+enum PrivatePackageToolWorkspace {
+    static func withPackage<T>(
+        _ file: OpenRuntimePackageFile,
+        operation: (URL, URL) throws -> T
+    ) throws -> T {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MacContainerPackageTool-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let stagedPackage = root.appendingPathComponent("reviewed.pkg", isDirectory: false)
+        try file.revalidateIdentity()
+        try SystemRuntimePackageInspector.copyOpenPackage(file, to: stagedPackage)
+        try file.revalidateIdentity()
+        return try operation(root, stagedPackage)
+    }
+}
+
 public extension RuntimePackageVerifier {
     static var system: Self {
         Self(
@@ -199,6 +213,18 @@ public enum PackageInspectionError: Error, Equatable, Sendable {
     case outputTooLarge
     case payloadCountMismatch
     case toolLaunchFailed(Int32)
+
+    var sanitizedCode: Int {
+        switch self {
+        case .expansionFailed: 52
+        case .hardLink: 53
+        case .invalidMetadata: 54
+        case .invalidPayload: 55
+        case .outputTooLarge: 56
+        case .payloadCountMismatch: 57
+        case .toolLaunchFailed: 58
+        }
+    }
 }
 
 private struct PackageInfoMetadata {
@@ -283,13 +309,13 @@ private final class PackageInfoParser: NSObject, XMLParserDelegate {
 }
 
 private enum FixedPackageToolCommand {
-    case checkSignature
+    case checkSignature(packagePath: String)
     case expandFull(packagePath: String, destination: URL)
 
     var arguments: [String] {
         switch self {
-        case .checkSignature:
-            ["--check-signature", "/dev/fd/198"]
+        case let .checkSignature(packagePath):
+            ["--check-signature", packagePath]
         case let .expandFull(packagePath, destination):
             ["--expand-full", packagePath, destination.path]
         }
@@ -302,10 +328,7 @@ private struct FixedPackageToolResult {
 }
 
 private enum FixedPackageToolRunner {
-    static func run(
-        _ command: FixedPackageToolCommand,
-        package: OpenRuntimePackageFile
-    ) throws -> FixedPackageToolResult {
+    static func run(_ command: FixedPackageToolCommand) throws -> FixedPackageToolResult {
         var outputPipe = [Int32](repeating: -1, count: 2)
         guard Darwin.pipe(&outputPipe) == 0 else { throw posixError() }
         defer {
@@ -316,7 +339,6 @@ private enum FixedPackageToolRunner {
         var actions: posix_spawn_file_actions_t?
         guard posix_spawn_file_actions_init(&actions) == 0 else { throw posixError() }
         defer { posix_spawn_file_actions_destroy(&actions) }
-        posix_spawn_file_actions_adddup2(&actions, package.fileDescriptor, 198)
         posix_spawn_file_actions_adddup2(&actions, outputPipe[1], STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions, outputPipe[1], STDERR_FILENO)
         posix_spawn_file_actions_addclose(&actions, outputPipe[0])
