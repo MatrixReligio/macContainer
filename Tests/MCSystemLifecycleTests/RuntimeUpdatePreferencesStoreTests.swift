@@ -53,6 +53,20 @@ struct RuntimeUpdatePreferencesStoreTests {
         #expect(try String(contentsOf: protected, encoding: .utf8) == "keep")
     }
 
+    @Test func `download mode cannot disable automatic checks`() throws {
+        let fixture = PreferencesFixture()
+        defer { fixture.cleanup() }
+        let store = RuntimeUpdatePreferencesStore(fileURL: fixture.fileURL)
+
+        #expect(throws: RuntimeUpdatePreferencesStoreError.invalidPreferences) {
+            try store.save(.init(
+                automaticallyChecks: false,
+                mode: .downloadAndNotify,
+                consentVersion: nil
+            ))
+        }
+    }
+
     private func permissions(_ url: URL) -> mode_t {
         var status = stat()
         guard Darwin.lstat(url.path, &status) == 0 else { return 0 }

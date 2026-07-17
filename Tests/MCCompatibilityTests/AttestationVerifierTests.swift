@@ -72,7 +72,7 @@ struct AttestationVerifierTests {
 
     @Test func `bundled signer is immutable and cryptographically self consistent`() throws {
         let configuration = try TrustedAttestationSignerConfiguration.bundled()
-        #expect(configuration.signers.map(\.keyID) == ["matrixreligio-physical-2026-07"])
+        #expect(configuration.signers.map(\.keyID) == ["matrixreligio-physical-2026-07-r1"])
         #expect(try configuration.signers[0].validated() == configuration.signers[0])
     }
 

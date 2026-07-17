@@ -1,17 +1,21 @@
 import Foundation
 import MCContainerBridge
 import MCModel
+import MCSystemLifecycle
 import Testing
 
 @Suite(
     "Authorized physical runtime operations",
     .serialized,
-    .enabled(if: PhysicalTestGate.isAuthorized, "PHYSICAL_TEST_AUTHORIZATION missing or mismatched")
+    .enabled(
+        if: PhysicalTestGate.isAuthorized && PhysicalTestGate.phase == "install-and-operations",
+        "Exact operation authorization and phase are required"
+    )
 )
 struct PhysicalOperationTests {
     @Test func `system and configuration domains use the production bridge`() async throws {
         let bridge = try PhysicalTestGate.productionBridge()
-        let started = try await bridge.system.start(.init(healthTimeoutSeconds: 60))
+        let started = try await ensureRuntime(bridge: bridge)
         #expect(started.state == .running)
         #expect(try await bridge.system.status().state == .running)
         #expect(try await bridge.system.version().version == "1.1.0")
@@ -21,6 +25,7 @@ struct PhysicalOperationTests {
 
     @Test func `resource inventories are reachable without a command line subprocess`() async throws {
         let bridge = try PhysicalTestGate.productionBridge()
+        _ = try await ensureRuntime(bridge: bridge)
 
         _ = try await bridge.containers.list()
         _ = try await bridge.images.list()
@@ -36,5 +41,22 @@ struct PhysicalOperationTests {
         let runID = try #require(PhysicalTestGate.runID)
         #expect(PhysicalTestGate.namespace == "mct-e2e-\(runID.uuidString.lowercased())")
         #expect(PhysicalTestGate.namespace != "mct-e2e")
+    }
+
+    private func ensureRuntime(bridge: AppleRuntimeBridge) async throws -> SystemSummary {
+        do {
+            _ = try await SystemInstalledReceiptVerifier().verify(expected: ReviewedRuntime110Manifest.package)
+            try await SystemInstalledPayloadVerifier().verify(expected: ReviewedRuntime110Manifest.package)
+        } catch {
+            let package = try PhysicalTestGate.packageURL(version: "1.1.0")
+            let verified = try await RuntimePackageVerifier.system.verify(
+                packageAt: package,
+                against: ReviewedRuntime110Manifest.package
+            )
+            _ = try await HelperClient().install(verified)
+            _ = try await SystemInstalledReceiptVerifier().verify(expected: ReviewedRuntime110Manifest.package)
+            try await SystemInstalledPayloadVerifier().verify(expected: ReviewedRuntime110Manifest.package)
+        }
+        return try await bridge.system.start(.init(healthTimeoutSeconds: 60))
     }
 }

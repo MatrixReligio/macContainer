@@ -9,10 +9,17 @@ public final class SettingsStore {
     public var automaticallyCheckRuntimeUpdates: Bool {
         didSet { persistUpdatePreferences(changed: .checks) }
     }
-    public var autoInstallCompatibleRuntimeUpdates: Bool {
-        didSet { persistUpdatePreferences(changed: .automaticInstall) }
+
+    public var runtimeUpdateMode: RuntimeUpdateMode {
+        didSet { persistUpdatePreferences(changed: .mode) }
     }
-    public private(set) var runtimeUpdatePreferencesPersistenceFailed: Bool
+
+    public var autoInstallCompatibleRuntimeUpdates: Bool {
+        get { runtimeUpdateMode == .automaticWhenIdle }
+        set { runtimeUpdateMode = newValue ? .automaticWhenIdle : .checkOnly }
+    }
+
+    public private(set) var updatePreferencesPersistenceFailed: Bool
 
     @ObservationIgnored private let updatePreferences: (any RuntimeUpdatePreferencesPersisting)?
     @ObservationIgnored private var normalizingUpdatePreferences = false
@@ -28,23 +35,23 @@ public final class SettingsStore {
         self.updatePreferences = updatePreferences
         let fallback = Self.preferences(
             checks: automaticallyCheckRuntimeUpdates,
-            automaticInstall: autoInstallCompatibleRuntimeUpdates
+            mode: autoInstallCompatibleRuntimeUpdates ? .automaticWhenIdle : .checkOnly
         )
         let loaded: RuntimeUpdatePreferences
         if let updatePreferences {
             do {
                 loaded = try updatePreferences.load()
-                runtimeUpdatePreferencesPersistenceFailed = false
+                updatePreferencesPersistenceFailed = false
             } catch {
                 loaded = .safeDefaults
-                runtimeUpdatePreferencesPersistenceFailed = true
+                updatePreferencesPersistenceFailed = true
             }
         } else {
             loaded = fallback
-            runtimeUpdatePreferencesPersistenceFailed = false
+            updatePreferencesPersistenceFailed = false
         }
         self.automaticallyCheckRuntimeUpdates = loaded.automaticallyChecks
-        self.autoInstallCompatibleRuntimeUpdates = loaded.mode == .automaticWhenIdle
+        runtimeUpdateMode = loaded.mode
         lastPersistedUpdatePreferences = loaded
     }
 
@@ -55,8 +62,8 @@ public final class SettingsStore {
 
         switch changed {
         case .checks where !automaticallyCheckRuntimeUpdates:
-            autoInstallCompatibleRuntimeUpdates = false
-        case .automaticInstall where autoInstallCompatibleRuntimeUpdates:
+            runtimeUpdateMode = .checkOnly
+        case .mode:
             automaticallyCheckRuntimeUpdates = true
         default:
             break
@@ -64,38 +71,37 @@ public final class SettingsStore {
 
         let preferences = Self.preferences(
             checks: automaticallyCheckRuntimeUpdates,
-            automaticInstall: autoInstallCompatibleRuntimeUpdates
+            mode: runtimeUpdateMode
         )
         guard let updatePreferences else {
             lastPersistedUpdatePreferences = preferences
-            runtimeUpdatePreferencesPersistenceFailed = false
+            updatePreferencesPersistenceFailed = false
             return
         }
         do {
             try updatePreferences.save(preferences)
             lastPersistedUpdatePreferences = preferences
-            runtimeUpdatePreferencesPersistenceFailed = false
+            updatePreferencesPersistenceFailed = false
         } catch {
             automaticallyCheckRuntimeUpdates = lastPersistedUpdatePreferences.automaticallyChecks
-            autoInstallCompatibleRuntimeUpdates =
-                lastPersistedUpdatePreferences.mode == .automaticWhenIdle
-            runtimeUpdatePreferencesPersistenceFailed = true
+            runtimeUpdateMode = lastPersistedUpdatePreferences.mode
+            updatePreferencesPersistenceFailed = true
         }
     }
 
     private static func preferences(
         checks: Bool,
-        automaticInstall: Bool
+        mode: RuntimeUpdateMode
     ) -> RuntimeUpdatePreferences {
         .init(
-            automaticallyChecks: automaticInstall ? true : checks,
-            mode: automaticInstall ? .automaticWhenIdle : .checkOnly,
-            consentVersion: automaticInstall ? RuntimeUpdatePolicy.currentConsentVersion : nil
+            automaticallyChecks: mode == .automaticWhenIdle ? true : checks,
+            mode: mode,
+            consentVersion: mode == .automaticWhenIdle ? RuntimeUpdatePolicy.currentConsentVersion : nil
         )
     }
 }
 
 private enum UpdatePreferenceChange {
     case checks
-    case automaticInstall
+    case mode
 }

@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import MCContainerBridge
 
@@ -81,11 +82,50 @@ enum PhysicalTestGate {
             kernelTemporaryRoot: runRoot.appendingPathComponent("kernel-downloads", isDirectory: true)
         )
     }
+
+    static func record(_ ids: String...) throws {
+        guard isAuthorized, let runRoot else {
+            throw PhysicalTestGateError.authorizationMissing
+        }
+        let resultsRoot = runRoot.appendingPathComponent("results", isDirectory: true)
+        guard resultsRoot.path == environment["PHYSICAL_RESULTS_ROOT"],
+              FileManager.default.fileExists(atPath: resultsRoot.path)
+        else {
+            throw PhysicalTestGateError.resultsRootMissing
+        }
+        for id in ids {
+            guard id.range(of: "^[a-z0-9.-]+$", options: .regularExpression) != nil else {
+                throw PhysicalTestGateError.invalidResultID
+            }
+            let destination = resultsRoot.appendingPathComponent("\(id).json")
+            let bytes = Data("{\"id\":\"\(id)\",\"passed\":true}\n".utf8)
+            let descriptor = open(destination.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600)
+            let isMatchingExistingResult = descriptor < 0 && errno == EEXIST &&
+                (try? Data(contentsOf: destination, options: [.uncached])) == bytes
+            if isMatchingExistingResult {
+                continue
+            }
+            guard descriptor >= 0 else {
+                throw PhysicalTestGateError.duplicateOrUnsafeResult
+            }
+            defer { close(descriptor) }
+            let written = bytes.withUnsafeBytes { buffer in
+                Darwin.write(descriptor, buffer.baseAddress, buffer.count)
+            }
+            guard written == bytes.count, fsync(descriptor) == 0 else {
+                throw PhysicalTestGateError.resultWriteFailed
+            }
+        }
+    }
 }
 
 enum PhysicalTestGateError: Error {
     case authorizationMissing
     case packageMissing
     case packageOutsideRunRoot
+    case resultsRootMissing
+    case invalidResultID
+    case duplicateOrUnsafeResult
+    case resultWriteFailed
     case unreviewedPackageVersion
 }

@@ -38,6 +38,7 @@ struct DestructiveConfirmation: View {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
+                .accessibilityIdentifier("cancel-destructive-action")
                 Button("Delete", role: .destructive) {
                     confirm()
                     isPresented = false

@@ -14,7 +14,7 @@ Task {
             exit(EXIT_SUCCESS)
         }
         let presenter = UpdateAgentPresenter()
-        let coordinator = try ProductionRuntimeUpdateCoordinatorFactory.make(
+        let coordinator = try ProductionUpdateCoordinatorFactory.make(
             stateSink: presenter,
             preferences: preferences
         )

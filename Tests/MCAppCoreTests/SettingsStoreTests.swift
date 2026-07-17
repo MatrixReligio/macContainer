@@ -1,10 +1,25 @@
-import MCSystemLifecycle
 @testable import MCAppCore
+import MCSystemLifecycle
 import Testing
 
 @MainActor
 @Suite("Settings persistence")
 struct SettingsStoreTests {
+    @Test func `loads and persists download then notify mode`() throws {
+        let persistence = RecordingPreferencesPersistence(value: .init(
+            automaticallyChecks: true,
+            mode: .downloadAndNotify,
+            consentVersion: nil
+        ))
+        let settings = SettingsStore(updatePreferences: persistence)
+
+        #expect(settings.runtimeUpdateMode == .downloadAndNotify)
+        #expect(!settings.autoInstallCompatibleRuntimeUpdates)
+
+        settings.runtimeUpdateMode = .checkOnly
+        #expect(try #require(persistence.saved.last).mode == .checkOnly)
+    }
+
     @Test func `loads explicit automatic update consent`() {
         let persistence = RecordingPreferencesPersistence(value: .init(
             automaticallyChecks: true,
@@ -16,7 +31,7 @@ struct SettingsStoreTests {
 
         #expect(settings.automaticallyCheckRuntimeUpdates)
         #expect(settings.autoInstallCompatibleRuntimeUpdates)
-        #expect(!settings.runtimeUpdatePreferencesPersistenceFailed)
+        #expect(!settings.updatePreferencesPersistenceFailed)
     }
 
     @Test func `enabling automatic updates forces checks and records current consent`() throws {
@@ -59,7 +74,7 @@ struct SettingsStoreTests {
 
         #expect(!settings.autoInstallCompatibleRuntimeUpdates)
         #expect(settings.automaticallyCheckRuntimeUpdates)
-        #expect(settings.runtimeUpdatePreferencesPersistenceFailed)
+        #expect(settings.updatePreferencesPersistenceFailed)
     }
 }
 
@@ -77,7 +92,9 @@ private final class RecordingPreferencesPersistence: RuntimeUpdatePreferencesPer
     }
 
     func save(_ preferences: RuntimeUpdatePreferences) throws {
-        if failSaves { throw RecordingPreferencesError.failed }
+        if failSaves {
+            throw RecordingPreferencesError.failed
+        }
         value = preferences
         saved.append(preferences)
     }

@@ -73,29 +73,29 @@ private final class RuntimeDiscoveryRedirectRefuser: NSObject, URLSessionTaskDel
     }
 }
 
+private struct RuntimeDiscoveryRelease: Decodable {
+    let tagName: String
+    let assets: [RuntimeDiscoveryAsset]
+
+    enum CodingKeys: String, CodingKey {
+        case tagName = "tag_name"
+        case assets
+    }
+}
+
+private struct RuntimeDiscoveryAsset: Decodable {
+    let name: String
+    let browserDownloadURL: String
+    let digest: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadURL = "browser_download_url"
+        case digest
+    }
+}
+
 public struct GitHubRuntimeReleaseDiscovery: RuntimeReleaseDiscovering, Sendable {
-    private struct Release: Decodable {
-        let tagName: String
-        let assets: [Asset]
-
-        enum CodingKeys: String, CodingKey {
-            case tagName = "tag_name"
-            case assets
-        }
-    }
-
-    private struct Asset: Decodable {
-        let name: String
-        let browserDownloadURL: String
-        let digest: String?
-
-        enum CodingKeys: String, CodingKey {
-            case name
-            case browserDownloadURL = "browser_download_url"
-            case digest
-        }
-    }
-
     public static let defaultEndpoint = URL(
         string: "https://api.github.com/repos/apple/container/releases/latest"
     )!
@@ -104,7 +104,7 @@ public struct GitHubRuntimeReleaseDiscovery: RuntimeReleaseDiscovering, Sendable
     private let loader: any RuntimeReleaseDiscoveryDataLoading
 
     public init(
-        endpoint: URL = GitHubRuntimeReleaseDiscovery.defaultEndpoint,
+        endpoint: URL = Self.defaultEndpoint,
         loader: any RuntimeReleaseDiscoveryDataLoading = URLSessionRuntimeReleaseDiscoveryLoader()
     ) {
         self.endpoint = endpoint
@@ -119,7 +119,9 @@ public struct GitHubRuntimeReleaseDiscovery: RuntimeReleaseDiscovering, Sendable
             guard response.finalURL == endpoint, response.body.count <= 2_000_000 else {
                 return .offline
             }
-            if response.statusCode == 304 { return .notModified }
+            if response.statusCode == 304 {
+                return .notModified
+            }
             if response.statusCode == 403 || response.statusCode == 429 {
                 let reset = response.headers["x-ratelimit-reset"]
                     .flatMap(TimeInterval.init)
@@ -127,7 +129,7 @@ public struct GitHubRuntimeReleaseDiscovery: RuntimeReleaseDiscovering, Sendable
                 return .rateLimited(reset: reset)
             }
             guard response.statusCode == 200 else { return .offline }
-            let release = try JSONDecoder().decode(Release.self, from: response.body)
+            let release = try JSONDecoder().decode(RuntimeDiscoveryRelease.self, from: response.body)
             guard release.assets.count <= 256,
                   let version = Self.strictVersion(release.tagName)
             else {

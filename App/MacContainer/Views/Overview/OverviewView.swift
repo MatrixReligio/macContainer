@@ -14,7 +14,7 @@ struct OverviewView: View {
                         .font(.largeTitle.bold())
                     Text("Runtime health and the safest next action, at a glance.")
                         .font(.title3)
-                        .foregroundStyle(.primary)
+                        .readableForeground()
                 }
 
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
@@ -84,13 +84,13 @@ private struct HealthSummary: View {
                         .foregroundStyle(.primary)
                     Text(value)
                         .font(.headline)
+                        .readableForeground()
                         .accessibilityIdentifier(identifier)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): \(value)")
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -112,11 +112,11 @@ private struct MetricSummary: View {
                         .foregroundStyle(.primary)
                     Text(value)
                         .font(.headline.monospacedDigit())
+                        .readableForeground()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): \(value)")
+        .accessibilityElement(children: .contain)
     }
 }

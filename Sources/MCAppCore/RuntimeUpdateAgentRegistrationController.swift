@@ -39,12 +39,15 @@ public actor SimulatedRuntimeUpdateAgentRegistrar: RuntimeUpdateAgentRegistering
 
     public init() {}
 
-    public func status() -> RuntimeUpdateAgentRegistrationStatus { current }
+    public func status() -> RuntimeUpdateAgentRegistrationStatus {
+        current
+    }
 
     public func reconcile(enabled: Bool) -> RuntimeUpdateAgentRegistrationStatus {
         current = enabled ? .enabled : .notRegistered
         return current
     }
 
+    // swiftlint:disable:next modifier_order
     public nonisolated func openApprovalSettings() {}
 }

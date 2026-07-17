@@ -69,6 +69,7 @@ struct TemplateLibraryView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { isPresented = false }
+                        .accessibilityIdentifier("template-library-done")
                 }
             }
         }

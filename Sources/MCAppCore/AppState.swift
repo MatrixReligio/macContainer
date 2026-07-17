@@ -1,3 +1,4 @@
+import MCContracts
 import MCSystemLifecycle
 import Observation
 import SwiftUI
@@ -50,13 +51,15 @@ public final class AppState {
     public var activityCenterPresented = false
     public var simpleModePresented = false
     public var health: HealthState = .checking
-    public var runtimeUpdateState: RuntimeUpdateState
     public var hasUnsavedWork = false
     public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter
     public let appUpdates: AppUpdateController
     public let runtimeLifecycle: RuntimeLifecycleController
     public let runtimeUpdateAgentRegistration: RuntimeUpdateAgentRegistrationController
+    public let runtimeUpdates: RuntimeUpdateController
+    public let resourceBrowser: RuntimeResourceBrowserController
+    public let operationExecutor: OperationExecutor
     public let environment: AppEnvironment
 
     public init(environment: AppEnvironment = AppEnvironment()) {
@@ -69,9 +72,30 @@ public final class AppState {
         runtimeUpdateAgentRegistration = RuntimeUpdateAgentRegistrationController(
             service: environment.runtimeUpdateAgentService
         )
+        runtimeUpdates = RuntimeUpdateController(
+            service: environment.runtimeUpdateManager,
+            initialState: environment.mode == .fakeRuntime
+                ? .available(version: "1.1.0")
+                : .checking
+        )
+        resourceBrowser = RuntimeResourceBrowserController(
+            provider: environment.runtimeResourceProvider,
+            activities: activities
+        )
+        let contract: UpstreamContract
+        do {
+            contract = try ContractRepository.bundled(
+                version: RuntimeVersion(major: 1, minor: 1, patch: 0)
+            )
+        } catch {
+            preconditionFailure("Bundled Apple container contract is unavailable: \(error)")
+        }
+        operationExecutor = OperationExecutor(
+            contract: contract,
+            capabilities: Set(contract.operations.map(\.id)),
+            dispatcher: environment.operationDispatcher,
+            activities: activities
+        )
         health = environment.mode == .fakeRuntime ? .healthy : .checking
-        runtimeUpdateState = environment.mode == .fakeRuntime
-            ? .available(version: "1.1.0")
-            : .checking
     }
 }

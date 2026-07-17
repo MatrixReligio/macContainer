@@ -7,6 +7,27 @@ import TestSupport
 
 @Suite("Guarded automatic runtime upgrade")
 struct AutomaticUpgradeTests {
+    @Test func `check only reports reviewed candidate without package or rollback work`() async throws {
+        let fixture = try AutomaticFixture(mode: .checkOnly)
+
+        #expect(try await fixture.coordinator.process(.fixture) == .available(version: "1.1.0"))
+        #expect(fixture.actions.values == ["context"])
+        #expect(await fixture.sink.states == [
+            .checking, .available(version: "1.1.0")
+        ])
+    }
+
+    @Test func `download and notify caches verified package without install preflight`() async throws {
+        let fixture = try AutomaticFixture(mode: .downloadAndNotify)
+
+        #expect(try await fixture.coordinator.process(.fixture) == .available(version: "1.1.0"))
+        #expect(fixture.actions.values == ["context", "package", "cache"])
+        #expect(await fixture.sink.states == [
+            .checking, .available(version: "1.1.0"), .downloading(version: "1.1.0"),
+            .available(version: "1.1.0")
+        ])
+    }
+
     @Test func `compatible idle update passes every gate and succeeds`() async throws {
         let fixture = try AutomaticFixture()
 
@@ -31,7 +52,7 @@ struct AutomaticUpgradeTests {
 
         let busy = try AutomaticFixture(activity: [.init(activeContainers: 1)])
         #expect(try await busy.coordinator.process(.fixture) == .pending(.workActive))
-        #expect(busy.actions.values == ["context", "package"])
+        #expect(busy.actions.values == ["context"])
     }
 
     @Test func `production package gate builds only the exact catalog target`() async throws {
@@ -118,6 +139,7 @@ private final class AutomaticFixture {
     let provider: RecordingAutomaticContextProvider
     let package: RecordingAutomaticPackageVerifier
     let rollback: RecordingRollbackAvailability
+    let cache: RecordingAutomaticPackageCache
     let executor: RecordingAutomaticExecutor
     let blocker = RecordingAutomaticBlocker()
     let sink = RecordingAutomaticSink()
@@ -131,7 +153,8 @@ private final class AutomaticFixture {
         rollbackFails: Bool = false,
         rollbackDelay: Duration = .zero,
         upgradeError: UpgradeError? = nil,
-        probeRegistry: ProbeRegistry = ProbeRegistry()
+        probeRegistry: ProbeRegistry = ProbeRegistry(),
+        mode: RuntimeUpdateMode = .automaticWhenIdle
     ) throws {
         let catalog = try CompatibilityCatalog.bundled()
         let entry = try #require(catalog.entries.first)
@@ -144,7 +167,8 @@ private final class AutomaticFixture {
             actions: actions,
             catalog: catalog,
             entry: entry,
-            activity: activity
+            activity: activity,
+            mode: mode
         )
         package = RecordingAutomaticPackageVerifier(actions: actions, fails: packageFails)
         rollback = RecordingRollbackAvailability(
@@ -152,15 +176,30 @@ private final class AutomaticFixture {
             fails: rollbackFails,
             delay: rollbackDelay
         )
+        cache = RecordingAutomaticPackageCache(actions: actions)
         executor = RecordingAutomaticExecutor(actions: actions, error: upgradeError)
         coordinator = RuntimeUpdateCoordinator(
             contextProvider: provider,
             packageVerifier: package,
+            packageCache: cache,
             rollbackAvailability: rollback,
             probeRegistry: probeRegistry,
             executor: executor,
             blocker: blocker,
             stateSink: sink
+        )
+    }
+}
+
+private struct RecordingAutomaticPackageCache: AutomaticUpdatePackageCaching {
+    let actions: LockedAutomaticActions
+
+    func cache(_ target: RuntimeUpgradeTarget) async throws -> RetainedRuntimePackage {
+        actions.append("cache")
+        return .init(
+            url: URL(fileURLWithPath: "/private/tmp/\(target.installTarget.manifest.assetName)"),
+            runtimeVersion: target.version,
+            sha256: target.installTarget.manifest.sha256
         )
     }
 }
@@ -182,17 +221,20 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
     let catalog: CompatibilityCatalog
     let entry: CompatibilityEntry
     var activity: [RuntimeActivitySnapshot]
+    let mode: RuntimeUpdateMode
 
     init(
         actions: LockedAutomaticActions,
         catalog: CompatibilityCatalog,
         entry: CompatibilityEntry,
-        activity: [RuntimeActivitySnapshot]
+        activity: [RuntimeActivitySnapshot],
+        mode: RuntimeUpdateMode
     ) {
         self.actions = actions
         self.catalog = catalog
         self.entry = entry
         self.activity = activity
+        self.mode = mode
     }
 
     func context(for _: RuntimeReleaseCandidate) async throws -> AutomaticUpdateContext {
@@ -213,8 +255,10 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
             verifiedAttestationIDs: [entry.attestation.id],
             blockedAttestationID: nil,
             destructiveMigrationConsent: false,
-            mode: .automaticWhenIdle,
-            consentVersion: RuntimeUpdatePolicy.currentConsentVersion,
+            mode: mode,
+            consentVersion: mode == .automaticWhenIdle
+                ? RuntimeUpdatePolicy.currentConsentVersion
+                : nil,
             helperAuthorized: true,
             activity: initialActivity,
             bridge: FakeRuntimeBridge(runtimeVersion: "1.0.0"),

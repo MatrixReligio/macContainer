@@ -4,6 +4,16 @@ import XCTest
 final class SparkleUpdateUITests: XCTestCase {
     func testSignedSeedUpdatesAndPreservesPreferences() throws {
         let environment = ProcessInfo.processInfo.environment
+        let requiredHarnessVariables = [
+            "SPARKLE_TEST_SEED_APP",
+            "SPARKLE_TEST_FEED_URL",
+            "SPARKLE_TEST_ROOT",
+            "SPARKLE_TEST_HOME",
+            "SPARKLE_TEST_EXPECTED_VERSION"
+        ]
+        guard requiredHarnessVariables.allSatisfy({ environment[$0]?.isEmpty == false }) else {
+            throw XCTSkip("The signed Sparkle update harness supplies seed, feed, root, home, and target version.")
+        }
         let seedApp = try XCTUnwrap(environment["SPARKLE_TEST_SEED_APP"])
         let feedURL = try XCTUnwrap(environment["SPARKLE_TEST_FEED_URL"])
         let root = try XCTUnwrap(environment["SPARKLE_TEST_ROOT"])

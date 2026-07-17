@@ -1,3 +1,4 @@
+import MCAppCore
 import MCContracts
 import MCModel
 import MCTemplates
@@ -8,9 +9,12 @@ struct TemplateReviewView: View {
     let review: TemplateReview
     let contract: UpstreamContract
     @Binding var isPresented: Bool
-    let onRun: () -> Void
+    let onRun: () async throws -> String
 
     @State private var advancedEditorPresented = false
+    @State private var isRunning = false
+    @State private var resultSummary: String?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -70,18 +74,41 @@ struct TemplateReviewView: View {
                     }
                     .accessibilityIdentifier("template-review.edit-all")
                 }
+                if isRunning || resultSummary != nil || errorMessage != nil {
+                    Section("Result") {
+                        if isRunning {
+                            HStack {
+                                ProgressView()
+                                Text("Starting through the native runtime bridge…")
+                            }
+                        } else if let resultSummary {
+                            Label(resultSummary, systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                        } else if let errorMessage {
+                            Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
             }
             .navigationTitle("Review \(template.id)")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Back") { isPresented = false }
+                        .disabled(isRunning)
+                        .accessibilityIdentifier("template-review-back")
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Run") {
-                        onRun()
-                        isPresented = false
+                    Button(resultSummary == nil ? (errorMessage == nil ? "Run" : "Retry") : "Done") {
+                        if resultSummary != nil {
+                            isPresented = false
+                        } else {
+                            run()
+                        }
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(isRunning)
                     .accessibilityIdentifier("template-run")
                 }
             }
@@ -98,6 +125,24 @@ struct TemplateReviewView: View {
                 )
                 .frame(minWidth: 900, minHeight: 650)
             }
+        }
+    }
+
+    private func run() {
+        isRunning = true
+        resultSummary = nil
+        errorMessage = nil
+        Task {
+            do {
+                resultSummary = try await onRun()
+            } catch {
+                errorMessage = ErrorMapper().map(
+                    error,
+                    domain: .unknown,
+                    operationID: review.draft.operationID
+                ).diagnosticDetail
+            }
+            isRunning = false
         }
     }
 }

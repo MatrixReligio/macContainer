@@ -27,7 +27,7 @@ struct ParameterField: View {
             HStack(spacing: 8) {
                 Text(LocalizedStringKey(parameter.conciseHelpKey))
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
+                    .readableForeground()
                 Spacer()
                 Text(field.source.rawValue)
                     .font(.caption.weight(.semibold).monospaced())

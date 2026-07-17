@@ -31,10 +31,16 @@ if [[ "$actual_version" != "$expected_version" ]]; then
     exit 1
 fi
 
-/bin/mkdir -p "$temporary_repo/Tests"
+/bin/mkdir -p "$temporary_repo/Tests" "$temporary_repo/Config/compatibility"
 /usr/bin/ditto "$repo_root/project.yml" "$temporary_repo/project.yml"
 /usr/bin/ditto "$repo_root/Package.swift" "$temporary_repo/Package.swift"
 /usr/bin/ditto "$repo_root/App" "$temporary_repo/App"
+/usr/bin/ditto \
+    "$repo_root/Config/physical-test-plan-v1.json" \
+    "$temporary_repo/Config/physical-test-plan-v1.json"
+/usr/bin/ditto \
+    "$repo_root/Config/compatibility/attestations" \
+    "$temporary_repo/Config/compatibility/attestations"
 /usr/bin/ditto \
     "$repo_root/Tests/MacContainerIntegrationTests" \
     "$temporary_repo/Tests/MacContainerIntegrationTests"

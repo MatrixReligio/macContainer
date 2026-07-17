@@ -30,7 +30,7 @@ public actor RuntimeUpdateAgentRegistrar: RuntimeUpdateAgentRegistering {
     }
 
     public init(plistName: String = RuntimeUpdateAgentRegistrar.agentPlistName) {
-        backend = SystemRuntimeUpdateAgentRegistrationBackend(plistName: plistName)
+        backend = SystemUpdateAgentBackend(plistName: plistName)
     }
 
     public func status() -> RuntimeUpdateAgentRegistrationStatus {
@@ -85,17 +85,13 @@ public actor RuntimeUpdateAgentRegistrar: RuntimeUpdateAgentRegistering {
         return .notRegistered
     }
 
-    // Swift requires the access modifier before nonisolated here; SwiftLint's preferred order conflicts with it.
     // swiftlint:disable:next modifier_order
     public nonisolated func openApprovalSettings() {
         SMAppService.openSystemSettingsLoginItems()
     }
 }
 
-public final class SystemRuntimeUpdateAgentRegistrationBackend:
-    RuntimeUpdateAgentRegistrationBackend,
-    @unchecked Sendable
-{
+public final class SystemUpdateAgentBackend: RuntimeUpdateAgentRegistrationBackend, @unchecked Sendable {
     private let service: SMAppService
 
     public init(plistName: String = RuntimeUpdateAgentRegistrar.agentPlistName) {

@@ -47,11 +47,23 @@ require_text 'PHYSICAL_PACKAGE_110="$package_110"'
 require_text 'ledger_transition temporary-directory "$upgrade_state" planned'
 require_text 'run_physical_package_tests'
 require_text 'run_physical_package_tests PhysicalOperationTests'
+require_text 'run_physical_package_tests PhysicalUninstallTests'
+require_text '"$phase" == "install-and-operations"'
 require_text 'production_complete_uninstall'
 require_text 'compare-baseline.swift'
 require_text 'summarize.swift'
 require_text 'recover.swift'
 require_text 'cleanup ledger contains only verifiedAbsent states'
+
+if /usr/bin/grep -Fq -- "=designated =>" "$runner"; then
+    print -u2 -- "physical runner uses invalid codesign test-requirement syntax"
+    exit 1
+fi
+
+if /usr/bin/grep -Eq -- 'local([^#\n]|[[:space:]])*\bstatus\b|^[[:space:]]*status=' "$runner"; then
+    print -u2 -- "physical runner shadows zsh's read-only status parameter"
+    exit 1
+fi
 
 if /usr/bin/grep -Eq -- '(brew install|pip(3)? install|npm install -g|sudo[[:space:]]+rm|rm[[:space:]]+-rf)' "$runner"; then
     print -u2 -- "physical runner contains global install or unsafe cleanup"

@@ -52,6 +52,8 @@ struct UpdateAgentServiceTests {
             .rateLimited(reset))
         #expect(await offline.coordinator.candidates.isEmpty)
         #expect(await limited.coordinator.candidates.isEmpty)
+        #expect(await offline.presenter.published == [.checking, .checkFailed(.offline)])
+        #expect(await limited.presenter.published == [.checking, .checkFailed(.rateLimited)])
     }
 
     @Test func `cancellation propagates and never reaches coordinator`() async throws {

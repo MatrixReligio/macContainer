@@ -45,12 +45,16 @@ private final class RecordingUpdateAgentBackend: RuntimeUpdateAgentRegistrationB
         self.approvalRequired = approvalRequired
     }
 
-    func status() -> RuntimeUpdateAgentRegistrationStatus { storedStatus }
+    func status() -> RuntimeUpdateAgentRegistrationStatus {
+        storedStatus
+    }
 
     func register() throws {
         registerCalls += 1
         storedStatus = approvalRequired ? .requiresApproval : .enabled
-        if approvalRequired { throw RecordingUpdateAgentError.approvalRequired }
+        if approvalRequired {
+            throw RecordingUpdateAgentError.approvalRequired
+        }
     }
 
     func unregister() throws {

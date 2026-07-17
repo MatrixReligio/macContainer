@@ -28,7 +28,8 @@ final class UpdateAgentTests: XCTestCase {
 
     func testUpdateAgentBuildSmokeDoesNotTouchRuntime() throws {
         let products = Bundle(for: Self.self).bundleURL.deletingLastPathComponent()
-        let executable = products.appending(path: "MacContainerUpdateAgent")
+        let executable = products
+            .appending(path: "MacContainer.app/Contents/MacOS/container.matrixreligio.com.update-agent")
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: executable.path))
 
         let process = Process()

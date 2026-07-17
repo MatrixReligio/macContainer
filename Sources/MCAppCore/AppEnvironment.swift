@@ -13,6 +13,9 @@ public struct AppEnvironment {
     public let languageController: LanguageController
     public let runtimeLifecycleService: any RuntimeLifecycleServicing
     public let runtimeUpdateAgentService: any RuntimeUpdateAgentRegistering
+    public let runtimeUpdateManager: any RuntimeUpdateManaging
+    public let runtimeResourceProvider: any RuntimeResourceProviding
+    public let operationDispatcher: any OperationDispatching
     public let now: @Sendable () -> Date
     public let makeID: @Sendable () -> UUID
 
@@ -22,6 +25,9 @@ public struct AppEnvironment {
         languageController: LanguageController = LanguageController(),
         runtimeLifecycleService: (any RuntimeLifecycleServicing)? = nil,
         runtimeUpdateAgentService: (any RuntimeUpdateAgentRegistering)? = nil,
+        runtimeUpdateManager: (any RuntimeUpdateManaging)? = nil,
+        runtimeResourceProvider: (any RuntimeResourceProviding)? = nil,
+        operationDispatcher: (any OperationDispatching)? = nil,
         now: @escaping @Sendable () -> Date = Date.init,
         makeID: @escaping @Sendable () -> UUID = UUID.init
     ) {
@@ -39,6 +45,21 @@ public struct AppEnvironment {
             mode == .fakeRuntime
                 ? SimulatedRuntimeUpdateAgentRegistrar()
                 : RuntimeUpdateAgentRegistrar()
+        )
+        self.runtimeUpdateManager = runtimeUpdateManager ?? (
+            mode == .fakeRuntime
+                ? SimulatedRuntimeUpdateManager()
+                : ProductionRuntimeUpdateManager()
+        )
+        self.runtimeResourceProvider = runtimeResourceProvider ?? (
+            mode == .fakeRuntime
+                ? SimulatedRuntimeResourceProvider()
+                : ProductionRuntimeResourceProvider()
+        )
+        self.operationDispatcher = operationDispatcher ?? (
+            mode == .fakeRuntime
+                ? SimulatedOperationDispatcher()
+                : BridgeOperationDispatcher()
         )
         self.now = now
         self.makeID = makeID

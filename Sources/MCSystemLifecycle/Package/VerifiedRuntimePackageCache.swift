@@ -128,7 +128,9 @@ public actor VerifiedRuntimePackageCache: InstallPackageRetaining {
             Darwin.openat(directoryDescriptor, $0, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
         }
         guard descriptor >= 0 else {
-            if errno == ENOENT { return }
+            if errno == ENOENT {
+                return
+            }
             throw VerifiedRuntimePackageCacheError.unsafeExistingPackage
         }
         defer { Darwin.close(descriptor) }

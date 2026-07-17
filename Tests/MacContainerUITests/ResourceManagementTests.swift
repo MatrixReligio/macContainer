@@ -52,6 +52,6 @@ final class ResourceManagementTests: XCTestCase {
         )
         XCTAssertTrue(app.staticTexts["demo-web"].exists)
         XCTAssertTrue(app.staticTexts["This action permanently removes the selected container."].exists)
-        app.buttons["Cancel"].click()
+        app.buttons["cancel-destructive-action"].click()
     }
 }

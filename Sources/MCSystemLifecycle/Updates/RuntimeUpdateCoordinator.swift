@@ -64,6 +64,10 @@ public protocol AutomaticUpdatePackageVerifying: Sendable {
     ) async throws -> RuntimeUpgradeTarget
 }
 
+public protocol AutomaticUpdatePackageCaching: Sendable {
+    func cache(_ target: RuntimeUpgradeTarget) async throws -> RetainedRuntimePackage
+}
+
 public protocol AutomaticRollbackAvailabilityChecking: Sendable {
     func check(target: RuntimeUpgradeTarget) async throws
 }
@@ -88,6 +92,7 @@ public protocol RuntimeUpdateStateSink: Sendable {
 public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
     private let contextProvider: any AutomaticUpdateContextProviding
     private let packageVerifier: any AutomaticUpdatePackageVerifying
+    private let packageCache: any AutomaticUpdatePackageCaching
     private let rollbackAvailability: any AutomaticRollbackAvailabilityChecking
     private let probeRegistry: ProbeRegistry
     private let executor: any AutomaticUpgradeExecuting
@@ -99,6 +104,7 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
     public init(
         contextProvider: any AutomaticUpdateContextProviding,
         packageVerifier: any AutomaticUpdatePackageVerifying,
+        packageCache: any AutomaticUpdatePackageCaching,
         rollbackAvailability: any AutomaticRollbackAvailabilityChecking,
         probeRegistry: ProbeRegistry = ProbeRegistry(),
         executor: any AutomaticUpgradeExecuting,
@@ -109,6 +115,7 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
     ) {
         self.contextProvider = contextProvider
         self.packageVerifier = packageVerifier
+        self.packageCache = packageCache
         self.rollbackAvailability = rollbackAvailability
         self.probeRegistry = probeRegistry
         self.executor = executor
@@ -118,6 +125,8 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
         self.updatePolicy = updatePolicy
     }
 
+    // The coordinator intentionally makes every fail-closed gate visible in one ordered state machine.
+    // swiftlint:disable:next cyclomatic_complexity
     public func process(_ candidate: RuntimeReleaseCandidate) async throws -> RuntimeUpdateState {
         await stateSink.publish(.checking)
         try Task.checkCancellation()
@@ -131,6 +140,16 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
         }
 
         await stateSink.publish(.available(version: candidate.version))
+        switch updateAction(reviewed: reviewed, activity: reviewed.context.activity) {
+        case .notify:
+            return .available(version: candidate.version)
+        case let .pending(reason):
+            return await finish(.pending(reason))
+        case let .held(reason):
+            return await finish(.held(reason))
+        case .downloadThenNotify, .install:
+            break
+        }
         await stateSink.publish(.downloading(version: candidate.version))
         let target: RuntimeUpgradeTarget
         switch try await prepare(candidate, reviewed: reviewed) {
@@ -138,6 +157,22 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
             target = value
         case let .stop(state):
             return await finish(state)
+        }
+
+        if reviewed.context.mode == .downloadAndNotify {
+            do {
+                let retained = try await packageCache.cache(target)
+                guard retained.runtimeVersion == target.version,
+                      retained.sha256 == target.installTarget.manifest.sha256
+                else {
+                    return await finish(.held(.packageIdentityMismatch))
+                }
+                return await finish(.available(version: candidate.version))
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                return await finish(.held(.packageIdentityMismatch))
+            }
         }
 
         if let state = policyState(
@@ -258,19 +293,26 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
         activity: RuntimeActivitySnapshot,
         candidateVersion: String
     ) -> RuntimeUpdateState? {
-        let action = updatePolicy.action(for: .init(
-            mode: reviewed.context.mode,
-            compatibilityDecision: reviewed.decision,
-            consentVersion: reviewed.context.consentVersion,
-            helperAuthorized: reviewed.context.helperAuthorized,
-            activity: activity
-        ))
+        let action = updateAction(reviewed: reviewed, activity: activity)
         switch action {
         case .install: return nil
         case .notify, .downloadThenNotify: return .available(version: candidateVersion)
         case let .pending(reason): return .pending(reason)
         case let .held(reason): return .held(reason)
         }
+    }
+
+    private func updateAction(
+        reviewed: ReviewedAutomaticUpdate,
+        activity: RuntimeActivitySnapshot
+    ) -> RuntimeUpdateAction {
+        updatePolicy.action(for: .init(
+            mode: reviewed.context.mode,
+            compatibilityDecision: reviewed.decision,
+            consentVersion: reviewed.context.consentVersion,
+            helperAuthorized: reviewed.context.helperAuthorized,
+            activity: activity
+        ))
     }
 
     private func execute(

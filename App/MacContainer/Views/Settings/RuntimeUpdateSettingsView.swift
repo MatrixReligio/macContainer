@@ -21,18 +21,18 @@ struct RuntimeUpdateSettingsView: View {
                     "Automatically check for signed runtime updates",
                     isOn: $settings.automaticallyCheckRuntimeUpdates
                 )
-                Toggle(
-                    "Automatically install only compatibility-approved updates",
-                    isOn: $settings.autoInstallCompatibleRuntimeUpdates
-                )
-                Text(
-                    settings.autoInstallCompatibleRuntimeUpdates
-                        ? "Automatic installation is limited to compatibility-approved updates."
-                        : "Automatic installation is off until you explicitly opt in."
-                )
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color(nsColor: .labelColor))
-                if settings.runtimeUpdatePreferencesPersistenceFailed {
+                Picker("Approved update action", selection: $settings.runtimeUpdateMode) {
+                    Text("Check only").tag(RuntimeUpdateMode.checkOnly)
+                    Text("Download and notify").tag(RuntimeUpdateMode.downloadAndNotify)
+                    Text("Automatic when idle").tag(RuntimeUpdateMode.automaticWhenIdle)
+                }
+                .pickerStyle(.radioGroup)
+                .disabled(!settings.automaticallyCheckRuntimeUpdates)
+                .accessibilityIdentifier("runtime-update-mode")
+                Text(modeDescription(settings.runtimeUpdateMode))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
+                if settings.updatePreferencesPersistenceFailed {
                     Label("Update preference could not be saved; the previous safe setting was restored.",
                           systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.red)
@@ -42,56 +42,60 @@ struct RuntimeUpdateSettingsView: View {
 
                 Divider()
                 updateStatus
-                Label {
-                    Text("Unknown version 1.2.0 is held — no automatic install")
-                        .foregroundStyle(Color(nsColor: .labelColor))
-                } icon: {
-                    Image(systemName: "pause.circle.fill")
-                        .foregroundStyle(.orange)
+                if isAuditMode {
+                    Label {
+                        Text("Unknown version 1.2.0 is held — no automatic install")
+                            .foregroundStyle(Color(nsColor: .labelColor))
+                    } icon: {
+                        Image(systemName: "pause.circle.fill")
+                            .foregroundStyle(.orange)
+                    }
+                    Text("Rollback point: 1.0.0 · verified · retained")
+                        .font(.caption.monospaced())
                 }
-                Text("Rollback point: 1.0.0 · verified · retained")
-                    .font(.caption.monospaced())
 
                 HStack {
                     Button("Check now") {
-                        state.runtimeUpdateState = .checking
+                        Task { await state.runtimeUpdates.checkNow() }
                     }
+                    .disabled(state.runtimeUpdates.isBusy)
                     .accessibilityIdentifier("check-runtime-update")
-                    if case .available = state.runtimeUpdateState {
+                    if case .available = state.runtimeUpdates.state {
                         Button("Install compatible update") {
-                            state.runtimeUpdateState = .installing(.targetProbes)
+                            Task { await state.runtimeUpdates.installAvailable() }
                         }
+                        .disabled(state.runtimeUpdates.isBusy)
                         .accessibilityIdentifier("install-compatible-update")
                     }
                 }
 
                 if isAuditMode {
-                    switch state.runtimeUpdateState {
+                    switch state.runtimeUpdates.state {
                     case .checking:
                         Button("Complete update check") {
-                            state.runtimeUpdateState = .available(version: "1.1.0")
+                            state.runtimeUpdates.setAuditState(.available(version: "1.1.0"))
                         }
                         .accessibilityIdentifier("complete-update-check")
                     case .installing:
                         Button("Simulate failed postflight") {
-                            state.runtimeUpdateState = .rolledBack(
+                            state.runtimeUpdates.setAuditState(.rolledBack(
                                 previousVersion: "1.0.0",
                                 failedProbeID: .images
-                            )
+                            ))
                         }
                         .accessibilityIdentifier("simulate-upgrade-failure")
                         Button("Simulate rollback failure") {
-                            state.runtimeUpdateState = .recoveryRequired(
+                            state.runtimeUpdates.setAuditState(.recoveryRequired(
                                 code: "rollback.previous-probes.run"
-                            )
+                            ))
                         }
                         .accessibilityIdentifier("simulate-update-recovery")
                     case .rolledBack, .recoveryRequired, .held, .pending:
                         Button("Retry after review") {
-                            state.runtimeUpdateState = .available(version: "1.1.0")
+                            state.runtimeUpdates.setAuditState(.available(version: "1.1.0"))
                         }
                         .accessibilityIdentifier("retry-runtime-update")
-                    case .available, .downloading, .upToDate:
+                    case .available, .downloading, .checkFailed, .upToDate:
                         EmptyView()
                     }
                 }
@@ -114,8 +118,13 @@ struct RuntimeUpdateSettingsView: View {
     private var updateAgentStatus: some View {
         switch state.runtimeUpdateAgentRegistration.status {
         case .enabled:
-            Label("Background update checks are enabled", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+            Label {
+                Text("Background update checks are enabled")
+                    .readableForeground()
+            } icon: {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            }
         case .requiresApproval:
             HStack {
                 Label("Background checks require approval in System Settings",
@@ -141,7 +150,7 @@ struct RuntimeUpdateSettingsView: View {
 
     @ViewBuilder
     private var updateStatus: some View {
-        switch state.runtimeUpdateState {
+        switch state.runtimeUpdates.state {
         case .checking:
             status("Checking for reviewed runtime updates", symbol: "arrow.triangle.2.circlepath")
         case let .available(version):
@@ -175,13 +184,36 @@ struct RuntimeUpdateSettingsView: View {
                 symbol: "exclamationmark.triangle.fill",
                 color: .red
             )
+        case let .checkFailed(failure):
+            status(checkFailureText(failure), symbol: "wifi.exclamationmark", color: .orange)
         case .upToDate:
             status("Runtime is up to date and compatibility verified", symbol: "checkmark.circle.fill", color: .green)
         }
     }
 
+    private func checkFailureText(_ failure: RuntimeUpdateCheckFailure) -> LocalizedStringKey {
+        switch failure {
+        case .cancelled: "Runtime update check was cancelled"
+        case .internalFailure: "Runtime update check could not be completed"
+        case .noCandidate: "No reviewed runtime update candidate is available"
+        case .offline: "Runtime update service is offline — check your connection and retry"
+        case .rateLimited: "Runtime update service is temporarily rate limited — retry later"
+        }
+    }
+
+    private func modeDescription(_ mode: RuntimeUpdateMode) -> LocalizedStringKey {
+        switch mode {
+        case .checkOnly:
+            "Reports reviewed updates and waits for an explicit install request."
+        case .downloadAndNotify:
+            "Downloads and verifies an approved package, then waits for your review."
+        case .automaticWhenIdle:
+            "Installs only compatibility-approved updates after explicit consent when all work is idle."
+        }
+    }
+
     private func status(
-        _ text: String,
+        _ text: LocalizedStringKey,
         symbol: String,
         color: Color = Color(nsColor: .labelColor)
     ) -> some View {
@@ -193,14 +225,14 @@ struct RuntimeUpdateSettingsView: View {
         .accessibilityIdentifier("runtime-update-status")
     }
 
-    private func pendingText(_ reason: PendingReason) -> String {
+    private func pendingText(_ reason: PendingReason) -> LocalizedStringKey {
         switch reason {
         case .workActive: "Update pending until containers, machines, and builds are idle"
         case .authorizationRequired: "Update pending administrator authorization"
         }
     }
 
-    private func heldText(_ reason: HoldReason) -> String {
+    private func heldText(_ reason: HoldReason) -> LocalizedStringKey {
         switch reason {
         case .unknownRuntime: "Update held — runtime version has not been reviewed"
         case .appVersionOutsideRange: "Update held — this app version is outside the reviewed range"

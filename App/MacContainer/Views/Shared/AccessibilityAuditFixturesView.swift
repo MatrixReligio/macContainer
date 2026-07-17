@@ -210,7 +210,7 @@ private struct TemplateReviewAuditFixture: View {
                         review: review,
                         contract: contract,
                         isPresented: $isPresented
-                    ) {}
+                    ) { "Simulated template run completed" }
                 }
             }
         } else {

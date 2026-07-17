@@ -16,6 +16,14 @@ public protocol OperationDispatching: Sendable {
     func dispatch(_ draft: OperationDraft) async throws -> OperationDispatchResult
 }
 
+public struct SimulatedOperationDispatcher: OperationDispatching, Sendable {
+    public init() {}
+
+    public func dispatch(_ draft: OperationDraft) async throws -> OperationDispatchResult {
+        OperationDispatchResult(summary: "Simulated \(draft.operationID) completed")
+    }
+}
+
 public struct OperationExecutionResult: Equatable, Sendable {
     public let operationID: String
     public let activityID: UUID

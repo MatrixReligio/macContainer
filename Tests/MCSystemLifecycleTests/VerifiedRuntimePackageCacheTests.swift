@@ -89,7 +89,7 @@ private final class CacheFixture {
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: sourceURL.path)
         let handle = try FileHandle(forReadingFrom: sourceURL)
         defer { try? handle.close() }
-        return VerifiedRuntimePackage(
+        return try VerifiedRuntimePackage(
             runtimeVersion: "1.1.0",
             sha256: String(repeating: "a", count: 64),
             installerTeamID: "TESTTEAM",
@@ -97,7 +97,7 @@ private final class CacheFixture {
             receiptIdentifier: "com.example.runtime",
             installLocation: "/usr/local",
             payload: [],
-            openFile: try OpenRuntimePackageFile(duplicating: handle.fileDescriptor)
+            openFile: OpenRuntimePackageFile(duplicating: handle.fileDescriptor)
         )
     }
 

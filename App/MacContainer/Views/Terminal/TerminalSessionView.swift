@@ -15,7 +15,7 @@ struct TerminalSessionView: View {
                         .font(.headline)
                     Text("Remote clipboard, links, notifications, and title changes are blocked.")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color(nsColor: .labelColor))
+                        .readableForeground()
                 }
                 Spacer()
                 Label {

@@ -100,7 +100,7 @@ struct OperationForm: View {
                     .font(.title2.weight(.semibold).monospaced())
                 Text(verbatim: "Native \(operation.nativeAction) · Apple container \(runtimeVersion)")
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color(nsColor: .labelColor))
+                    .readableForeground()
             }
             Spacer()
             Text(operation.risk.rawValue.capitalized)

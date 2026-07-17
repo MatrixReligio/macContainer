@@ -67,9 +67,9 @@ struct GitHubRuntimeReleaseDiscoveryTests {
           }]
         }
         """.utf8)
-        let redirected = GitHubRuntimeReleaseDiscovery(loader: FixedDiscoveryLoader(response: .init(
+        let redirected = try GitHubRuntimeReleaseDiscovery(loader: FixedDiscoveryLoader(response: .init(
             statusCode: 200,
-            finalURL: URL(string: "https://example.com/redirect")!,
+            finalURL: #require(URL(string: "https://example.com/redirect")),
             body: body,
             headers: [:]
         )))

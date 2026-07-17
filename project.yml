@@ -30,6 +30,10 @@ targets:
     platform: macOS
     sources:
       - App/MacContainer
+      - path: Config/physical-test-plan-v1.json
+        buildPhase: resources
+      - path: Config/compatibility/attestations
+        buildPhase: resources
     dependencies:
       - package: MacContainerCore
         product: MCModel
@@ -78,7 +82,7 @@ targets:
         SUFeedURL: https://github.com/matrixreligio/macContainer/releases/latest/download/appcast.xml
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 86400
-        SUPublicEDKey: SY7+LwKROwq3OPv7vZbnzyQ1a6Be/LeuFU4TO0RWJwU=
+        SUPublicEDKey: H1VCzTV1DnEB/LGQzJj7/FIDC4HhkwFB9oMIyImL0oY=
     postCompileScripts:
       - name: Embed helper and update agent
         inputFiles:

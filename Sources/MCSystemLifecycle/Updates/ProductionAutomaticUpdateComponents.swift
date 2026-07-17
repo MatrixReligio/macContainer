@@ -10,7 +10,9 @@ public protocol CompatibilityCatalogProviding: Sendable {
 
 public struct BundledCompatibilityCatalogProvider: CompatibilityCatalogProviding, Sendable {
     public init() {}
-    public func catalog() throws -> CompatibilityCatalog { try CompatibilityCatalog.bundled() }
+    public func catalog() throws -> CompatibilityCatalog {
+        try CompatibilityCatalog.bundled()
+    }
 }
 
 public protocol RuntimeUpdateHostProfiling: Sendable {
@@ -71,7 +73,9 @@ public protocol PhysicalAttestationIDProviding: Sendable {
 
 public struct FailClosedPhysicalAttestationIDProvider: PhysicalAttestationIDProviding, Sendable {
     public init() {}
-    public func verifiedIDs(for _: CompatibilityEntry) async -> Set<String> { [] }
+    public func verifiedIDs(for _: CompatibilityEntry) async -> Set<String> {
+        []
+    }
 }
 
 public struct SystemAutomaticUpdateContextProvider: AutomaticUpdateContextProviding, Sendable {
@@ -94,7 +98,7 @@ public struct SystemAutomaticUpdateContextProvider: AutomaticUpdateContextProvid
         preferences: any RuntimeUpdatePreferencesPersisting = RuntimeUpdatePreferencesStore(),
         registrar: any PrivilegedHelperRegistering = PrivilegedHelperRegistrar(),
         activityProvider: (any RuntimeUpdateActivityProviding)? = nil,
-        attestationProvider: any PhysicalAttestationIDProviding = FailClosedPhysicalAttestationIDProvider(),
+        attestationProvider: any PhysicalAttestationIDProviding = BundledPhysicalAttestationIDProvider(),
         blockedVersions: BlockedVersionStore = BlockedVersionStore(),
         bridge: any RuntimeBridge = AppleRuntimeBridge()
     ) {
@@ -129,7 +133,7 @@ public struct SystemAutomaticUpdateContextProvider: AutomaticUpdateContextProvid
         } else {
             nil
         }
-        return AutomaticUpdateContext(
+        return await AutomaticUpdateContext(
             catalog: catalog,
             appVersion: appVersion,
             host: hostProvider.profile(),
@@ -140,7 +144,7 @@ public struct SystemAutomaticUpdateContextProvider: AutomaticUpdateContextProvid
             destructiveMigrationConsent: false,
             mode: preferences.mode,
             consentVersion: preferences.consentVersion,
-            helperAuthorized: await registrar.status() == .enabled,
+            helperAuthorized: registrar.status() == .enabled,
             activity: activity,
             bridge: bridge,
             enabledCapabilityIDs: entry?.capabilityIDs ?? []
@@ -196,7 +200,7 @@ public struct SystemAutomaticUpgradeBaselineCapture: UpgradeBaselineCapturing, S
     )!
 }
 
-public struct SystemAutomaticRollbackAvailabilityChecker: AutomaticRollbackAvailabilityChecking, Sendable {
+public struct SystemRollbackAvailabilityChecker: AutomaticRollbackAvailabilityChecking, Sendable {
     private let baselineCapture: any UpgradeBaselineCapturing
     private let previousPackageVerifier: any PreviousRuntimePackageVerifying
 
@@ -233,6 +237,35 @@ public enum ProductionAutomaticUpdateComponentError: Error, Equatable, Sendable 
     case invalidTarget
     case previousPackageMismatch
     case unsupportedUpgradeSource
+}
+
+public struct SystemAutomaticUpdatePackageCache: AutomaticUpdatePackageCaching, Sendable {
+    private let preparer: any UpgradePackagePreparing
+    private let retainer: any InstallPackageRetaining
+
+    public init(
+        preparer: any UpgradePackagePreparing = SystemUpgradePackagePreparer(),
+        retainer: any InstallPackageRetaining = VerifiedRuntimePackageCache()
+    ) {
+        self.preparer = preparer
+        self.retainer = retainer
+    }
+
+    public func cache(_ target: RuntimeUpgradeTarget) async throws -> RetainedRuntimePackage {
+        let prepared = try await preparer.prepare(target)
+        defer { try? prepared.cleanup() }
+        try prepared.package.openFile.revalidateIdentity()
+        let retained = try await retainer.retain(
+            prepared.package,
+            assetName: target.installTarget.manifest.assetName
+        )
+        guard retained.runtimeVersion == target.version,
+              retained.sha256 == target.installTarget.manifest.sha256
+        else {
+            throw ProductionAutomaticUpdateComponentError.invalidTarget
+        }
+        return retained
+    }
 }
 
 public enum SystemApplicationVersion {
@@ -279,7 +312,9 @@ public struct ReviewedUpgradeTargetBlocker: UpgradeTargetBlocking, Sendable {
 
 public struct DenyAutomaticDowngradeConsentProvider: UpgradeDowngradeConsentProviding, Sendable {
     public init() {}
-    public func approve(_: DowngradeConsentRequest) async -> Bool { false }
+    public func approve(_: DowngradeConsentRequest) async -> Bool {
+        false
+    }
 }
 
 public struct UpgradeDiagnosticRecord: Codable, Equatable, Sendable {
@@ -332,10 +367,14 @@ public actor PrivateUpgradeDiagnosticStore: UpgradeDiagnosticPersisting {
         try load().records
     }
 
+    // Secure descriptor validation is deliberately linear and fail closed at every filesystem condition.
+    // swiftlint:disable:next cyclomatic_complexity
     private func load() throws -> Storage {
         var status = stat()
         guard Darwin.lstat(fileURL.path, &status) == 0 else {
-            if errno == ENOENT { return Storage(schemaVersion: 1, records: []) }
+            if errno == ENOENT {
+                return Storage(schemaVersion: 1, records: [])
+            }
             throw PrivateUpgradeDiagnosticStoreError.unsafeStorage
         }
         guard status.st_mode & S_IFMT == S_IFREG,
@@ -354,7 +393,9 @@ public actor PrivateUpgradeDiagnosticStore: UpgradeDiagnosticPersisting {
         while true {
             let count = Darwin.read(descriptor, &buffer, buffer.count)
             guard count >= 0 else {
-                if errno == EINTR { continue }
+                if errno == EINTR {
+                    continue
+                }
                 throw PrivateUpgradeDiagnosticStoreError.unsafeStorage
             }
             guard count > 0 else { break }
@@ -412,7 +453,9 @@ public actor PrivateUpgradeDiagnosticStore: UpgradeDiagnosticPersisting {
             while offset < bytes.count {
                 let count = Darwin.write(descriptor, base.advanced(by: offset), bytes.count - offset)
                 guard count >= 0 else {
-                    if errno == EINTR { continue }
+                    if errno == EINTR {
+                        continue
+                    }
                     throw PrivateUpgradeDiagnosticStoreError.unsafeStorage
                 }
                 offset += count
@@ -457,13 +500,13 @@ public actor PrivateUpgradeDiagnosticStore: UpgradeDiagnosticPersisting {
     }
 }
 
-public enum ProductionRuntimeUpdateCoordinatorFactory {
+public enum ProductionUpdateCoordinatorFactory {
     public static func make(
         stateSink: any RuntimeUpdateStateSink,
         bridge: any RuntimeBridge = AppleRuntimeBridge(),
         registrar: any PrivilegedHelperRegistering = PrivilegedHelperRegistrar(),
         preferences: any RuntimeUpdatePreferencesPersisting = RuntimeUpdatePreferencesStore(),
-        attestationProvider: any PhysicalAttestationIDProviding = FailClosedPhysicalAttestationIDProvider(),
+        attestationProvider: any PhysicalAttestationIDProviding = BundledPhysicalAttestationIDProvider(),
         targetResolver: any InstalledRuntimeTargetResolving = SystemInstalledRuntimeTargetResolver(),
         blockedVersions: BlockedVersionStore = BlockedVersionStore(),
         packageCache: VerifiedRuntimePackageCache = VerifiedRuntimePackageCache(),
@@ -513,7 +556,8 @@ public enum ProductionRuntimeUpdateCoordinatorFactory {
                 bridge: bridge
             ),
             packageVerifier: ReviewedAutomaticUpdatePackageVerifier(),
-            rollbackAvailability: SystemAutomaticRollbackAvailabilityChecker(
+            packageCache: SystemAutomaticUpdatePackageCache(retainer: packageCache),
+            rollbackAvailability: SystemRollbackAvailabilityChecker(
                 baselineCapture: baseline,
                 previousPackageVerifier: SystemPreviousRuntimePackageVerifier()
             ),

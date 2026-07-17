@@ -8,15 +8,21 @@ struct MacContainerApp: App {
     private let sparkleUpdater: SparkleAppUpdater?
     private let physicalHelperBootstrap: PhysicalHelperBootstrapCommand?
     private let physicalPacketFilterAudit: PhysicalPacketFilterAuditCommand?
+    private let isPhysicalRuntimeUITest: Bool
 
     init() {
         let arguments = ProcessInfo.processInfo.arguments
+        let environment = ProcessInfo.processInfo.environment
         let mode: AppEnvironmentMode = arguments.contains("--fake-runtime")
             ? .fakeRuntime
             : .production
+        let physicalRuntimeUITest = mode == .production &&
+            arguments.contains("--physical-runtime-ui-test") &&
+            Self.isAuthorizedPhysicalTest(environment)
+        isPhysicalRuntimeUITest = physicalRuntimeUITest
         let forcedLanguage = arguments.compactMap(Self.fakeRuntimeLanguage).first
-        let languageController = if mode == .fakeRuntime, let forcedLanguage {
-            LanguageController(storage: FixedLanguageSelectionStore(selection: forcedLanguage))
+        let languageController = if mode == .fakeRuntime {
+            LanguageController(storage: FixedLanguageSelectionStore(selection: forcedLanguage ?? .english))
         } else {
             LanguageController()
         }
@@ -28,16 +34,16 @@ struct MacContainerApp: App {
         physicalHelperBootstrap = mode == .production
             ? PhysicalHelperBootstrapCommand(
                 arguments: arguments,
-                environment: ProcessInfo.processInfo.environment
+                environment: environment
             )
             : nil
         physicalPacketFilterAudit = mode == .production
             ? PhysicalPacketFilterAuditCommand(
                 arguments: arguments,
-                environment: ProcessInfo.processInfo.environment
+                environment: environment
             )
             : nil
-        if mode == .production || SparkleAppUpdater.hasValidatedTestFeed {
+        if (mode == .production && !physicalRuntimeUITest) || SparkleAppUpdater.hasValidatedTestFeed {
             let updater = SparkleAppUpdater(state: state)
             state.appUpdates.attach(driver: updater)
             sparkleUpdater = updater
@@ -59,7 +65,11 @@ struct MacContainerApp: App {
                         try? await physicalHelperBootstrap.execute()
                     } else if let physicalPacketFilterAudit {
                         try? await physicalPacketFilterAudit.execute()
+                    } else if isPhysicalRuntimeUITest {
+                        await state.runtimeUpdates.restoreLatestStatus()
+                        return
                     } else {
+                        await state.runtimeUpdates.restoreLatestStatus()
                         await state.runtimeUpdateAgentRegistration.reconcile(
                             enabled: state.environment.settings.automaticallyCheckRuntimeUpdates
                         )
@@ -93,6 +103,18 @@ struct MacContainerApp: App {
         let prefix = "--fake-runtime-language="
         guard argument.hasPrefix(prefix) else { return nil }
         return AppLanguage(rawValue: String(argument.dropFirst(prefix.count)))
+    }
+
+    private static func isAuthorizedPhysicalTest(_ environment: [String: String]) -> Bool {
+        guard let runID = environment["PHYSICAL_RUN_ID"],
+              UUID(uuidString: runID) != nil,
+              environment["PHYSICAL_TEST_AUTHORIZATION"] == runID,
+              let root = environment["PHYSICAL_RUN_ROOT"]
+        else {
+            return false
+        }
+        return URL(fileURLWithPath: root, isDirectory: true)
+            .standardizedFileURL.lastPathComponent == runID
     }
 }
 

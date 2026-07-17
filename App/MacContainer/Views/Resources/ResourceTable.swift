@@ -3,24 +3,16 @@ import MCAppCore
 import MCModel
 import SwiftUI
 
-struct ResourceRow: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let status: String
-    let detail: String
-    let isProtected: Bool
-}
-
 struct ResourceTable: View {
     @Environment(AppState.self) private var state
     let route: AppRoute
-    let resources: [ResourceRow]
+    let resources: [RuntimeResourceSnapshot]
 
     @State private var searchText = ""
-    @State private var selection: Set<ResourceRow.ID> = []
+    @State private var selection: Set<RuntimeResourceSnapshot.ID> = []
     @State private var confirmationPresented = false
 
-    private var filteredResources: [ResourceRow] {
+    private var filteredResources: [RuntimeResourceSnapshot] {
         guard searchText.isEmpty == false else { return resources }
         return resources.filter {
             $0.name.localizedCaseInsensitiveContains(searchText)
@@ -29,7 +21,7 @@ struct ResourceTable: View {
         }
     }
 
-    private var selectedRows: [ResourceRow] {
+    private var selectedRows: [RuntimeResourceSnapshot] {
         resources.filter { selection.contains($0.id) }
     }
 
@@ -65,11 +57,21 @@ struct ResourceTable: View {
             Divider()
 
             if filteredResources.isEmpty {
-                EmptyStateView(
-                    symbol: "magnifyingglass",
-                    title: "No Results",
-                    message: "Try a different search."
-                )
+                if let error = state.resourceBrowser.errorCode(for: route) {
+                    EmptyStateView(
+                        symbol: "exclamationmark.triangle",
+                        title: "Resources unavailable",
+                        message: error
+                    )
+                } else {
+                    EmptyStateView(
+                        symbol: searchText.isEmpty ? "shippingbox" : "magnifyingglass",
+                        title: searchText.isEmpty ? "No resources" : "No Results",
+                        message: searchText.isEmpty
+                            ? "Create a resource or refresh after the runtime starts."
+                            : "Try a different search."
+                    )
+                }
             } else {
                 Table(filteredResources, selection: $selection) {
                     TableColumn("Name") { resource in
@@ -83,7 +85,7 @@ struct ResourceTable: View {
                 .foregroundStyle(.primary)
                 .accessibilityLabel("\(route.title) resources")
                 .accessibilityIdentifier("resource-table.\(route.rawValue)")
-                .contextMenu(forSelectionType: ResourceRow.ID.self) { selectedIDs in
+                .contextMenu(forSelectionType: RuntimeResourceSnapshot.ID.self) { selectedIDs in
                     if let resource = resources.first(where: { selectedIDs.contains($0.id) }) {
                         Button("Inspect") {
                             selection = selectedIDs
@@ -127,19 +129,13 @@ struct ResourceTable: View {
     }
 
     private func refresh() {
-        let id = state.activities.start(titleKey: "activity.\(route.rawValue).refresh")
-        state.activities.finish(id, outcome: .succeeded)
+        Task { await state.resourceBrowser.refresh(route) }
     }
 
     private func deleteSelectedRows() {
         let ids = selectedRows.map(\.id)
-        let id = state.activities.start(titleKey: "activity.\(route.rawValue).delete")
-        state.activities.finish(
-            id,
-            outcome: .succeeded,
-            itemResults: ids.map { ActivityItemResult(resourceID: $0, outcome: .succeeded) }
-        )
         selection = []
+        Task { await state.resourceBrowser.delete(route, ids: ids) }
     }
 }
 

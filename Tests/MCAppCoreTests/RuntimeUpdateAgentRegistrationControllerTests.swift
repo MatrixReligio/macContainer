@@ -1,10 +1,10 @@
-import MCSystemLifecycle
 @testable import MCAppCore
+import MCSystemLifecycle
 import Testing
 
 @MainActor
 @Suite("Runtime update agent registration controller")
-struct RuntimeUpdateAgentRegistrationControllerTests {
+struct UpdateAgentRegistrationControllerTests {
     @Test func `publishes approval requirement after enabling checks`() async {
         let service = RecordingRuntimeUpdateAgentRegistrar(result: .requiresApproval)
         let controller = RuntimeUpdateAgentRegistrationController(service: service)
@@ -37,17 +37,21 @@ private final class RecordingRuntimeUpdateAgentRegistrar: RuntimeUpdateAgentRegi
         self.fails = fails
     }
 
-    func status() async -> RuntimeUpdateAgentRegistrationStatus { result }
+    func status() async -> RuntimeUpdateAgentRegistrationStatus {
+        result
+    }
 
     func reconcile(enabled: Bool) async throws -> RuntimeUpdateAgentRegistrationStatus {
         enabledValues.append(enabled)
-        if fails { throw RecordingRuntimeUpdateAgentRegistrarError.failed }
+        if fails {
+            throw RecordingUpdateAgentError.failed
+        }
         return result
     }
 
     func openApprovalSettings() {}
 }
 
-private enum RecordingRuntimeUpdateAgentRegistrarError: Error {
+private enum RecordingUpdateAgentError: Error {
     case failed
 }

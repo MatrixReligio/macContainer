@@ -61,7 +61,7 @@ struct SimpleModeView: View {
                     contract: Self.contract,
                     isPresented: $reviewPresented
                 ) {
-                    run(review)
+                    try await run(review)
                 }
             }
         }
@@ -124,7 +124,7 @@ struct SimpleModeView: View {
                         .font(.title.bold())
                     Text("Choose an outcome. MacContainer fills in safe, host-aware defaults.")
                         .fontWeight(.medium)
-                        .foregroundStyle(Color(nsColor: .labelColor))
+                        .readableForeground()
                 }
 
                 LazyVGrid(columns: columns, spacing: 10) {
@@ -197,6 +197,13 @@ struct SimpleModeView: View {
                     advancedPresented.toggle()
                 } label: {
                     Label("Advanced", systemImage: advancedPresented ? "chevron.down" : "chevron.right")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(
+                            Color(nsColor: .controlBackgroundColor),
+                            in: RoundedRectangle(cornerRadius: 8)
+                        )
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("template-advanced")
@@ -230,6 +237,7 @@ struct SimpleModeView: View {
             .padding(24)
             .frame(maxWidth: 720, alignment: .leading)
         }
+        .accessibilityIdentifier("template-configuration-scroll")
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Configure the selected scenario")
     }
@@ -320,13 +328,22 @@ struct SimpleModeView: View {
     }
 
     private var context: TemplateContext {
-        TemplateContext(
+        let process = ProcessInfo.processInfo
+        let macOSMajor = process.operatingSystemVersion.majorVersion
+        var capabilities: Set<String> = []
+        if macOSMajor >= 26 {
+            capabilities.insert("nestedVirtualization")
+        }
+        if FileManager.default.fileExists(atPath: "/Library/Apple/usr/libexec/oah/libRosettaRuntime") {
+            capabilities.insert("rosetta")
+        }
+        return TemplateContext(
             host: HostProfile(
-                logicalCPUs: 8,
-                physicalMemoryBytes: 16 * 1_073_741_824,
+                logicalCPUs: max(1, process.activeProcessorCount),
+                physicalMemoryBytes: Int64(clamping: process.physicalMemory),
                 chip: .appleSilicon,
-                macOSMajor: 26,
-                capabilities: ["rosetta", "nestedVirtualization"]
+                macOSMajor: macOSMajor,
+                capabilities: capabilities
             ),
             image: ImageProfile(
                 reference: imageReference,
@@ -342,10 +359,11 @@ struct SimpleModeView: View {
         )
     }
 
-    private func run(_ review: TemplateReview) {
-        let id = state.activities.start(titleKey: "activity.template.\(selectedTemplateID)")
-        state.activities.finish(id, outcome: .succeeded)
-        statusMessage = "Started safely with \(review.rows.count) reviewed values"
+    private func run(_ review: TemplateReview) async throws -> String {
+        let result = try await state.operationExecutor.execute(review.draft)
+        let summary = "\(result.summary) · \(review.rows.count) reviewed values"
+        statusMessage = summary
+        return summary
     }
 
     private static let contract: UpstreamContract = {

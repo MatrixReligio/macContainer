@@ -93,6 +93,23 @@ struct OperationExecutorTests {
         #expect(activity.outcome == .succeeded)
         #expect(activity.phaseKey == "activity.phase.completed")
     }
+
+    @Test
+    func `fake application environment executes through its injected dispatcher`() async throws {
+        let dispatcher = RecordingDispatcher()
+        let state = AppState(environment: AppEnvironment(
+            mode: .fakeRuntime,
+            operationDispatcher: dispatcher
+        ))
+
+        let result = try await state.operationExecutor.execute(
+            OperationDraft(operationID: "system.status", fields: [:])
+        )
+
+        #expect(result.summary == "ok")
+        #expect(await dispatcher.operationIDs() == ["system.status"])
+        #expect(state.activities.activities[result.activityID]?.outcome == .succeeded)
+    }
 }
 
 private actor RecordingDispatcher: OperationDispatching {

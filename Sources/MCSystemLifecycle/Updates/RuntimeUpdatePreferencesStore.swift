@@ -43,7 +43,7 @@ public struct RuntimeUpdatePreferencesStore: RuntimeUpdatePreferencesPersisting,
     private static let maximumBytes = 64 * 1024
     private let fileURL: URL
 
-    public init(fileURL: URL = RuntimeUpdatePreferencesStore.defaultURL) {
+    public init(fileURL: URL = Self.defaultURL) {
         self.fileURL = fileURL.standardizedFileURL
     }
 
@@ -126,7 +126,9 @@ public struct RuntimeUpdatePreferencesStore: RuntimeUpdatePreferencesPersisting,
     private func existingFileIsSafe() throws -> Bool {
         var status = stat()
         guard Darwin.lstat(fileURL.path, &status) == 0 else {
-            if errno == ENOENT { return false }
+            if errno == ENOENT {
+                return false
+            }
             throw RuntimeUpdatePreferencesStoreError.unsafeStorage
         }
         guard status.st_mode & S_IFMT == S_IFREG,
@@ -165,7 +167,11 @@ public struct RuntimeUpdatePreferencesStore: RuntimeUpdatePreferencesPersisting,
             else {
                 throw RuntimeUpdatePreferencesStoreError.invalidPreferences
             }
-        case .checkOnly, .downloadAndNotify:
+        case .downloadAndNotify:
+            guard preferences.automaticallyChecks, preferences.consentVersion == nil else {
+                throw RuntimeUpdatePreferencesStoreError.invalidPreferences
+            }
+        case .checkOnly:
             guard preferences.consentVersion == nil else {
                 throw RuntimeUpdatePreferencesStoreError.invalidPreferences
             }
@@ -188,7 +194,9 @@ public struct RuntimeUpdatePreferencesStore: RuntimeUpdatePreferencesPersisting,
         while true {
             let count = Darwin.read(descriptor, &buffer, buffer.count)
             guard count >= 0 else {
-                if errno == EINTR { continue }
+                if errno == EINTR {
+                    continue
+                }
                 throw RuntimeUpdatePreferencesStoreError.unsafeStorage
             }
             guard count > 0 else { break }
@@ -207,7 +215,9 @@ public struct RuntimeUpdatePreferencesStore: RuntimeUpdatePreferencesPersisting,
             while offset < bytes.count {
                 let count = Darwin.write(descriptor, base.advanced(by: offset), bytes.count - offset)
                 guard count >= 0 else {
-                    if errno == EINTR { continue }
+                    if errno == EINTR {
+                        continue
+                    }
                     throw RuntimeUpdatePreferencesStoreError.unsafeStorage
                 }
                 offset += count

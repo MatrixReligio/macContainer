@@ -177,7 +177,9 @@ private actor FixturePhysicalHelperRegistrar: PrivilegedHelperRegistering {
         self.shouldFail = shouldFail
     }
 
-    func status() -> PrivilegedHelperRegistrationStatus { result }
+    func status() -> PrivilegedHelperRegistrationStatus {
+        result
+    }
 
     func ensureAvailable() throws -> PrivilegedHelperRegistrationStatus {
         ensureCalls += 1
@@ -190,6 +192,7 @@ private actor FixturePhysicalHelperRegistrar: PrivilegedHelperRegistering {
     func unregister() {
         unregisterCalls += 1
     }
+
     nonisolated func openApprovalSettings() {}
 }
 
@@ -197,5 +200,7 @@ private enum PhysicalHelperBootstrapFailure: Int, CustomNSError {
     case registration = 1
 
     static let errorDomain = "MCAppCoreTests.PhysicalHelperBootstrapFailure"
-    var errorCode: Int { rawValue }
+    var errorCode: Int {
+        rawValue
+    }
 }

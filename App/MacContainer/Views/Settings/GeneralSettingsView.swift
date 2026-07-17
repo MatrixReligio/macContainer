@@ -35,6 +35,16 @@ struct GeneralSettingsView: View {
                     }
                 }
                 .accessibilityIdentifier("app-language-picker")
+                .accessibilityAction {
+                    let options = AppLanguage.allCases
+                    let current = language.pendingSelection ?? language.selection
+                    let index = options.firstIndex(of: current) ?? 0
+                    language.request(
+                        options[(index + 1) % options.count],
+                        hasUnsavedWork: state.hasUnsavedWork,
+                        hasActiveOperations: state.activities.hasActiveOperations
+                    )
+                }
 
                 if language.requiresRelaunch {
                     Text(languageChangeMessage(language.pendingResult))

@@ -22,9 +22,10 @@ struct InstallRuntimeView: View {
                 Label("Apple container 1.1.0", systemImage: "shippingbox.fill")
                     .font(.headline)
                 Text("Source: developer.apple.com")
+                    .readableForeground()
                 Text("Signer: Apple Inc. - Containerization (UPBK2H6LZM)")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
+                    .readableForeground()
                 Label {
                     Text("SHA-256 digest verified")
                         .foregroundStyle(Color(nsColor: .labelColor))
@@ -36,7 +37,7 @@ struct InstallRuntimeView: View {
                 Text("Disk impact: up to 420 MB")
                 Text("Administrator approval is requested only when installation begins.")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
+                    .readableForeground()
 
                 Button("Review and install") {
                     if isAuditMode {

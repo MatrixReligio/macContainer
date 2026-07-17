@@ -45,7 +45,7 @@ final class SimpleModeTests: XCTestCase {
             XCTAssertTrue(app.buttons["template-run"].waitForExistence(timeout: 2))
             XCTAssertTrue(app.staticTexts["Review \(template)"].exists)
             XCTAssertTrue(app.staticTexts["value.source.user"].exists)
-            app.buttons["Back"].click()
+            app.buttons["template-review-back"].click()
         }
     }
 
@@ -76,7 +76,11 @@ final class SimpleModeTests: XCTestCase {
         image.typeKey("a", modifierFlags: [.command])
         image.typeText("example/custom")
 
-        app.buttons["template-advanced"].click()
+        let advanced = app.buttons["template-advanced"]
+        for _ in 0 ..< 8 where !advanced.isHittable {
+            app.scrollViews["template-configuration-scroll"].swipeUp()
+        }
+        advanced.click()
         XCTAssertEqual(image.value as? String, "example/custom")
         XCTAssertTrue(app.staticTexts["Generated values remain fully editable in review."].exists)
 
@@ -85,7 +89,7 @@ final class SimpleModeTests: XCTestCase {
         XCTAssertTrue(app.buttons["import-template"].exists)
         XCTAssertTrue(app.buttons["export-template"].exists)
         XCTAssertTrue(app.buttons["duplicate-template"].exists)
-        app.buttons["Done"].click()
+        app.buttons["template-library-done"].click()
     }
 
     func testOnboardingRequiresExplicitAutomaticInstallConsent() {

@@ -4,33 +4,22 @@ import MCSystemLifecycle
 import UserNotifications
 
 final class UpdateAgentPresenter: UpdateAgentPresenting, RuntimeUpdateStateSink, @unchecked Sendable {
+    private let statusStore: RuntimeUpdateStatusStore
+
+    init(statusStore: RuntimeUpdateStatusStore = RuntimeUpdateStatusStore()) {
+        self.statusStore = statusStore
+    }
+
     func isAppRunning() async -> Bool {
         NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "container.matrixreligio.com" }
     }
 
     func publish(_ state: RuntimeUpdateState) async {
-        guard let data = try? JSONEncoder().encode(state) else { return }
-        let connection = NSXPCConnection(machServiceName: UpdateAgentXPCIdentity.serviceName)
-        connection.remoteObjectInterface = NSXPCInterface(with: UpdateAgentStatusXPC.self)
-        connection.resume()
-        await withCheckedContinuation { continuation in
-            let proxy = connection.remoteObjectProxyWithErrorHandler { _ in
-                connection.invalidate()
-                continuation.resume()
-            } as? UpdateAgentStatusXPC
-            guard let proxy else {
-                connection.invalidate()
-                continuation.resume()
-                return
-            }
-            proxy.publishStatus(data) { _ in
-                connection.invalidate()
-                continuation.resume()
-            }
-        }
+        await statusStore.publish(state)
     }
 
     func notify(_ state: RuntimeUpdateState) async {
+        await statusStore.publish(state)
         let content = UNMutableNotificationContent()
         content.title = "MacContainer runtime update"
         content.body = notificationBody(for: state)

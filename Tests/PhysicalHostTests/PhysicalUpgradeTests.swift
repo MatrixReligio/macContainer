@@ -30,6 +30,7 @@ struct PhysicalUpgradeTests {
             bridge: bridge,
             start: true
         )
+        try PhysicalTestGate.record("upgrade.install-1.0.0")
 
         let target = try reviewedTarget(packageURL: package110)
         let configuration = FileManager.default.homeDirectoryForCurrentUser
@@ -55,6 +56,7 @@ struct PhysicalUpgradeTests {
             bridge: bridge,
             start: false
         )
+        try PhysicalTestGate.record("upgrade.automatic-1.1.0", "upgrade.compatibility-probes")
 
         try await context.services.stopRuntime()
         _ = try await helper.install(verified100)
@@ -68,6 +70,7 @@ struct PhysicalUpgradeTests {
             try await injected.upgrade(to: target)
         }
         #expect(await blocker.blockedVersions == ["1.1.0"])
+        try PhysicalTestGate.record("upgrade.injected-postflight-failure")
         try await verifyInstalled(
             manifest: ReviewedRuntime100Manifest.package,
             bridge: bridge,
@@ -77,6 +80,7 @@ struct PhysicalUpgradeTests {
             probes: ProbeID.baselineAllCases.map(\.rawValue),
             runtimeVersion: "1.0.0"
         )
+        try PhysicalTestGate.record("upgrade.rollback-1.0.0")
 
         let final = try await context.transaction(probes: context.probes).upgrade(to: target)
         #expect(final.runtimeVersion == "1.1.0")
@@ -100,6 +104,7 @@ struct PhysicalUpgradeTests {
             )
         }
         #expect(try await bridge.system.version().version == "1.1.0")
+        try PhysicalTestGate.record("upgrade.unknown-version-hold")
     }
 
     private func reviewedTarget(packageURL: URL) throws -> RuntimeUpgradeTarget {

@@ -13,15 +13,16 @@ struct AboutSettingsView: View {
                     .accessibilityHidden(true)
                 Text("MacContainer")
                     .font(.largeTitle.bold())
+                    .readableForeground()
                 Text("Version \(appVersion)")
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color(nsColor: .labelColor))
+                    .readableForeground()
                 Link("contact@matrixreligio.com", destination: URL(string: "mailto:contact@matrixreligio.com")!)
                     .accessibilityLabel("Email Matrix Religio support")
                     .accessibilityHint("Opens a message to contact at matrixreligio dot com")
                 Text("Apache License 2.0")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
+                    .readableForeground()
             }
             .frame(maxWidth: .infinity)
 
@@ -32,6 +33,7 @@ struct AboutSettingsView: View {
                 )
                 LabeledContent("Status") {
                     Text(updateStatus)
+                        .readableForeground()
                 }
                 if case let .failed(message) = state.appUpdates.state {
                     Text(message)
@@ -60,7 +62,7 @@ struct AboutSettingsView: View {
                 // swiftlint:disable:next line_length
                 Text("Application updates are signed and handled separately from Apple container runtime updates, which always require compatibility approval.")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .readableForeground()
             }
         }
         .formStyle(.grouped)

@@ -73,7 +73,11 @@ helper_bootstrap_output="${TMPDIR%/}/helper-bootstrap-$RUN_UUID.json"
 helper_cleanup_output="${TMPDIR%/}/helper-cleanup-$RUN_UUID.json"
 physical_audit_app="${MACCONTAINER_PHYSICAL_AUDIT_APP:-}"
 helper_registration_attempted=0
+runtime_mutation_attempted=0
 cleanup_running=0
+helper_bootstrap_passed=0
+summary_results_copy=""
+summary_copy_preserved=0
 package_100=""
 package_110=""
 upgrade_state=""
@@ -82,6 +86,12 @@ cleanup() {
     local original_status=$?
     (( cleanup_running == 0 )) || return $original_status
     cleanup_running=1
+    if (( runtime_mutation_attempted == 1 )); then
+        if ! production_complete_uninstall; then
+            print -u2 -- "emergency production uninstall failed; preserving failure status"
+            original_status=1
+        fi
+    fi
     if (( helper_registration_attempted == 1 )); then
         if ! run_signed_helper_cleanup "$physical_audit_app"; then
             print -u2 -- "signed helper cleanup failed; preserving failure status"
@@ -92,6 +102,10 @@ cleanup() {
     /bin/rm -f -- "$packet_filter_audit_output"
     /bin/rm -f -- "$helper_bootstrap_output"
     /bin/rm -f -- "$helper_cleanup_output"
+    if [[ -n "$summary_results_copy" && -d "$summary_results_copy" && $summary_copy_preserved -eq 0 ]]; then
+        [[ "$summary_results_copy" == "${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID" ]] || return 1
+        /bin/rm -R -- "$summary_results_copy"
+    fi
     if [[ -d "$run_root" && -f "$run_root/cleanup.jsonl" ]]; then
         if /usr/bin/swift "$script_dir/recover.swift" --run-root "$run_root" --run-id "$RUN_UUID"; then
             # Recovery proves the cleanup ledger contains only verifiedAbsent states before bootstrap removal.
@@ -160,13 +174,13 @@ verify_signed_physical_app() {
         die "MACCONTAINER_PHYSICAL_AUDIT_APP is invalid"
     /usr/bin/codesign --verify --deep --strict --verbose=2 "$app"
     /usr/bin/codesign --verify --strict \
-        --test-requirement '=designated => anchor apple generic and identifier "container.matrixreligio.com" and certificate leaf[subject.OU] = "4DUQGD879H"' \
+        --test-requirement '=anchor apple generic and identifier "container.matrixreligio.com" and certificate leaf[subject.OU] = "4DUQGD879H"' \
         "$app"
 }
 
 run_signed_helper_bootstrap() {
     local app="$1"
-    local status
+    local helper_status
     verify_signed_physical_app "$app"
     helper_registration_attempted=1
     /bin/rm -f -- "$helper_bootstrap_output"
@@ -175,17 +189,20 @@ run_signed_helper_bootstrap() {
         --env "PHYSICAL_AUDIT_ROOT=${TMPDIR%/}" \
         "$app" --args "--physical-helper-bootstrap-output=$helper_bootstrap_output"
     [[ -f "$helper_bootstrap_output" ]] || die "signed helper bootstrap produced no result"
-    status="$(/usr/bin/plutil -extract status raw -o - "$helper_bootstrap_output")"
-    case "$status" in
-        enabled) print -r -- "Signed helper bootstrap PASS" ;;
+    helper_status="$(/usr/bin/plutil -extract status raw -o - "$helper_bootstrap_output")"
+    case "$helper_status" in
+        enabled)
+            helper_bootstrap_passed=1
+            print -r -- "Signed helper bootstrap PASS"
+            ;;
         requires-approval) die "privileged helper requires approval in System Settings > Login Items & Extensions" ;;
-        *) die "signed helper bootstrap failed: $status" ;;
+        *) die "signed helper bootstrap failed: $helper_status" ;;
     esac
 }
 
 run_signed_helper_cleanup() {
     local app="$1"
-    local status
+    local helper_status
     [[ -d "$app" && -x "$app/Contents/MacOS/MacContainer" ]] || return 1
     /bin/rm -f -- "$helper_cleanup_output"
     run_with_timeout 60 /usr/bin/open -n -W \
@@ -193,12 +210,13 @@ run_signed_helper_cleanup() {
         --env "PHYSICAL_AUDIT_ROOT=${TMPDIR%/}" \
         "$app" --args "--physical-helper-cleanup-output=$helper_cleanup_output" || return 1
     [[ -f "$helper_cleanup_output" ]] || return 1
-    status="$(/usr/bin/plutil -extract status raw -o - "$helper_cleanup_output")"
-    [[ "$status" == unregistered ]]
+    helper_status="$(/usr/bin/plutil -extract status raw -o - "$helper_cleanup_output")"
+    [[ "$helper_status" == unregistered ]]
 }
 
 run_signed_packet_filter_audit() {
     local app="$1"
+    local baseline_output="${2:-$preflight_output}"
     verify_signed_physical_app "$app"
     /bin/rm -f -- "$packet_filter_audit_output"
     run_with_timeout 60 /usr/bin/open -n -W \
@@ -207,7 +225,7 @@ run_signed_packet_filter_audit() {
         "$app" --args "--physical-pf-audit-output=$packet_filter_audit_output"
     [[ -f "$packet_filter_audit_output" ]] || die "signed packet-filter audit produced no result"
     /usr/bin/swift run --package-path "$repo_root" mc-physical apply-pf-audit \
-        "$preflight_output" "$packet_filter_audit_output"
+        "$baseline_output" "$packet_filter_audit_output"
 }
 
 verify_digest() {
@@ -243,6 +261,7 @@ run_signed_helper_phase() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
+        PHYSICAL_RESULTS_ROOT="$run_root/results" \
         /usr/bin/xcodebuild \
         -project "$repo_root/MacContainer.xcodeproj" \
         -scheme MacContainer \
@@ -250,16 +269,32 @@ run_signed_helper_phase() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
+        PHYSICAL_RESULTS_ROOT="$run_root/results" \
         PHYSICAL_TEST_PHASE="$selected_phase" test
 }
 
-run_physical_package_tests() {
-    local selected_filter="$1"
+run_physical_ui_tests() {
     run_with_timeout 7200 /usr/bin/env \
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
-        PHYSICAL_TEST_PHASE="$phase" \
+        PHYSICAL_RESULTS_ROOT="$run_root/results" \
+        /usr/bin/xcodebuild \
+        -project "$repo_root/MacContainer.xcodeproj" \
+        -scheme MacContainer \
+        -derivedDataPath "$derived_data" \
+        -only-testing:MacContainerUITests/PhysicalRuntimeUITests test
+}
+
+run_physical_package_tests() {
+    local selected_filter="$1"
+    local selected_phase="${2:-$phase}"
+    run_with_timeout 7200 /usr/bin/env \
+        PHYSICAL_RUN_ID="$RUN_UUID" \
+        PHYSICAL_RUN_ROOT="$run_root" \
+        PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
+        PHYSICAL_RESULTS_ROOT="$run_root/results" \
+        PHYSICAL_TEST_PHASE="$selected_phase" \
         PHYSICAL_PACKAGE_100="$package_100" \
         PHYSICAL_PACKAGE_110="$package_110" \
         PHYSICAL_UPGRADE_STATE="$upgrade_state" \
@@ -276,7 +311,8 @@ ledger_transition() {
 }
 
 production_complete_uninstall() {
-    run_signed_helper_phase complete-uninstall-and-restore
+    run_physical_package_tests PhysicalUninstallTests complete-uninstall-and-restore
+    runtime_mutation_attempted=0
 }
 
 compare_restored_baseline() {
@@ -284,12 +320,77 @@ compare_restored_baseline() {
         "$run_root/physical-baseline.json" "$run_root/post-physical.json"
 }
 
-summarize_results() {
-    /usr/bin/swift "$script_dir/summarize.swift" \
-        --input "$run_root/raw-results.json" --output "$run_root/physical-summary.json"
+capture_post_baseline() {
+    local output="$run_root/post-physical.json"
+    local message command_result=0
+    ledger_transition file "$output" planned
+    message="$(/usr/bin/swift "$script_dir/preflight.swift" --output "$output" --read-only)" || command_result=$?
+    if (( command_result != 0 )); then
+        [[ "$message" == *packet-filter-unverified* && -n "$physical_audit_app" ]] || \
+            die "post-run read-only inventory failed: $message"
+        run_signed_packet_filter_audit "$physical_audit_app" "$output"
+    fi
+    ledger_transition file "$output" created
 }
 
-if [[ "$mode" != "--simulated-host" && -n "$physical_audit_app" ]]; then
+summarize_results() {
+    local output="$repo_root/.artifacts/physical-summary.json"
+    /usr/bin/swift "$script_dir/summarize.swift" \
+        --plan "$plan" \
+        --results "$summary_results_copy" \
+        --app "$physical_audit_app" \
+        --output "$output" \
+        --source-commit 5973b938ea064986e7e115ab3f9d0cff5ec88812 \
+        --runtime-version 1.1.0 \
+        --runtime-sha256 "$digest_110" \
+        --signer-key-id matrixreligio-physical-2026-07-r1 \
+        --residue-count 0 \
+        --baseline-restored true \
+        --cleanup-ledger-empty true
+    print -r -- "Physical unsigned attestation: $output"
+}
+
+record_result_at() {
+    local root="$1"
+    local id="$2"
+    [[ "$id" =~ '^[a-z0-9.-]+$' ]] || die "invalid physical result ID"
+    [[ -d "$root" ]] || die "physical result root missing"
+    local destination="$root/$id.json"
+    local expected="{\"id\":\"$id\",\"passed\":true}"
+    if [[ -e "$destination" ]]; then
+        [[ "$(<"$destination")" == "$expected" ]] || die "conflicting physical result: $id"
+        return
+    fi
+    print -r -- "$expected" > "$destination"
+    /bin/chmod 0600 "$destination"
+}
+
+record_result() {
+    record_result_at "$run_root/results" "$1"
+}
+
+finalize_physical_results() {
+    summary_results_copy="${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID"
+    [[ ! -e "$summary_results_copy" ]] || die "physical summary copy already exists"
+    /bin/mkdir -m 0700 "$summary_results_copy"
+    /usr/bin/ditto "$run_root/results" "$summary_results_copy"
+    summary_copy_preserved=1
+    cleanup
+    [[ ! -e "$run_root" ]] || die "physical run root survived cleanup"
+    record_result_at "$summary_results_copy" cleanup.ledger-empty
+    if ! summarize_results; then
+        /bin/rm -R -- "$summary_results_copy"
+        summary_results_copy=""
+        summary_copy_preserved=0
+        return 1
+    fi
+    /bin/rm -R -- "$summary_results_copy"
+    summary_results_copy=""
+    summary_copy_preserved=0
+}
+
+if [[ "$mode" != "--simulated-host" ]]; then
+    [[ -n "$physical_audit_app" ]] || die "MACCONTAINER_PHYSICAL_AUDIT_APP is required for signed physical mutation"
     run_signed_helper_bootstrap "$physical_audit_app"
 fi
 
@@ -314,6 +415,16 @@ if [[ "$mode" == "--simulated-host" ]]; then
     exit 0
 fi
 
+results_root="$run_root/results"
+ledger_transition temporary-directory "$results_root" planned
+/bin/mkdir -m 0700 "$results_root"
+ledger_transition temporary-directory "$results_root" created
+record_result preflight.host-identity
+record_result preflight.macos-version
+record_result preflight.existing-state-refusal
+(( helper_bootstrap_passed == 1 )) || die "signed helper authorization was not established"
+record_result install.authorization
+
 baseline="$run_root/physical-baseline.json"
 ledger_transition file "$baseline" planned
 /bin/cp "$preflight_output" "$baseline"
@@ -329,15 +440,21 @@ ledger_transition temporary-directory "$downloads" planned
 /bin/mkdir -- "$downloads"
 ledger_transition temporary-directory "$downloads" created
 
-if [[ "$phase" == "upgrade-rollback" || "$phase" == "all" ]]; then
-    package_100="$downloads/container-1.0.0-installer-signed.pkg"
+if [[ "$phase" == "install-and-operations" || "$phase" == "upgrade-rollback" || \
+      "$phase" == "physical-ui" || "$phase" == "complete-uninstall-and-restore" || "$phase" == "all" ]]; then
     package_110="$downloads/container-1.1.0-installer-signed.pkg"
-    ledger_transition runtime-package "$package_100" planned
-    download_verified_package "$package_url_100" "$package_100" "$digest_100"
-    ledger_transition runtime-package "$package_100" created
     ledger_transition runtime-package "$package_110" planned
     download_verified_package "$package_url_110" "$package_110" "$digest_110"
     ledger_transition runtime-package "$package_110" created
+    record_result install.package-digest
+    record_result install.package-signature
+fi
+
+if [[ "$phase" == "upgrade-rollback" || "$phase" == "all" ]]; then
+    package_100="$downloads/container-1.0.0-installer-signed.pkg"
+    ledger_transition runtime-package "$package_100" planned
+    download_verified_package "$package_url_100" "$package_100" "$digest_100"
+    ledger_transition runtime-package "$package_100" created
     upgrade_state="$run_root/upgrade-state"
     ledger_transition temporary-directory "$upgrade_state" planned
     /bin/mkdir -- "$upgrade_state"
@@ -346,29 +463,35 @@ fi
 
 case "$phase" in
     install-and-operations)
-        run_signed_helper_phase "$phase"
+        runtime_mutation_attempted=1
         run_physical_package_tests PhysicalOperationTests
         ;;
     upgrade-rollback)
-        run_signed_helper_phase "$phase"
+        runtime_mutation_attempted=1
         run_physical_package_tests PhysicalUpgradeTests
         ;;
     physical-ui)
-        run_signed_helper_phase "$phase"
+        runtime_mutation_attempted=1
+        run_physical_package_tests PhysicalOperationTests install-and-operations
+        run_physical_ui_tests
         ;;
     complete-uninstall-and-restore)
+        runtime_mutation_attempted=1
+        run_physical_package_tests PhysicalOperationTests install-and-operations
         production_complete_uninstall
+        capture_post_baseline
         compare_restored_baseline
         ;;
     all)
-        run_signed_helper_phase install-and-operations
-        run_physical_package_tests PhysicalOperationTests
-        run_signed_helper_phase upgrade-rollback
-        run_physical_package_tests PhysicalUpgradeTests
-        run_signed_helper_phase physical-ui
+        runtime_mutation_attempted=1
+        run_physical_package_tests PhysicalOperationTests install-and-operations
+        run_physical_package_tests PhysicalUpgradeTests upgrade-rollback
+        run_physical_ui_tests
         production_complete_uninstall
+        capture_post_baseline
         compare_restored_baseline
-        summarize_results
+        record_result cleanup.baseline-compare
+        finalize_physical_results
         ;;
     *) die "unsupported physical phase: $phase" ;;
 esac

@@ -32,6 +32,7 @@ struct ParameterHelpButton: View {
                 }
                 Text(LocalizedStringKey(parameter.detailedHelpKey))
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("parameter.\(operation.id).\(parameter.id).detail")
                 if parameter.acceptedValues.isEmpty == false {
                     LabeledContent("Accepted values", value: parameter.acceptedValues.joined(separator: ", "))
                 }

@@ -39,7 +39,16 @@ public enum RuntimeUpdateState: Codable, Equatable, Sendable {
     case held(HoldReason)
     case rolledBack(previousVersion: String, failedProbeID: ProbeID?)
     case recoveryRequired(code: String)
+    case checkFailed(RuntimeUpdateCheckFailure)
     case upToDate
+}
+
+public enum RuntimeUpdateCheckFailure: String, Codable, Equatable, Sendable {
+    case cancelled
+    case internalFailure
+    case noCandidate
+    case offline
+    case rateLimited
 }
 
 public enum UpdateAgentRunResult: Equatable, Sendable {
@@ -148,10 +157,12 @@ public actor UpdateAgentService {
             )
             persisted.nextAllowedCheck = retry
             try await stateStore.save(persisted)
+            await present(.checkFailed(.offline), notifyWhenClosed: false)
             return .offlineRetry(retry)
         case let .rateLimited(reset):
             persisted.nextAllowedCheck = reset
             try await stateStore.save(persisted)
+            await present(.checkFailed(.rateLimited), notifyWhenClosed: false)
             return .rateLimited(reset)
         case let .available(candidate, validators):
             persisted.lastCheck = now
