@@ -45,10 +45,19 @@ intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-
     "$fixture/.github/workflows/ci.yml" || true)"
 arm_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' \
     "$fixture/.github/workflows/ci.yml" || true)"
-if [[ "$intel_runner_count" != 1 || "$arm_runner_count" != 1 ]]; then
-    print -u2 -- "expected one 14 GB Intel build runner and one native Apple Silicon UI runner"
+if [[ "$intel_runner_count" != 3 || "$arm_runner_count" != 1 ]]; then
+    print -u2 -- "expected three parallel 14 GB Intel gates and one native Apple Silicon UI runner"
     exit 1
 fi
+
+/usr/bin/ruby -e '
+    require "yaml"
+    jobs = YAML.load_file(ARGV.fetch(0)).fetch("jobs")
+    %w[verify coverage app-build ui-tests].each { |name| jobs.fetch(name) }
+    needs = jobs.fetch("ui-tests").fetch("needs")
+    abort "UI tests must wait for every parallel gate" unless needs == %w[verify coverage app-build]
+    abort "UI tests need a measured 30 minute budget" unless jobs.fetch("ui-tests").fetch("timeout-minutes") >= 30
+' "$fixture/.github/workflows/ci.yml"
 
 "$fixture/scripts/check-workflow-policy.sh"
 

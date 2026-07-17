@@ -17,7 +17,7 @@ jobs:
   verify:
     name: Secret-free verification on macOS 26
     runs-on: macos-26-intel
-    timeout-minutes: 90
+    timeout-minutes: 60
     steps:
       - name: Check out the reviewed revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -33,11 +33,24 @@ jobs:
           zsh Tests/ToolingTests/release-script-policy.bats
           zsh Tests/ToolingTests/release-workflow-policy.bats
 
+  coverage:
+    name: Package tests with coverage
+    runs-on: macos-26-intel
+    timeout-minutes: 60
+    steps:
+      - name: Check out the reviewed revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
       - name: Run package tests with coverage
         run: swift test --jobs 1 --enable-code-coverage --parallel
 
-      - name: Reclaim SwiftPM build storage before Xcode builds
-        run: rm -rf .build
+  app-build:
+    name: Unsigned Debug and Release application builds
+    runs-on: macos-26-intel
+    timeout-minutes: 60
+    steps:
+      - name: Check out the reviewed revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Install the Xcode Metal toolchain component
         run: xcodebuild -downloadComponent MetalToolchain
@@ -61,9 +74,9 @@ jobs:
 
   ui-tests:
     name: Integration and UI tests with ephemeral signing
-    needs: verify
+    needs: [verify, coverage, app-build]
     runs-on: macos-26
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
