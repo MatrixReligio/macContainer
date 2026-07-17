@@ -92,8 +92,17 @@ let timestampFormatter = ISO8601DateFormatter()
 timestampFormatter.formatOptions = [.withInternetDateTime]
 let timestamp = timestampFormatter.string(from: Date(timeIntervalSince1970: epoch))
 let commit = try gitCommit(repoRoot: repoRoot)
-let appVersion = "0.1.0"
-let appBuild = "1"
+let environment = ProcessInfo.processInfo.environment
+let appVersion = environment["MARKETING_VERSION"] ?? "0.1.0"
+let appBuild = environment["CURRENT_PROJECT_VERSION"] ?? "1"
+guard appVersion.range(of: #"^[0-9]+\.[0-9]+\.[0-9]+$"#, options: .regularExpression) != nil else {
+    fail("MARKETING_VERSION must be semantic version")
+}
+
+guard appBuild.range(of: #"^[1-9][0-9]*$"#, options: .regularExpression) != nil else {
+    fail("CURRENT_PROJECT_VERSION must be positive")
+}
+
 let appRef = "pkg:generic/container.matrixreligio.com@\(appVersion)?build=\(appBuild)&commit=\(commit)"
 private let dependencies = inventory.dependencies.sorted { purl(for: $0) < purl(for: $1) }
 

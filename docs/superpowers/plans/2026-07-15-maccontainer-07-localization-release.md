@@ -273,27 +273,29 @@ git commit -m "feat: update MacContainer securely with Sparkle"
 - Create: `scripts/sign.sh`, `scripts/package.sh`, `scripts/notarize.sh`, `scripts/generate-appcast.sh`, `scripts/release.sh`, `scripts/verify-release.sh`
 - Create: `Tests/ToolingTests/release-script-policy.bats`
 
-- [ ] **Step 1: Write failing release-policy tests**
+- [x] **Step 1: Write failing release-policy tests**
 
 Test that scripts require a clean tracked worktree, tag/version/build agreement, exact Developer ID identity/team, hardened runtime, helper/agent mutual designated requirements, notarization/stapling, Gatekeeper assessment of app inside mounted DMG, a fresh EdDSA appcast, SHA-256 checksums, SBOMs, release notes, cleanup traps, and no secret output. Reject release if any step is skipped.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `zsh Tests/ToolingTests/release-script-policy.bats`
 
 Expected: FAIL because release scripts are absent.
 
-- [ ] **Step 3: Implement deterministic release scripts**
+- [x] **Step 3: Implement deterministic release scripts**
 
 `sign.sh` signs nested Sparkle XPC services/tools/frameworks, SwiftTerm/upstream dylibs if present, update agent, helper, app frameworks, then app; verifies Team ID `4DUQGD879H`, bundle IDs, entitlements, and designated requirements after each phase. `package.sh` creates a clean staging directory, copies App and Applications symlink, builds a reproducible-layout DMG, and removes staging/mounts through traps. `notarize.sh` submits DMG with profile `maccontainer-notary`, staples DMG/app where applicable, mounts read-only, and runs `spctl --assess --type execute` plus `codesign --verify --deep --strict` on the app inside. `generate-appcast.sh` writes a fresh appcast using the MacContainer EdDSA key and rejects stale output. `release.sh` orchestrates version/tag validation, Release archive, signing, DMG, notarization, appcast, checksums, SBOM, notes. `verify-release.sh` independently repeats signature/notary/Gatekeeper/appcast/checksum/SBOM/version checks.
 
-- [ ] **Step 4: Run unsigned policy and local signed rehearsal**
+- [x] **Step 4: Run unsigned policy and local signed rehearsal**
 
 Run: `zsh Tests/ToolingTests/release-script-policy.bats && scripts/release.sh --policy-check`
 
 Expected: policy PASS. If the Developer ID identity and local notarization profile are available, run `scripts/release.sh --local-rehearsal 0.1.0-seed` and `scripts/verify-release.sh dist`; otherwise this signed command remains a required physical Stage 8/9 gate rather than being reported passed.
 
-- [ ] **Step 5: Commit**
+Result: unsigned policy, mutation, Ed25519 verification, SBOM, and isolated DMG layout checks pass. The development Mac exposes only an Apple Development identity, so the Developer ID/notarization rehearsal remains an explicit final release-runner gate.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts Tests/ToolingTests/release-script-policy.bats RELEASE.md

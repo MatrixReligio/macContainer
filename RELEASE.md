@@ -22,3 +22,14 @@ Secrets are available only to guarded non-pull-request release jobs after
 secret-free verification. Releases are immutable; a bad release is withdrawn
 and superseded, never silently replaced. See [Security](SECURITY.md) for urgent
 fix coordination and [Changelog](CHANGELOG.md) for public changes.
+
+## Local release interface
+
+`scripts/release.sh --policy-check` is secret-free. A real release must start
+from a clean, tagged commit and uses the exact Matrix Religio Developer ID,
+Team ID `4DUQGD879H`, the `maccontainer-notary` profile, and this repository's
+dedicated Sparkle Ed25519 seed. The scripts sign nested code from the inside
+out, notarize and staple both app and DMG, assess the app from a read-only DMG,
+and independently verify the Sparkle signature, checksums, and SBOMs. Temporary
+keychains, credentials, mounts, archives, and staging directories are always
+removed by cleanup traps.
