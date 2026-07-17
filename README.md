@@ -1,53 +1,67 @@
+---
+source_revision: 2b364a7
+language: en
+document_id: readme
+---
+
+<a id="maccontainer"></a>
 # MacContainer
 
-MacContainer is a native macOS control center for Apple's `container` runtime.
-It is designed to make the complete upstream feature set approachable without
-hiding advanced parameters or delegating operations to the `container` CLI.
+MacContainer is a native macOS control center for Apple's `container` runtime. It makes the complete reviewed runtime surface approachable through SwiftUI while retaining advanced parameters, explicit safety gates, and truthful recovery details.
 
-> Development status: pre-release. The repository currently establishes the
-> reviewed upstream 1.1.0 contract, reproducible build, application identity,
-> icon, and supply-chain gates. Runtime and lifecycle features land only with
-> tests and stage-review evidence.
+> **Pre-release:** version 0.1.0 targets macOS 26 or later on Apple silicon. Treat it as early software: keep independent backups of important container data and review every destructive action.
 
-## Product principles
+[English](README.md) · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-- Native SwiftUI interaction that follows macOS conventions and accessibility.
-- Safe scenario templates for common tasks, with every effective parameter
-  inspectable before execution.
-- Direct use of reviewed Apple container libraries and protocols; production
-  code must not shell out to the `container` CLI.
-- Explicit privileged boundaries for installation, upgrade, rollback, and
-  complete product-owned cleanup.
-- Compatibility-gated runtime updates: unknown versions are held until they pass
-  the published compatibility suite.
-- Local processing and no telemetry by default.
+<a id="why"></a>
+## Why MacContainer
 
+- Native controls for containers, images, builds, machines, networks, volumes, registries, and system operations.
+- Eight safe scenario templates for common workloads, with every generated value visible before execution.
+- Direct, typed integration with reviewed Apple container libraries and protocols; production code does not shell out to the `container` CLI.
+- Explicit privileged boundaries for runtime installation, upgrade, rollback, and product-owned cleanup.
+- Compatibility-gated runtime updates. Unknown versions are held until a signed physical-test attestation and the required probes approve them.
+- Local processing with analytics and telemetry disabled by default.
+- Complete uninstall that inventories and verifies all 15 product-controlled residue categories.
+
+<a id="requirements"></a>
 ## Requirements
 
-- macOS 26 or later on Apple silicon
-- Xcode 26 for development
-- Network access only when an operation explicitly needs GitHub, a registry, or
-  an update feed
+- macOS 26 or later
+- Apple silicon
+- An administrator account for runtime installation, update, rollback, or complete uninstall
+- Network access only for operations that explicitly contact GitHub, a registry, or an approved update feed
 
-## Build and verify
+Xcode 26 is required only for development.
+
+<a id="documentation"></a>
+## Documentation
+
+- [User Guide](docs/en/USER_GUIDE.md)
+- [Installation](docs/en/INSTALLATION.md)
+- [Runtime Updates](docs/en/RUNTIME_UPDATES.md)
+- [Complete Uninstallation](docs/en/COMPLETE_UNINSTALLATION.md)
+- [Troubleshooting](docs/en/TROUBLESHOOTING.md)
+- [Architecture](ARCHITECTURE.md), [Privacy](PRIVACY.md), and [Security](SECURITY.md)
+
+All normal product workflows are available in the app. The user guides do not require Terminal.
+
+<a id="development"></a>
+## Development
+
+The repository pins project-local build tools and verifies generated files, supply-chain metadata, formatting, tests, accessibility, and release policy.
 
 ```console
 scripts/bootstrap-tools.sh
 scripts/check-repository.sh
-xcodebuild -project MacContainer.xcodeproj -scheme MacContainer \
-  -configuration Debug CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -configuration Debug CODE_SIGNING_ALLOWED=NO build
 ```
 
-The checksum-pinned bootstrap installs project-local development tools under
-`.tools`; it does not modify the system toolchain. See [Development](DEVELOPMENT.md)
-for the isolated workflow and [Architecture](ARCHITECTURE.md) for trust boundaries.
+See [Development](DEVELOPMENT.md) for the isolated workflow and [Contributing](CONTRIBUTING.md) before proposing a change.
 
-## Community and security
+<a id="security-support"></a>
+## Security and support
 
-- Read [Contributing](CONTRIBUTING.md) before proposing a change.
-- Use [Support](SUPPORT.md) for usage questions.
-- Report vulnerabilities privately as described in [Security](SECURITY.md).
-- Review local data handling in [Privacy](PRIVACY.md).
+Do not post vulnerability details in a public issue. Follow [Security](SECURITY.md) for private reporting. For product support, read [Support](SUPPORT.md) or email [contact@matrixreligio.com](mailto:contact@matrixreligio.com).
 
-MacContainer is licensed under Apache-2.0. See [LICENSE](LICENSE),
-[NOTICE](NOTICE), and [third-party notices](THIRD_PARTY_NOTICES).
+The canonical repository is `matrixreligio/macContainer`. MacContainer is licensed under Apache-2.0; see [LICENSE](LICENSE), [NOTICE](NOTICE), and [third-party notices](THIRD_PARTY_NOTICES).
