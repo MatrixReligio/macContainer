@@ -71,11 +71,19 @@ require_text '"$phase" == "install-and-operations"'
 require_text 'production_complete_uninstall'
 require_text 'compare-baseline.swift'
 require_text 'summarize.swift'
+require_text 'source_commit="$(git -C "$repo_root" rev-parse HEAD)"'
+require_text '--source-commit "$source_commit"'
+require_text 'tracked worktree must be clean for physical attestation'
 require_text 'recover.swift'
 require_text 'cleanup ledger contains only verifiedAbsent states'
 
 if /usr/bin/grep -Fq -- "=designated =>" "$runner"; then
     print -u2 -- "physical runner uses invalid codesign test-requirement syntax"
+    exit 1
+fi
+
+if /usr/bin/grep -Eq -- '--source-commit [0-9a-f]{40}' "$runner"; then
+    print -u2 -- "physical runner hard-codes an attestation source commit"
     exit 1
 fi
 

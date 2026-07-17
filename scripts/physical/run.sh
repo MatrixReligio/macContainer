@@ -64,6 +64,13 @@ case "$mode" in
     *) die "usage: run.sh --simulated-host | --all | --phase <name> | --policy-check" ;;
 esac
 
+source_commit="$(git -C "$repo_root" rev-parse HEAD)"
+[[ "$source_commit" =~ '^[0-9a-f]{40}$' ]] || die "physical source commit is invalid"
+if [[ "$mode" != "--simulated-host" ]]; then
+    git -C "$repo_root" diff --quiet -- && git -C "$repo_root" diff --cached --quiet -- || \
+        die "tracked worktree must be clean for physical attestation"
+fi
+
 umask 077
 RUN_UUID="$(/usr/bin/uuidgen | /usr/bin/tr '[:upper:]' '[:lower:]')"
 run_root="$physical_root/$RUN_UUID"
@@ -357,7 +364,7 @@ summarize_results() {
         --results "$summary_results_copy" \
         --app "$physical_audit_app" \
         --output "$output" \
-        --source-commit 5973b9cc626a3e7a499bb316a958237ebe14e2ed \
+        --source-commit "$source_commit" \
         --runtime-version 1.1.0 \
         --runtime-sha256 "$digest_110" \
         --signer-key-id matrixreligio-physical-2026-07-r1 \
