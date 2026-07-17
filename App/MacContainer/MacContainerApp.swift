@@ -1,69 +1,31 @@
-import AppKit
+import MCAppCore
 import SwiftUI
 
 @main
 struct MacContainerApp: App {
+    @State private var state: AppState
+
+    init() {
+        let mode: AppEnvironmentMode = ProcessInfo.processInfo.arguments.contains("--fake-runtime")
+            ? .fakeRuntime
+            : .production
+        _state = State(initialValue: AppState(environment: AppEnvironment(mode: mode)))
+    }
+
     var body: some Scene {
         WindowGroup("MacContainer", id: "main-window") {
-            ContentView()
+            RootScene()
+                .environment(state)
         }
-        .defaultSize(width: 1080, height: 720)
-    }
-}
-
-private struct ContentView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "shippingbox")
-                .font(.system(size: 44, weight: .medium))
-                .accessibilityHidden(true)
-            Text("MacContainer")
-                .font(.title)
-            Text("Apple container management is being prepared.")
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(WindowAccessibilityIdentifier("main-window"))
-    }
-}
-
-private struct WindowAccessibilityIdentifier: NSViewRepresentable {
-    let identifier: String
-
-    init(_ identifier: String) {
-        self.identifier = identifier
-    }
-
-    func makeNSView(context: Context) -> IdentifierView {
-        IdentifierView(identifier: identifier)
-    }
-
-    func updateNSView(_ nsView: IdentifierView, context: Context) {
-        nsView.accessibilityID = identifier
-        nsView.applyIdentifier()
-    }
-
-    @MainActor
-    final class IdentifierView: NSView {
-        var accessibilityID: String
-
-        init(identifier: String) {
-            accessibilityID = identifier
-            super.init(frame: .zero)
+        .defaultSize(width: 1180, height: 760)
+        .commands {
+            MacContainerCommands(state: state)
         }
 
-        @available(*, unavailable)
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
+        Window("Activity Center", id: "activity-center") {
+            ActivityCenterView(center: state.activities)
+                .background(WindowAccessibilityIdentifier("activity-center"))
         }
-
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            applyIdentifier()
-        }
-
-        func applyIdentifier() {
-            window?.setAccessibilityIdentifier(accessibilityID)
-        }
+        .defaultSize(width: 680, height: 460)
     }
 }

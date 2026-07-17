@@ -122,7 +122,7 @@ git commit -m "feat: orchestrate observable app activities"
 - Create: `App/MacContainer/Views/Shared/EmptyStateView.swift`
 - Test: `Tests/MacContainerUITests/NavigationTests.swift`
 
-- [ ] **Step 1: Write failing navigation/keyboard tests**
+- [x] **Step 1: Write failing navigation/keyboard tests**
 
 ```swift
 func testAllSidebarDomainsAndKeyboardNavigation() throws {
@@ -138,13 +138,13 @@ func testAllSidebarDomainsAndKeyboardNavigation() throws {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/NavigationTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because navigation views are absent.
 
-- [ ] **Step 3: Implement native navigation**
+- [x] **Step 3: Implement native navigation**
 
 ```swift
 struct RootScene: View {
@@ -170,13 +170,13 @@ struct RootScene: View {
 
 Use system sidebar styling, standard toolbar sidebar toggle, searchable content, `Commands` with Cmd-1...9 domain selection, Cmd-N context creation, Cmd-R refresh, Cmd-Shift-L Activity Center, and Settings. Overview shows installation/service/compatibility health, disk usage, running counts, pending activities, and contextual next actions without custom dashboard chrome.
 
-- [ ] **Step 4: Run navigation and window-size tests**
+- [x] **Step 4: Run navigation and window-size tests**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/NavigationTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: PASS at minimum window size, default size, and large accessibility text.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer Tests/MacContainerUITests/NavigationTests.swift
