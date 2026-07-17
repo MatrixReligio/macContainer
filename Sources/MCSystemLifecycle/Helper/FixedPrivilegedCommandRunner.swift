@@ -252,6 +252,16 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
         command: FixedPrivilegedCommand,
         diagnostic: Data
     ) -> FixedPrivilegedCommandFailure {
+        switch command {
+        case .validateSystemPacketFilter:
+            return .packetFilterValidation
+        case .reloadSystemPacketFilter:
+            return .packetFilterReload
+        case .reloadDNS:
+            return .dnsReload
+        default:
+            break
+        }
         guard command == .installPackage,
               let message = String(data: diagnostic, encoding: .utf8)?.lowercased()
         else {
@@ -475,11 +485,14 @@ struct PrivatePackageStager: Sendable {
 }
 
 public enum FixedPrivilegedCommandFailure: Equatable, Sendable {
+    case dnsReload
     case installerIncompatibleHost
     case installerInvalidPackagePath
     case installerRejected
     case installerRequiresRoot
     case installerUnavailableVolume
+    case packetFilterReload
+    case packetFilterValidation
     case unspecified
 }
 
@@ -500,6 +513,9 @@ public enum FixedPrivilegedCommandError: Error, Equatable, Sendable {
         case .commandFailed(.installerUnavailableVolume): 23
         case .commandFailed(.installerRejected): 24
         case .commandFailed(.unspecified): 25
+        case .commandFailed(.packetFilterValidation): 32
+        case .commandFailed(.packetFilterReload): 33
+        case .commandFailed(.dnsReload): 34
         case .invalidPackageDescriptor: 26
         case .launchFailed: 27
         case .outputTooLarge: 28

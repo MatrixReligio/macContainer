@@ -155,6 +155,31 @@ struct SystemPrivilegedHostMutatorTests {
         ])
     }
 
+    @Test func `removes a resolver directory that the DNS round trip created`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        try FileManager.default.removeItem(at: fixture.resolverDirectory)
+        let host = fixture.makeHost(runner: HostRecordingCommandRunner())
+
+        try host.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
+        try host.deleteDNSDomain(name: "dev.example")
+
+        #expect(!FileManager.default.fileExists(atPath: fixture.resolverDirectory.path))
+    }
+
+    @Test func `failed DNS creation removes a resolver directory it created`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        try FileManager.default.removeItem(at: fixture.resolverDirectory)
+        let host = fixture.makeHost(runner: HostRecordingCommandRunner(failOn: .validateSystemPacketFilter))
+
+        #expect(throws: HostCommandFailure.rejected) {
+            try host.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
+        }
+
+        #expect(!FileManager.default.fileExists(atPath: fixture.resolverDirectory.path))
+    }
+
     @Test func `DNS creation restores resolver and packet filter files when validation fails`() throws {
         let fixture = try HostMutationFixture()
         defer { fixture.cleanup() }

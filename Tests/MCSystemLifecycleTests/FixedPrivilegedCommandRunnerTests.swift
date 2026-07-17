@@ -30,6 +30,33 @@ struct FixedPrivilegedCommandRunnerTests {
         }
     }
 
+    @Test(arguments: [
+        (FixedPrivilegedCommand.validateSystemPacketFilter, FixedPrivilegedCommandFailure.packetFilterValidation),
+        (FixedPrivilegedCommand.reloadSystemPacketFilter, FixedPrivilegedCommandFailure.packetFilterReload),
+        (FixedPrivilegedCommand.reloadDNS, FixedPrivilegedCommandFailure.dnsReload)
+    ])
+    func `system reload failures retain only their fixed command category`(
+        command: FixedPrivilegedCommand,
+        expected: FixedPrivilegedCommandFailure
+    ) {
+        let invocation = FixedPrivilegedCommandInvocation(
+            command: command,
+            packageDescriptor: nil,
+            executable: "/bin/sh",
+            arguments: ["/bin/sh", "-c", "exit 1"],
+            environment: [:],
+            workingDirectory: "/"
+        )
+
+        #expect(throws: FixedPrivilegedCommandError.commandFailed(expected)) {
+            try PosixSpawnFixedPrivilegedCommandRunner().run(
+                invocation,
+                standardInput: nil,
+                package: nil
+            )
+        }
+    }
+
     @Test func `staged package is immutable to users and readable by the installer service`() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("mc-installer-permissions-\(UUID().uuidString)", isDirectory: true)

@@ -2,6 +2,9 @@ import Darwin
 import Foundation
 
 public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
+    private static let resolverOwnershipMarker = ".container.matrixreligio.com-owned"
+    private static let resolverOwnershipText = "container.matrixreligio.com\n"
+
     private let installRoot: URL
     private let resolverDirectory: URL
     private let packetFilterConfig: URL
@@ -91,6 +94,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
         guard Darwin.unlinkat(directory, filename, 0) == 0 else { throw posixError() }
         guard Darwin.fsync(directory) == 0 else { throw posixError() }
         try commandRunner.run(.reloadDNS, package: nil)
+        try cleanupOwnedResolverDirectoryIfUnused(directory)
     }
 
     public func createDNSDomain(_ request: DNSDomainRequest) throws {
@@ -117,6 +121,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
                 try? mutatePacketFilter(domain: request.name, redirectIPv4: redirect, adding: false)
             }
             try? removeManagedFile(named: filename, in: directory)
+            try? cleanupOwnedResolverDirectoryIfUnused(directory)
             _ = try? commandRunner.run(.reloadDNS, package: nil)
             throw error
         }
@@ -138,6 +143,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
                 try mutatePacketFilter(domain: name, redirectIPv4: redirect, adding: false)
             }
             try commandRunner.run(.reloadDNS, package: nil)
+            try cleanupOwnedResolverDirectoryIfUnused(directory)
         } catch {
             try? writeManagedFile(Data(original.utf8), named: filename, in: directory, replacing: false)
             if let redirect {
@@ -206,10 +212,12 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
 
         let name = resolverDirectory.lastPathComponent
         var directory = Darwin.openat(parent, name, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        var created = false
         if directory < 0, errno == ENOENT, createIfMissing {
             guard Darwin.mkdirat(parent, name, 0o755) == 0 else { throw posixError() }
             guard Darwin.fsync(parent) == 0 else { throw posixError() }
             directory = Darwin.openat(parent, name, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+            created = true
         }
         if directory < 0, errno == ENOENT, !createIfMissing {
             return -1
@@ -217,11 +225,80 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
         guard directory >= 0 else { throw posixError() }
         do {
             try validateDirectory(directory, owner: requiredOwner)
+            if created {
+                try writeManagedFile(
+                    Data(Self.resolverOwnershipText.utf8),
+                    named: Self.resolverOwnershipMarker,
+                    in: directory,
+                    replacing: false
+                )
+            }
             return directory
         } catch {
+            if created {
+                try? removeManagedFile(
+                    named: Self.resolverOwnershipMarker,
+                    in: directory,
+                    missingIsSuccess: true
+                )
+                _ = Darwin.unlinkat(parent, name, AT_REMOVEDIR)
+            }
             Darwin.close(directory)
             throw error
         }
+    }
+
+    private func cleanupOwnedResolverDirectoryIfUnused(_ directory: Int32) throws {
+        guard let marker = try readManagedFile(named: Self.resolverOwnershipMarker, in: directory) else {
+            return
+        }
+        guard marker == Self.resolverOwnershipText else {
+            throw SystemPrivilegedHostError.invalidManagedFile
+        }
+        let names = try directoryEntryNames(directory).filter {
+            $0 != "." && $0 != ".." && $0 != Self.resolverOwnershipMarker
+        }
+        guard !names.contains(where: { $0.hasPrefix("containerization.") }) else {
+            return
+        }
+        try removeManagedFile(named: Self.resolverOwnershipMarker, in: directory)
+        guard names.isEmpty else { return }
+
+        let parentURL = Self.trustedDirectoryURL(resolverDirectory.deletingLastPathComponent())
+        let parent = Darwin.open(parentURL.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        guard parent >= 0 else { throw posixError() }
+        defer { Darwin.close(parent) }
+        try validateDirectory(parent, owner: requiredOwner)
+        guard Darwin.unlinkat(parent, resolverDirectory.lastPathComponent, AT_REMOVEDIR) == 0 else {
+            if errno == ENOTEMPTY || errno == EEXIST {
+                return
+            }
+            throw posixError()
+        }
+        guard Darwin.fsync(parent) == 0 else { throw posixError() }
+    }
+
+    private func directoryEntryNames(_ directory: Int32) throws -> [String] {
+        let duplicate = Darwin.dup(directory)
+        guard duplicate >= 0 else { throw posixError() }
+        guard let stream = Darwin.fdopendir(duplicate) else {
+            Darwin.close(duplicate)
+            throw posixError()
+        }
+        defer { Darwin.closedir(stream) }
+        var names: [String] = []
+        errno = 0
+        while let entry = Darwin.readdir(stream) {
+            let name = withUnsafePointer(to: &entry.pointee.d_name) { pointer in
+                pointer.withMemoryRebound(to: CChar.self, capacity: Int(MAXNAMLEN) + 1) {
+                    String(cString: $0)
+                }
+            }
+            names.append(name)
+            errno = 0
+        }
+        guard errno == 0 else { throw posixError() }
+        return names
     }
 
     private func mutatePacketFilter(domain: String, redirectIPv4: String, adding: Bool) throws {
