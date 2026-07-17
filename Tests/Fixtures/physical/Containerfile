@@ -1,0 +1,3 @@
+FROM scratch
+COPY context/fixture.txt /fixture.txt
+LABEL container.matrixreligio.com.fixture="physical-v1"

@@ -1,0 +1,7 @@
+{
+  "listen": "127.0.0.1:0",
+  "storageRoot": "${RUN_ROOT}/registry/storage",
+  "credentialsFile": "${RUN_ROOT}/registry/credentials.json",
+  "allowRemoteConnections": false,
+  "allowAnonymousPush": false
+}

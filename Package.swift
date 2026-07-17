@@ -97,6 +97,10 @@ let package = Package(
         ),
         .testTarget(name: "MCCompatibilityTests", dependencies: ["MCCompatibility", "TestSupport"]),
         .testTarget(name: "MCSystemLifecycleTests", dependencies: ["MCSystemLifecycle", "TestSupport"]),
-        .testTarget(name: "MCAppCoreTests", dependencies: ["MCAppCore", "TestSupport"])
+        .testTarget(name: "MCAppCoreTests", dependencies: ["MCAppCore", "TestSupport"]),
+        .testTarget(
+            name: "PhysicalHostTests",
+            dependencies: ["MCContainerBridge", "MCModel", "MCSystemLifecycle"]
+        )
     ]
 )
