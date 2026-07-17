@@ -21,7 +21,7 @@ struct OperationReview: View {
                         if let field = draft.fields[parameter.id], field.value != .none {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text(parameter.labelKey)
+                                    Text(LocalizedStringKey(parameter.labelKey))
                                     Spacer()
                                     Text(field.value.displayValue)
                                         .font(.body.monospaced())

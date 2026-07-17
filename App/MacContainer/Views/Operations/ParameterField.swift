@@ -11,7 +11,7 @@ struct ParameterField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 7) {
-                Text(parameter.labelKey)
+                Text(LocalizedStringKey(parameter.labelKey))
                     .font(.headline)
                 if parameter.required {
                     Text("Required")
@@ -25,7 +25,7 @@ struct ParameterField: View {
             control
 
             HStack(spacing: 8) {
-                Text(parameter.conciseHelpKey)
+                Text(LocalizedStringKey(parameter.conciseHelpKey))
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Color(nsColor: .labelColor))
                 Spacer()

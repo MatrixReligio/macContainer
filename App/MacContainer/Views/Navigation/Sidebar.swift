@@ -11,9 +11,13 @@ struct Sidebar: View {
                     Button {
                         selection = route
                     } label: {
-                        Label(route.title, systemImage: route.symbol)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
+                        Label {
+                            Text(LocalizedStringKey(route.title))
+                        } icon: {
+                            Image(systemName: route.symbol)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .listRowBackground(selection == route ? Color.accentColor.opacity(0.16) : Color.clear)

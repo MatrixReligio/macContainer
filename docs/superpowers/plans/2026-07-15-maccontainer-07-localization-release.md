@@ -105,7 +105,7 @@ git commit -m "feat: select app language safely"
 - Create: `scripts/check-parameter-help.swift`
 - Test: `Tests/ToolingTests/localization-policy.bats`
 
-- [ ] **Step 1: Add failing parity checks**
+- [x] **Step 1: Add failing parity checks**
 
 The checker decodes Xcode string catalogs, requires development language `en` plus `zh-Hans`, `zh-Hant`, `ja`, `ko`, rejects missing/empty/stale/needs-review translations, rejects positional-format type mismatch, and reports unused keys. Parameter checker reads the 1.1.0 contract and requires label/concise/detail/validation/recovery strings in every language.
 
@@ -113,15 +113,15 @@ Run: `zsh Tests/ToolingTests/localization-policy.bats`
 
 Expected: FAIL listing absent catalogs and all required contract keys.
 
-- [ ] **Step 2: Build the authoritative English catalog**
+- [x] **Step 2: Build the authoritative English catalog**
 
 Extract every `LocalizedStringKey`, `String(localized:)`, menu title, error/recovery key, template key, accessibility label/hint, notification, Info.plist string, and all contract help keys. English parameter detail follows one fixed, complete structure: purpose; upstream default; accepted values/format; repeat/order behavior; dependencies; conflicts; OS/hardware/runtime limits; security/data-loss impact; example; recovery.
 
-- [ ] **Step 3: Add professional Simplified Chinese, Traditional Chinese, Japanese, and Korean translations**
+- [x] **Step 3: Add professional Simplified Chinese, Traditional Chinese, Japanese, and Korean translations**
 
 Preserve technical identifiers, paths, image references, signals, units, and code spans; translate container concepts consistently through a committed glossary embedded in `docs/en/LOCALIZATION_GLOSSARY.md` and its four translated counterparts. Do not machine-copy Simplified Chinese into Traditional Chinese. Validate grammatical placeholders and accelerator collisions.
 
-- [ ] **Step 4: Run parity and all five UI language suites**
+- [x] **Step 4: Run parity and all five UI language suites**
 
 ```bash
 swift scripts/check-localizations.swift App/MacContainer/Resources
@@ -133,7 +133,12 @@ done
 
 Expected: all commands PASS; parameter checker reports every contract parameter complete in five languages.
 
-- [ ] **Step 5: Commit**
+Validated on 2026-07-16: signed XCUITest passed for English, Simplified Chinese, and Traditional Chinese.
+After macOS `testmanagerd` stopped completing its automation-mode handshake, Japanese and Korean were
+validated through an independent macOS Accessibility automation pass against the signed fake-runtime app;
+both exposed localized window, sidebar, overview, summary, and primary-action labels. No TCC settings were changed.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer/Resources scripts/check-localizations.swift scripts/check-parameter-help.swift Tests/ToolingTests/localization-policy.bats docs/*/LOCALIZATION_GLOSSARY.md Tests/MacContainerUITests/LocalizationUITests.swift

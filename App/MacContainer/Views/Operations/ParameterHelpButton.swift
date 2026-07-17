@@ -15,7 +15,7 @@ struct ParameterHelpButton: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .help(parameter.conciseHelpKey)
+        .help(Text(LocalizedStringKey(parameter.conciseHelpKey)))
         .accessibilityLabel("Information about \(parameter.labelKey)")
         .accessibilityIdentifier("parameter-help.\(operation.id).\(parameter.id)")
         .popover(isPresented: $isPresented) {
@@ -23,14 +23,14 @@ struct ParameterHelpButton: View {
                 HStack {
                     Image(systemName: "info.circle.fill")
                         .foregroundStyle(.tint)
-                    Text(parameter.labelKey)
+                    Text(LocalizedStringKey(parameter.labelKey))
                         .font(.headline)
                     Spacer()
                     Text(parameter.valueType.rawValue)
                         .font(.caption.monospaced())
                         .foregroundStyle(.primary)
                 }
-                Text(parameter.detailedHelpKey)
+                Text(LocalizedStringKey(parameter.detailedHelpKey))
                     .fixedSize(horizontal: false, vertical: true)
                 if parameter.acceptedValues.isEmpty == false {
                     LabeledContent("Accepted values", value: parameter.acceptedValues.joined(separator: ", "))
@@ -41,7 +41,7 @@ struct ParameterHelpButton: View {
                 }
                 LabeledContent("Required", value: parameter.required ? "Yes" : "No")
                 LabeledContent("Security impact", value: parameter.securityImpact.rawValue.capitalized)
-                Text(parameter.recoveryKey)
+                Text(LocalizedStringKey(parameter.recoveryKey))
                     .font(.caption)
                     .foregroundStyle(.primary)
             }
