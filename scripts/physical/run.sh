@@ -10,6 +10,9 @@ derived_data="$repo_root/.artifacts/DerivedData"
 expected_team_id="UPBK2H6LZM"
 digest_100="13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d"
 digest_110="0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714"
+physical_confirmation="ALLOW_EMPTY_HOST_MUTATION_AND_COMPLETE_RESTORE"
+package_url_100="https://github.com/apple/container/releases/download/1.0.0/container-1.0.0-installer-signed.pkg"
+package_url_110="https://github.com/apple/container/releases/download/1.1.0/container-1.1.0-installer-signed.pkg"
 
 die() {
     print -u2 -- "MacContainer physical validation error: $*"
@@ -157,13 +160,36 @@ download_verified_package() {
 
 run_signed_helper_phase() {
     local selected_phase="$1"
-    [[ -n "${PHYSICAL_TEST_AUTHORIZATION:-}" ]] || die "PHYSICAL_TEST_AUTHORIZATION missing"
-    run_with_timeout 7200 /usr/bin/xcodebuild \
+    run_with_timeout 7200 /usr/bin/env \
+        PHYSICAL_RUN_ID="$RUN_UUID" \
+        PHYSICAL_RUN_ROOT="$run_root" \
+        PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
+        /usr/bin/xcodebuild \
         -project "$repo_root/MacContainer.xcodeproj" \
         -scheme MacContainer \
         -derivedDataPath "$derived_data" \
-        PHYSICAL_TEST_AUTHORIZATION="$PHYSICAL_TEST_AUTHORIZATION" \
+        PHYSICAL_RUN_ID="$RUN_UUID" \
+        PHYSICAL_RUN_ROOT="$run_root" \
+        PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
         PHYSICAL_TEST_PHASE="$selected_phase" test
+}
+
+run_physical_package_tests() {
+    local selected_filter="$1"
+    run_with_timeout 7200 /usr/bin/env \
+        PHYSICAL_RUN_ID="$RUN_UUID" \
+        PHYSICAL_RUN_ROOT="$run_root" \
+        PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
+        /usr/bin/swift test --package-path "$repo_root" --filter "$selected_filter"
+}
+
+ledger_transition() {
+    local artifact_type="$1"
+    local value="$2"
+    local state="$3"
+    /usr/bin/swift run --package-path "$repo_root" mc-physical ledger-transition \
+        --run-root "$run_root" --run-id "$RUN_UUID" \
+        --type "$artifact_type" --value "$value" --state "$state"
 }
 
 production_complete_uninstall() {
@@ -186,6 +212,11 @@ if (( preflight_status != 0 )); then
     exit $preflight_status
 fi
 
+if [[ "$mode" != "--simulated-host" ]]; then
+    [[ "${MACCONTAINER_PHYSICAL_CONFIRMATION:-}" == "$physical_confirmation" ]] || \
+        die "MACCONTAINER_PHYSICAL_CONFIRMATION missing or mismatched"
+fi
+
 /bin/mkdir -p -- "$physical_root"
 /bin/mkdir -- "$run_root"
 /bin/chmod 0700 "$run_root"
@@ -196,9 +227,42 @@ if [[ "$mode" == "--simulated-host" ]]; then
     exit 0
 fi
 
-[[ -n "${PHYSICAL_TEST_AUTHORIZATION:-}" ]] || die "PHYSICAL_TEST_AUTHORIZATION missing"
+baseline="$run_root/physical-baseline.json"
+ledger_transition file "$baseline" planned
+/bin/cp "$preflight_output" "$baseline"
+ledger_transition file "$baseline" created
+
+derived_data="$run_root/DerivedData"
+ledger_transition temporary-directory "$derived_data" planned
+/bin/mkdir -- "$derived_data"
+ledger_transition temporary-directory "$derived_data" created
+
+downloads="$run_root/downloads"
+ledger_transition temporary-directory "$downloads" planned
+/bin/mkdir -- "$downloads"
+ledger_transition temporary-directory "$downloads" created
+
+if [[ "$phase" == "upgrade-rollback" || "$phase" == "all" ]]; then
+    package_100="$downloads/container-1.0.0-installer-signed.pkg"
+    package_110="$downloads/container-1.1.0-installer-signed.pkg"
+    ledger_transition runtime-package "$package_100" planned
+    download_verified_package "$package_url_100" "$package_100" "$digest_100"
+    ledger_transition runtime-package "$package_100" created
+    ledger_transition runtime-package "$package_110" planned
+    download_verified_package "$package_url_110" "$package_110" "$digest_110"
+    ledger_transition runtime-package "$package_110" created
+fi
+
 case "$phase" in
-    install-and-operations|upgrade-rollback|physical-ui)
+    install-and-operations)
+        run_signed_helper_phase "$phase"
+        run_physical_package_tests PhysicalOperationTests
+        ;;
+    upgrade-rollback)
+        run_signed_helper_phase "$phase"
+        run_physical_package_tests PhysicalUpgradeTests
+        ;;
+    physical-ui)
         run_signed_helper_phase "$phase"
         ;;
     complete-uninstall-and-restore)
@@ -207,7 +271,9 @@ case "$phase" in
         ;;
     all)
         run_signed_helper_phase install-and-operations
+        run_physical_package_tests PhysicalOperationTests
         run_signed_helper_phase upgrade-rollback
+        run_physical_package_tests PhysicalUpgradeTests
         run_signed_helper_phase physical-ui
         production_complete_uninstall
         compare_restored_baseline

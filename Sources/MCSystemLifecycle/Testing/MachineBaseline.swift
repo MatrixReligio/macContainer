@@ -693,7 +693,7 @@ private struct SystemMachineBaselineCollector {
     }
 
     private func text(_ data: Data) -> String {
-        String(decoding: data, as: UTF8.self)
+        String(bytes: data, encoding: .utf8) ?? ""
     }
 
     private static func sha256(_ data: Data) -> String {

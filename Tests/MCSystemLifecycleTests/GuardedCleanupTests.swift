@@ -92,6 +92,24 @@ struct GuardedCleanupTests {
         #expect(FileManager.default.fileExists(atPath: owned.path))
     }
 
+    @Test func `removes an owned nonempty directory tree without following links`() async throws {
+        let fixture = try CleanupFixture()
+        defer { fixture.destroy() }
+        let directory = fixture.runRoot.appendingPathComponent("DerivedData", isDirectory: true)
+        let nested = directory.appendingPathComponent("Build/Products", isDirectory: true)
+        let file = nested.appendingPathComponent("artifact")
+        let artifact = TestArtifact.temporaryDirectory(directory.path)
+        try await fixture.ledger.plan(artifact)
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        try Data("fixture".utf8).write(to: file)
+        try await fixture.ledger.markCreated(artifact)
+
+        try await fixture.cleanup.remove(artifact)
+
+        #expect(!FileManager.default.fileExists(atPath: directory.path))
+        #expect(await fixture.ledger.state(of: artifact) == .verifiedAbsent)
+    }
+
     @Test func `file ledger persists synchronized events and rejects corruption`() async throws {
         let fixture = try CleanupFixture()
         defer { fixture.destroy() }

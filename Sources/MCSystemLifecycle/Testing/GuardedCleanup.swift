@@ -157,6 +157,8 @@ public actor GuardedCleanup {
         try await ledger.markVerifiedAbsent(artifact)
     }
 
+    // The explicit branches are the security checks for every filesystem identity transition.
+    // swiftlint:disable:next cyclomatic_complexity
     private func removePath(_ path: String, artifact: TestArtifact, state: CleanupState?) async throws {
         if state == .removed {
             guard lstatExists(path) == false else {
@@ -201,6 +203,9 @@ public actor GuardedCleanup {
             throw CleanupPolicyError.identityChanged
         }
 
+        if kind == S_IFDIR {
+            try removeDirectoryContents(descriptor)
+        }
         let removalStatus = kind == S_IFDIR ? rmdir(path) : unlink(path)
         guard removalStatus == 0 else {
             throw CleanupPolicyError.removalFailed
@@ -210,6 +215,82 @@ public actor GuardedCleanup {
             throw CleanupPolicyError.absenceVerificationFailed
         }
         try await ledger.markVerifiedAbsent(artifact)
+    }
+
+    private func removeDirectoryContents(_ descriptor: Int32) throws {
+        let streamDescriptor = Darwin.dup(descriptor)
+        guard streamDescriptor >= 0, let stream = fdopendir(streamDescriptor) else {
+            if streamDescriptor >= 0 {
+                Darwin.close(streamDescriptor)
+            }
+            throw CleanupPolicyError.removalFailed
+        }
+        defer { closedir(stream) }
+
+        while true {
+            errno = 0
+            guard let entry = readdir(stream) else {
+                guard errno == 0 else { throw CleanupPolicyError.removalFailed }
+                break
+            }
+            let name = withUnsafePointer(to: &entry.pointee.d_name) { pointer in
+                pointer.withMemoryRebound(to: CChar.self, capacity: Int(NAME_MAX) + 1) {
+                    String(cString: $0)
+                }
+            }
+            guard name != ".", name != ".." else { continue }
+            try removeDirectoryEntry(parent: descriptor, name: name)
+        }
+    }
+
+    // Each supported POSIX node kind has a distinct no-follow deletion policy.
+    // swiftlint:disable:next cyclomatic_complexity
+    private func removeDirectoryEntry(parent: Int32, name: String) throws {
+        var before = stat()
+        guard fstatat(parent, name, &before, AT_SYMLINK_NOFOLLOW) == 0 else {
+            throw CleanupPolicyError.identityChanged
+        }
+        let kind = before.st_mode & S_IFMT
+        switch kind {
+        case S_IFDIR:
+            let child = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+            guard child >= 0 else { throw CleanupPolicyError.identityChanged }
+            defer { Darwin.close(child) }
+            var opened = stat()
+            guard fstat(child, &opened) == 0,
+                  opened.st_dev == before.st_dev,
+                  opened.st_ino == before.st_ino,
+                  opened.st_mode & S_IFMT == S_IFDIR
+            else {
+                throw CleanupPolicyError.identityChanged
+            }
+            try removeDirectoryContents(child)
+            guard unlinkat(parent, name, AT_REMOVEDIR) == 0 else {
+                throw CleanupPolicyError.removalFailed
+            }
+        case S_IFREG:
+            guard before.st_nlink == 1 else { throw CleanupPolicyError.hardLinkSubstitution }
+            let child = openat(parent, name, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+            guard child >= 0 else { throw CleanupPolicyError.identityChanged }
+            defer { Darwin.close(child) }
+            var opened = stat()
+            guard fstat(child, &opened) == 0,
+                  opened.st_dev == before.st_dev,
+                  opened.st_ino == before.st_ino,
+                  opened.st_mode & S_IFMT == S_IFREG
+            else {
+                throw CleanupPolicyError.identityChanged
+            }
+            guard unlinkat(parent, name, 0) == 0 else {
+                throw CleanupPolicyError.removalFailed
+            }
+        case S_IFLNK:
+            guard unlinkat(parent, name, 0) == 0 else {
+                throw CleanupPolicyError.removalFailed
+            }
+        default:
+            throw CleanupPolicyError.unsupportedArtifact
+        }
     }
 
     private func lstatExists(_ path: String) -> Bool {

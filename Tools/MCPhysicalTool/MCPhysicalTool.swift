@@ -17,6 +17,8 @@ enum MCPhysicalTool {
             try compareBaseline(arguments)
         case "recover":
             try await recover(arguments)
+        case "ledger-transition":
+            try await ledgerTransition(arguments)
         case "assert-no-active-ledger":
             try await assertNoActiveLedger(arguments)
         case "simulate-run":
@@ -95,6 +97,56 @@ enum MCPhysicalTool {
         print("RECOVERY_PASS: cleanup ledger contains only verifiedAbsent states")
     }
 
+    private static func ledgerTransition(_ arguments: [String]) async throws {
+        guard
+            arguments.count == 10,
+            arguments[0] == "--run-root",
+            arguments[2] == "--run-id",
+            let runID = UUID(uuidString: arguments[3]),
+            arguments[4] == "--type",
+            arguments[6] == "--value",
+            arguments[8] == "--state"
+        else {
+            throw UsageError()
+        }
+        let root = URL(fileURLWithPath: arguments[1], isDirectory: true).standardizedFileURL
+        let artifact = try artifact(type: arguments[5], value: arguments[7])
+        try PhysicalCleanupPolicy(runID: runID, runRoot: root).validate(artifact)
+        let storage = try FileCleanupLedgerStorage(url: root.appendingPathComponent("cleanup.jsonl"))
+        let ledger = try await CleanupLedger.recover(storage: storage, runID: runID)
+        switch arguments[9] {
+        case "planned":
+            try await ledger.plan(artifact)
+        case "created":
+            try await ledger.markCreated(artifact)
+        default:
+            throw UsageError()
+        }
+    }
+
+    private static func artifact(type: String, value: String) throws -> TestArtifact {
+        switch type {
+        case "file": return .file(value)
+        case "temporary-directory": return .temporaryDirectory(value)
+        case "runtime-package": return .runtimePackage(value)
+        case "result-bundle": return .resultBundle(value)
+        case "launch-service": return .launchService(value)
+        case "container": return .container(value)
+        case "image": return .image(value)
+        case "network": return .network(value)
+        case "volume": return .volume(value)
+        case "machine": return .machine(value)
+        case "registry-credential": return .registryCredential(value)
+        case "resolver": return .resolver(value)
+        case "packet-filter-anchor": return .packetFilterAnchor(value)
+        case "rollback-point":
+            guard let identifier = UUID(uuidString: value) else { throw UsageError() }
+            return .rollbackPoint(identifier)
+        default:
+            throw UsageError()
+        }
+    }
+
     private static func assertNoActiveLedger(_ arguments: [String]) async throws {
         guard arguments.count == 1 else { throw UsageError() }
         let root = URL(fileURLWithPath: arguments[0], isDirectory: true).standardizedFileURL
@@ -127,6 +179,9 @@ enum MCPhysicalTool {
 
 private struct UsageError: Error, CustomStringConvertible {
     var description: String {
-        "usage: mc-physical preflight --output <path> | compare-baseline <before> <after> | recover --run-root <path> --run-id <uuid> | assert-no-active-ledger <physical-root> | simulate-run --run-root <path> --run-id <uuid> --plan <path>"
+        "usage: mc-physical preflight --output <path> | compare-baseline <before> <after> | " +
+            "recover --run-root <path> --run-id <uuid> | ledger-transition --run-root <path> " +
+            "--run-id <uuid> --type <type> --value <value> --state <planned|created> | " +
+            "assert-no-active-ledger <physical-root> | simulate-run --run-root <path> --run-id <uuid> --plan <path>"
     }
 }
