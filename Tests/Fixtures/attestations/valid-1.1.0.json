@@ -31,8 +31,8 @@
   "runtimePackageSHA256": "0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714",
   "runtimeVersion": "1.1.0",
   "schemaVersion": 1,
-  "signature": "MEQCICY6NaexhIQe5DOnUDlqyB3WtpcMDM455h/c7z1UwM8dAiAgc+RsDUDbBMPtZS/qUTTFoKfSrazTfxpELEio6Rb3VA==",
-  "signerKeyID": "matrixreligio-physical-2026-07",
+  "signature": "MEQCIE4q6/aAK2LPTx78/DkVRHYiv+IIxYvtkg3+yQBIc6GSAiBrIxhtRG/ffLIIxH/dzT3GItfrumxrDQuTpJJ725nI4Q==",
+  "signerKeyID": "matrixreligio-physical-2026-07-r1",
   "sourceCommit": "5973b9cc626a3e7a499bb316a958237ebe14e2ed",
   "testPlanVersion": "physical-v1"
 }
