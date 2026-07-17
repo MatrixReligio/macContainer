@@ -415,17 +415,17 @@ git commit -m "feat: expose complete runtime lifecycle in settings"
 - Test: `Tests/MacContainerIntegrationTests/TerminalAdapterTests.swift`
 - Test: `Tests/MacContainerUITests/TerminalUITests.swift`
 
-- [ ] **Step 1: Write failing byte/resize/close tests**
+- [x] **Step 1: Write failing byte/resize/close tests**
 
 Feed UTF-8, invalid UTF-8, ANSI control sequences, and 1 MiB output chunks through a fake `ProcessSession`; verify direct input bytes, debounced resize, safe clipboard behavior, reduced-motion presentation, detach/terminate close choices, stdout/stderr separation for non-TTY, and session task cleanup.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerIntegrationTests/TerminalAdapterTests -only-testing:MacContainerUITests/TerminalUITests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because terminal views are absent.
 
-- [ ] **Step 3: Implement isolated AppKit interop**
+- [x] **Step 3: Implement isolated AppKit interop**
 
 ```swift
 struct SwiftTermRepresentable: NSViewRepresentable {
@@ -447,13 +447,13 @@ struct SwiftTermRepresentable: NSViewRepresentable {
 
 Coordinator sends bytes to `ProcessSession.send`, feeds `.terminal` bytes into SwiftTerm, debounces geometry to `resize`, and owns one structured reader task cancelled at dismantle. OSC clipboard/title requests and dangerous escape capabilities are disabled unless a reviewed safe subset is required.
 
-- [ ] **Step 4: Run terminal integration/UI tests**
+- [x] **Step 4: Run terminal integration/UI tests**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerIntegrationTests/TerminalAdapterTests -only-testing:MacContainerUITests/TerminalUITests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: PASS with no leaked task/file handle.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer/Scenes/TerminalScene.swift App/MacContainer/Views/Terminal Tests/MacContainerIntegrationTests/TerminalAdapterTests.swift Tests/MacContainerUITests/TerminalUITests.swift

@@ -143,6 +143,10 @@ targets:
     dependencies:
       - package: MacContainerCore
         product: MCSystemLifecycle
+      - package: MacContainerCore
+        product: MCAppCore
+      - package: MacContainerCore
+        product: MCModel
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
