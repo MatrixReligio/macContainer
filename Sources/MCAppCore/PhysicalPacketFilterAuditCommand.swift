@@ -329,6 +329,7 @@ public struct PhysicalPrivilegedOperationCommand: Sendable {
     private let outputURL: URL
     private let runID: UUID
     private let runRoot: URL
+    private let packageSourceURL: URL?
     private let executor: any PhysicalPrivilegedOperationExecuting
 
     public init?(
@@ -355,6 +356,22 @@ public struct PhysicalPrivilegedOperationCommand: Sendable {
         self.outputURL = outputURL
         runID = authorizedRun.id
         runRoot = authorizedRun.root
+        let packageSourcePrefix = "--physical-helper-package-source="
+        let packageSourceArguments = arguments.filter { $0.hasPrefix(packageSourcePrefix) }
+        guard packageSourceArguments.count <= 1 else { return nil }
+        if let packageSourceArgument = packageSourceArguments.first {
+            guard operation == .install100,
+                  let packageSourceURL = Self.authorizedRollbackPackageURL(
+                      String(packageSourceArgument.dropFirst(packageSourcePrefix.count)),
+                      runRoot: authorizedRun.root
+                  )
+            else {
+                return nil
+            }
+            self.packageSourceURL = packageSourceURL
+        } else {
+            packageSourceURL = nil
+        }
         self.executor = executor
     }
 
@@ -405,6 +422,9 @@ public struct PhysicalPrivilegedOperationCommand: Sendable {
     }
 
     private func packageURL(version: String) throws -> URL {
+        if let packageSourceURL {
+            return packageSourceURL
+        }
         let filename = "container-\(version)-installer-signed.pkg"
         let url = runRoot
             .appendingPathComponent("downloads", isDirectory: true)
@@ -420,6 +440,49 @@ public struct PhysicalPrivilegedOperationCommand: Sendable {
             throw PhysicalPrivilegedOperationError.packageUnavailable
         }
         return url
+    }
+
+    private static func authorizedRollbackPackageURL(_ path: String, runRoot: URL) -> URL? {
+        let url = URL(fileURLWithPath: path, isDirectory: false).standardizedFileURL
+        guard path == url.path,
+              url.lastPathComponent == "00-container-1.0.0-installer-signed.pkg"
+        else {
+            return nil
+        }
+        let pointRoot = url.deletingLastPathComponent()
+        guard let pointID = UUID(uuidString: pointRoot.lastPathComponent),
+              pointRoot.lastPathComponent == pointID.uuidString
+        else {
+            return nil
+        }
+        let rollbackRoot = runRoot
+            .appendingPathComponent("upgrade-state", isDirectory: true)
+            .appendingPathComponent("rollback", isDirectory: true)
+        guard pointRoot.deletingLastPathComponent() == rollbackRoot,
+              [runRoot.appendingPathComponent("upgrade-state", isDirectory: true),
+               rollbackRoot, pointRoot].allSatisfy(Self.isPrivateOwnedDirectory),
+              Self.isPrivateOwnedPackage(url)
+        else {
+            return nil
+        }
+        return url
+    }
+
+    private static func isPrivateOwnedDirectory(_ url: URL) -> Bool {
+        var status = stat()
+        return Darwin.lstat(url.path, &status) == 0 &&
+            status.st_mode & S_IFMT == S_IFDIR &&
+            status.st_uid == geteuid() &&
+            status.st_mode & 0o077 == 0
+    }
+
+    private static func isPrivateOwnedPackage(_ url: URL) -> Bool {
+        var status = stat()
+        return Darwin.lstat(url.path, &status) == 0 &&
+            status.st_mode & S_IFMT == S_IFREG &&
+            status.st_uid == geteuid() &&
+            status.st_nlink == 1 &&
+            status.st_mode & 0o077 == 0
     }
 }
 

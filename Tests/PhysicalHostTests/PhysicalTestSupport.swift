@@ -143,10 +143,24 @@ struct PhysicalSignedAppInstallHelper: InstallPrivilegedHelping, UpgradePrivileg
     func install(_ package: VerifiedRuntimePackage) async throws {
         try package.openFile.revalidateIdentity()
         let expected = try PhysicalTestGate.packageURL(version: package.runtimeVersion)
-        guard package.openFile.sourceURL.standardizedFileURL == expected else {
+        let source = package.openFile.sourceURL.standardizedFileURL
+        if source == expected {
+            _ = try await PhysicalSignedAppOperations.invoke("install-\(package.runtimeVersion)")
+            return
+        }
+        let stateRoot = try PhysicalTestGate.upgradeStateRoot()
+        let pointRoot = source.deletingLastPathComponent()
+        guard package.runtimeVersion == "1.0.0",
+              source.lastPathComponent == "00-container-1.0.0-installer-signed.pkg",
+              pointRoot.deletingLastPathComponent() == stateRoot.appendingPathComponent("rollback"),
+              pointRoot.lastPathComponent == UUID(uuidString: pointRoot.lastPathComponent)?.uuidString
+        else {
             throw PhysicalSignedAppOperationError.packageIdentityMismatch
         }
-        _ = try await PhysicalSignedAppOperations.invoke("install-\(package.runtimeVersion)")
+        _ = try await PhysicalSignedAppOperations.invoke(
+            "install-\(package.runtimeVersion)",
+            packageSource: source
+        )
     }
 }
 
@@ -170,7 +184,10 @@ enum PhysicalSignedAppOperations {
         try await invoke("complete-uninstall")
     }
 
-    static func invoke(_ operation: String) async throws -> PhysicalSignedAppOperationResult {
+    static func invoke(
+        _ operation: String,
+        packageSource: URL? = nil
+    ) async throws -> PhysicalSignedAppOperationResult {
         guard PhysicalTestGate.isAuthorized,
               let runID = PhysicalTestGate.runID,
               let runRoot = PhysicalTestGate.runRoot,
@@ -207,6 +224,9 @@ enum PhysicalSignedAppOperations {
             "--physical-helper-operation=\(operation)",
             "--physical-helper-operation-output=\(output.path)"
         ]
+        if let packageSource {
+            process.arguments?.append("--physical-helper-package-source=\(packageSource.path)")
+        }
         let terminationStatus: Int32 = try await withCheckedThrowingContinuation { continuation in
             process.terminationHandler = { process in
                 continuation.resume(returning: process.terminationStatus)

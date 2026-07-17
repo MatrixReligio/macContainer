@@ -241,6 +241,73 @@ struct PhysicalPacketFilterAuditCommandTests {
         ) == nil)
     }
 
+    @Test func `signed app rollback install accepts only the private rollback package`() async throws {
+        let runID = UUID()
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-physical-operation-\(UUID().uuidString)", isDirectory: true)
+        let runRoot = root.appendingPathComponent(runID.uuidString.lowercased(), isDirectory: true)
+        let rollbackID = UUID()
+        let rollbackRoot = runRoot
+            .appendingPathComponent("upgrade-state/rollback", isDirectory: true)
+            .appendingPathComponent(rollbackID.uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: rollbackRoot,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        let privateDirectories = [
+            root,
+            runRoot,
+            runRoot.appendingPathComponent("upgrade-state"),
+            runRoot.appendingPathComponent("upgrade-state/rollback"),
+            rollbackRoot
+        ]
+        for directory in privateDirectories {
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        }
+        defer { try? FileManager.default.removeItem(at: root) }
+        let package = rollbackRoot.appendingPathComponent("00-container-1.0.0-installer-signed.pkg")
+        try Data("reviewed-rollback-package".utf8).write(to: package)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: package.path)
+        let executor = FixturePhysicalOperationExecutor()
+        let invocationID = UUID()
+        let output = root.appendingPathComponent(
+            "helper-operation-\(invocationID.uuidString.lowercased()).json"
+        )
+        let environment = [
+            "PHYSICAL_AUDIT_AUTHORIZATION": invocationID.uuidString.lowercased(),
+            "PHYSICAL_AUDIT_ROOT": root.path,
+            "PHYSICAL_RUN_ID": runID.uuidString.lowercased(),
+            "PHYSICAL_RUN_ROOT": runRoot.path
+        ]
+        let arguments = [
+            "--physical-helper-operation=install-1.0.0",
+            "--physical-helper-operation-output=\(output.path)",
+            "--physical-helper-package-source=\(package.path)"
+        ]
+        let command = try #require(PhysicalPrivilegedOperationCommand(
+            arguments: arguments,
+            environment: environment,
+            executor: executor
+        ))
+
+        try await command.execute()
+
+        #expect(await executor.installations == ["1.0.0|\(package.path)"])
+        #expect(PhysicalPrivilegedOperationCommand(
+            arguments: arguments.dropLast() + [
+                "--physical-helper-package-source=\(root.appendingPathComponent("outside.pkg").path)"
+            ],
+            environment: environment,
+            executor: executor
+        ) == nil)
+        #expect(PhysicalPrivilegedOperationCommand(
+            arguments: arguments + ["--physical-helper-package-source=\(package.path)"],
+            environment: environment,
+            executor: executor
+        ) == nil)
+    }
+
     @Test func `signed app DNS and uninstall operations return independently auditable results`() async throws {
         let fixture = try PhysicalOperationFixture()
         defer { fixture.cleanup() }
