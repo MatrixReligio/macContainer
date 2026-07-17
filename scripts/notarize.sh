@@ -19,8 +19,9 @@ fi
 temporary=""
 mountpoint=""
 cleanup() {
-    if [[ -n "$mountpoint" ]] && /sbin/mount | /usr/bin/grep -Fq -- "on $mountpoint "; then
-        /usr/bin/hdiutil detach -quiet "$mountpoint" || /usr/bin/hdiutil detach -force "$mountpoint" >/dev/null
+    if [[ -n "$mountpoint" ]]; then
+        /usr/bin/hdiutil detach -quiet "$mountpoint" >/dev/null 2>&1 || \
+            /usr/bin/hdiutil detach -force -quiet "$mountpoint" >/dev/null 2>&1 || true
     fi
     [[ -z "$temporary" ]] || /bin/rm -rf "$temporary"
     [[ -z "$mountpoint" ]] || /bin/rm -rf "$mountpoint"

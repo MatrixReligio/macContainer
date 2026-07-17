@@ -29,9 +29,8 @@ signature="$(/usr/bin/xmllint --xpath 'string(//*[local-name()="enclosure"]/@*[l
 
 mountpoint="$(/usr/bin/mktemp -d "${TMPDIR%/}/maccontainer-release-verify.XXXXXX")"
 cleanup() {
-    if /sbin/mount | /usr/bin/grep -Fq -- "on $mountpoint "; then
-        /usr/bin/hdiutil detach -quiet "$mountpoint" || /usr/bin/hdiutil detach -force "$mountpoint" >/dev/null
-    fi
+    /usr/bin/hdiutil detach -quiet "$mountpoint" >/dev/null 2>&1 || \
+        /usr/bin/hdiutil detach -force -quiet "$mountpoint" >/dev/null 2>&1 || true
     /bin/rm -rf "$mountpoint"
 }
 trap cleanup EXIT INT TERM

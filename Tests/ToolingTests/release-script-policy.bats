@@ -46,6 +46,7 @@ require_text scripts/notarize.sh 'gamemaster-notary'
 require_text scripts/notarize.sh 'notarytool submit'
 require_text scripts/notarize.sh 'stapler staple'
 require_text scripts/notarize.sh 'hdiutil attach -readonly -nobrowse'
+require_text scripts/notarize.sh 'hdiutil detach -quiet "$mountpoint"'
 require_text scripts/notarize.sh 'spctl --assess --type execute'
 require_text scripts/notarize.sh 'codesign --verify --deep --strict'
 require_text scripts/generate-appcast.sh 'SPARKLE_PRIVATE_KEY_FILE'
@@ -59,6 +60,13 @@ require_text scripts/release.sh 'checksums.txt'
 require_text scripts/verify-release.sh 'verify-sparkle-signature.swift'
 require_text scripts/verify-release.sh 'sbom-checksums.txt'
 require_text scripts/verify-release.sh 'spctl --assess --type execute'
+require_text scripts/verify-release.sh 'hdiutil detach -quiet "$mountpoint"'
+
+if /usr/bin/grep -Fq '/sbin/mount |' "$repo_root/scripts/notarize.sh" \
+    || /usr/bin/grep -Fq '/sbin/mount |' "$repo_root/scripts/verify-release.sh"; then
+    print -u2 -- "release cleanup must detach by mountpoint instead of comparing aliased paths"
+    exit 1
+fi
 
 if /usr/bin/grep -Fq 'SMPrivilegedExecutables' "$repo_root/project.yml" \
     || /usr/bin/grep -Fq 'SMPrivilegedExecutables' "$repo_root/App/MacContainer/Info.plist"; then
