@@ -6,6 +6,15 @@ import Testing
 
 @Suite("System privileged host mutator")
 struct SystemPrivilegedHostMutatorTests {
+    @Test func `canonicalizes the fixed macOS etc symlink before no-follow directory access`() {
+        #expect(SystemPrivilegedHostMutator.trustedDirectoryURL(
+            URL(fileURLWithPath: "/etc", isDirectory: true)
+        ).path == "/private/etc")
+        #expect(SystemPrivilegedHostMutator.trustedDirectoryURL(
+            URL(fileURLWithPath: "/etc/pf.anchors", isDirectory: true)
+        ).path == "/private/etc/pf.anchors")
+    }
+
     @Test func `reviewed manifest is byte identified and structurally identical to config`() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

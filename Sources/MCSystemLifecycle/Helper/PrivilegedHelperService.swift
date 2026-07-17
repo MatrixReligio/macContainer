@@ -139,7 +139,7 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         case EEXIST: 82
         case ENOSPC, EMFILE, ENFILE: 83
         case EIO: 84
-        default: 85
+        default: (1 ... 255).contains(code) ? 1000 + code : 1099
         }
     }
 }

@@ -198,7 +198,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
     }
 
     private func openResolverDirectory(createIfMissing: Bool) throws -> Int32 {
-        let parentURL = resolverDirectory.deletingLastPathComponent().resolvingSymlinksInPath()
+        let parentURL = Self.trustedDirectoryURL(resolverDirectory.deletingLastPathComponent())
         let parent = Darwin.open(parentURL.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
         guard parent >= 0 else { throw posixError() }
         defer { Darwin.close(parent) }
@@ -341,7 +341,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
     }
 
     private func openTrustedDirectory(_ directory: URL) throws -> Int32 {
-        let resolved = directory.resolvingSymlinksInPath()
+        let resolved = Self.trustedDirectoryURL(directory)
         let descriptor = Darwin.open(resolved.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
         guard descriptor >= 0 else { throw posixError() }
         do {
@@ -351,6 +351,15 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
             Darwin.close(descriptor)
             throw error
         }
+    }
+
+    static func trustedDirectoryURL(_ directory: URL) -> URL {
+        let standardized = directory.standardizedFileURL
+        let path = standardized.path
+        if path == "/etc" || path.hasPrefix("/etc/") {
+            return URL(fileURLWithPath: "/private\(path)", isDirectory: true)
+        }
+        return standardized.resolvingSymlinksInPath()
     }
 
     private func readManagedFile(named name: String, in directory: Int32) throws -> String? {

@@ -32,6 +32,11 @@ struct SystemPrivilegedAdapterTests {
                 for: NSError(domain: NSPOSIXErrorDomain, code: Int(ENOENT))
             ) == 81
         )
+        #expect(
+            PrivilegedHelperService.sanitizedErrorCode(
+                for: NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+            ) == 1022
+        )
     }
 
     @Test func `reverifies inherited descriptor and invokes only fixed installer`() throws {
