@@ -1,6 +1,7 @@
 import Foundation
 import MCContainerBridge
 import MCModel
+import MCSystemLifecycle
 
 public enum BridgeOperationDispatcherError: Error, Equatable, Sendable {
     case invalidField(String)
@@ -33,8 +34,8 @@ public struct BridgeOperationDispatcher: OperationDispatching, Sendable {
 
     private let bridge: any RuntimeBridge
 
-    public init(bridge: any RuntimeBridge = AppleRuntimeBridge()) {
-        self.bridge = bridge
+    public init(bridge: (any RuntimeBridge)? = nil) {
+        self.bridge = bridge ?? AppleRuntimeBridge(dnsBackend: PrivilegedDNSBackend())
     }
 
     // The exhaustive operation switch is the UI-to-bridge authority for the reviewed 1.1.0 contract.

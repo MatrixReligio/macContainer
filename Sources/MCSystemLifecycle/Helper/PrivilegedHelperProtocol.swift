@@ -21,6 +21,8 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
     case forgetReceipt(identifier: String)
     case writeResolver(ResolverRequest)
     case removeResolver(name: String)
+    case createDNSDomain(DNSDomainRequest)
+    case deleteDNSDomain(name: String)
     case applyPacketFilter(PacketFilterRequest)
     case removePacketFilter(anchor: String)
     case auditPacketFilter(anchor: String)
@@ -37,6 +39,10 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
         case let .writeResolver(request):
             try Self.validate(request, policy: policy)
         case let .removeResolver(name):
+            try Self.validateResolverName(name, policy: policy)
+        case let .createDNSDomain(request):
+            try Self.validateDNSDomain(request, policy: policy)
+        case let .deleteDNSDomain(name):
             try Self.validateResolverName(name, policy: policy)
         case let .applyPacketFilter(request):
             try Self.validate(request, policy: policy)
@@ -77,6 +83,18 @@ public enum PrivilegedRequest: Codable, Equatable, Sendable {
 
     private static func validateResolverName(_ name: String, policy: PathPolicy) throws {
         guard policy.allowsResolverName(name) else { throw PrivilegedRequestError.invalidResolver }
+    }
+
+    private static func validateDNSDomain(_ request: DNSDomainRequest, policy: PathPolicy) throws {
+        guard policy.allowsResolverName(request.name) else {
+            throw PrivilegedRequestError.invalidResolver
+        }
+        if let address = request.redirectIPv4 {
+            var parsed = in_addr()
+            guard address.withCString({ inet_pton(AF_INET, $0, &parsed) == 1 }) else {
+                throw PrivilegedRequestError.invalidResolver
+            }
+        }
     }
 
     private static func validate(_ request: PacketFilterRequest, policy: PathPolicy) throws {
@@ -158,6 +176,16 @@ public struct ResolverRequest: Codable, Equatable, Sendable {
     public init(name: String, nameservers: [String]) {
         self.name = name
         self.nameservers = nameservers
+    }
+}
+
+public struct DNSDomainRequest: Codable, Equatable, Sendable {
+    public let name: String
+    public let redirectIPv4: String?
+
+    public init(name: String, redirectIPv4: String?) {
+        self.name = name
+        self.redirectIPv4 = redirectIPv4
     }
 }
 

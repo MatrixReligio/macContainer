@@ -16,6 +16,7 @@ public struct AppleRuntimeBridge: RuntimeBridge, Sendable {
 
     public init(
         coordinator: OperationCoordinator = OperationCoordinator(),
+        dnsBackend: any DNSBackend = AppleDNSBackend(),
         kernelTemporaryRoot: URL = FileManager.default.temporaryDirectory
             .appending(path: "container.matrixreligio.com/kernel-downloads", directoryHint: .isDirectory)
     ) {
@@ -37,7 +38,7 @@ public struct AppleRuntimeBridge: RuntimeBridge, Sendable {
             coordinator: coordinator
         )
         system = SystemAdapter(backend: AppleSystemRuntimeBackend(), coordinator: coordinator)
-        dns = DNSAdapter(backend: AppleDNSBackend(), coordinator: coordinator)
+        dns = DNSAdapter(backend: dnsBackend, coordinator: coordinator)
         kernel = KernelAdapter(
             backend: AppleKernelBackend(),
             downloader: URLSessionKernelDownloader(),

@@ -6,6 +6,8 @@ public protocol PrivilegedSystemAdapting: Sendable {
     func forgetReceipt(identifier: String) throws
     func writeResolver(_ request: ResolverRequest) throws
     func removeResolver(name: String) throws
+    func createDNSDomain(_ request: DNSDomainRequest) throws
+    func deleteDNSDomain(name: String) throws
     func applyPacketFilter(_ request: PacketFilterRequest) throws
     func removePacketFilter(anchor: String) throws
     func packetFilterRulesPresent(anchor: String) throws -> Bool
@@ -50,6 +52,8 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         }
     }
 
+    // The enum switch is the complete privileged-operation allowlist.
+    // swiftlint:disable:next cyclomatic_complexity
     private func dispatch(_ request: PrivilegedRequest, packageFile: FileHandle?) throws -> PrivilegedResponse {
         switch request {
         case let .installVerifiedPackage(token):
@@ -67,6 +71,12 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
         case let .removeResolver(name):
             try rejectSmuggledPackage(packageFile)
             try system.removeResolver(name: name)
+        case let .createDNSDomain(request):
+            try rejectSmuggledPackage(packageFile)
+            try system.createDNSDomain(request)
+        case let .deleteDNSDomain(name):
+            try rejectSmuggledPackage(packageFile)
+            try system.deleteDNSDomain(name: name)
         case let .applyPacketFilter(request):
             try rejectSmuggledPackage(packageFile)
             try system.applyPacketFilter(request)

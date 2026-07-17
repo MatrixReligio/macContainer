@@ -24,6 +24,8 @@ final class PrivilegedHelperIntegrationTests: XCTestCase {
             (.forgetReceipt(identifier: "com.apple.container-installer"), nil),
             (.writeResolver(.init(name: "default", nameservers: ["192.168.64.1"])), nil),
             (.removeResolver(name: "default"), nil),
+            (.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10")), nil),
+            (.deleteDNSDomain(name: "dev.example"), nil),
             (.applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24")), nil),
             (.removePacketFilter(anchor: "com.apple.container"), nil),
             (.auditPacketFilter(anchor: "com.apple.container"), nil),
@@ -39,7 +41,8 @@ final class PrivilegedHelperIntegrationTests: XCTestCase {
 
         XCTAssertEqual(adapter.actions, [
             "install", "removePayload", "forgetReceipt", "writeResolver",
-            "removeResolver", "applyPacketFilter", "removePacketFilter", "auditPacketFilter",
+            "removeResolver", "createDNSDomain", "deleteDNSDomain",
+            "applyPacketFilter", "removePacketFilter", "auditPacketFilter",
             "removeKnownEmptyDirectories"
         ])
     }
@@ -172,6 +175,14 @@ private final class RecordingPrivilegedSystemAdapter: PrivilegedSystemAdapting, 
 
     func removeResolver(name _: String) throws {
         record("removeResolver")
+    }
+
+    func createDNSDomain(_: DNSDomainRequest) throws {
+        record("createDNSDomain")
+    }
+
+    func deleteDNSDomain(name _: String) throws {
+        record("deleteDNSDomain")
     }
 
     func applyPacketFilter(_: PacketFilterRequest) throws {

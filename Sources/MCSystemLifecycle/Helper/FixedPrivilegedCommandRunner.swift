@@ -7,6 +7,8 @@ public enum FixedPrivilegedCommand: Equatable, Sendable {
     case reloadContainerPacketFilter(subnetCIDR: String)
     case clearContainerPacketFilter
     case inspectContainerPacketFilter
+    case validateSystemPacketFilter
+    case reloadSystemPacketFilter
     case reloadDNS
 
     public var executable: String {
@@ -15,7 +17,8 @@ public enum FixedPrivilegedCommand: Equatable, Sendable {
             "/usr/sbin/installer"
         case .forgetContainerReceipt:
             "/usr/sbin/pkgutil"
-        case .reloadContainerPacketFilter, .clearContainerPacketFilter, .inspectContainerPacketFilter:
+        case .reloadContainerPacketFilter, .clearContainerPacketFilter, .inspectContainerPacketFilter,
+             .validateSystemPacketFilter, .reloadSystemPacketFilter:
             "/sbin/pfctl"
         case .reloadDNS:
             "/usr/bin/killall"
@@ -34,6 +37,10 @@ public enum FixedPrivilegedCommand: Equatable, Sendable {
             [executable, "-a", "com.apple.container", "-F", "all"]
         case .inspectContainerPacketFilter:
             [executable, "-a", "com.apple.container", "-sr"]
+        case .validateSystemPacketFilter:
+            [executable, "-n", "-f", "/etc/pf.conf"]
+        case .reloadSystemPacketFilter:
+            [executable, "-f", "/etc/pf.conf"]
         case .reloadDNS:
             [executable, "-HUP", "mDNSResponder"]
         }

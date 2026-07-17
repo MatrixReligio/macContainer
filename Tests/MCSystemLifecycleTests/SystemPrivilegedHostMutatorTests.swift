@@ -107,16 +107,101 @@ struct SystemPrivilegedHostMutatorTests {
                 )
         )
     }
+
+    @Test func `creates and deletes an Apple compatible DNS domain through fixed privileged actions`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        let runner = HostRecordingCommandRunner()
+        let host = fixture.makeHost(runner: runner)
+        let resolver = fixture.resolverDirectory.appendingPathComponent("containerization.dev.example")
+
+        try host.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
+
+        #expect(try String(contentsOf: resolver, encoding: .utf8) == """
+        domain dev.example
+        search dev.example
+        nameserver 127.0.0.1
+        port 1053
+        options localhost:192.0.2.10
+        """)
+        #expect(try String(contentsOf: fixture.packetFilterAnchor, encoding: .utf8).contains(
+            "rdr inet from any to 192.0.2.10 -> 127.0.0.1 # dev.example"
+        ))
+        let config = try String(contentsOf: fixture.packetFilterConfig, encoding: .utf8)
+        #expect(config.contains(#"rdr-anchor "com.apple.container""#))
+        #expect(config.contains(
+            "load anchor \"com.apple.container\" from \"\(fixture.packetFilterAnchor.path)\""
+        ))
+        #expect(runner.commands == [.validateSystemPacketFilter, .reloadSystemPacketFilter, .reloadDNS])
+
+        try host.deleteDNSDomain(name: "dev.example")
+
+        #expect(!FileManager.default.fileExists(atPath: resolver.path))
+        #expect(!FileManager.default.fileExists(atPath: fixture.packetFilterAnchor.path))
+        let restoredConfig = try String(contentsOf: fixture.packetFilterConfig, encoding: .utf8)
+        #expect(!restoredConfig.contains("com.apple.container"))
+        #expect(runner.commands == [
+            .validateSystemPacketFilter, .reloadSystemPacketFilter, .reloadDNS,
+            .validateSystemPacketFilter, .reloadSystemPacketFilter, .reloadDNS
+        ])
+    }
+
+    @Test func `DNS creation restores resolver and packet filter files when validation fails`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        let runner = HostRecordingCommandRunner(failOn: .validateSystemPacketFilter)
+        let host = fixture.makeHost(runner: runner)
+        let resolver = fixture.resolverDirectory.appendingPathComponent("containerization.dev.example")
+        let originalConfig = try Data(contentsOf: fixture.packetFilterConfig)
+
+        #expect(throws: HostCommandFailure.rejected) {
+            try host.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
+        }
+
+        #expect(!FileManager.default.fileExists(atPath: resolver.path))
+        #expect(!FileManager.default.fileExists(atPath: fixture.packetFilterAnchor.path))
+        #expect(try Data(contentsOf: fixture.packetFilterConfig) == originalConfig)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.resolverDirectory.path).isEmpty)
+    }
+
+    @Test func `DNS creation refuses a packet filter anchor symlink without changing its target`() throws {
+        let fixture = try HostMutationFixture()
+        defer { fixture.cleanup() }
+        try FileManager.default.createSymbolicLink(
+            at: fixture.packetFilterAnchor,
+            withDestinationURL: fixture.unrelatedFile
+        )
+        let host = fixture.makeHost(runner: HostRecordingCommandRunner())
+
+        #expect(throws: SystemPrivilegedHostError.invalidManagedFile) {
+            try host.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
+        }
+
+        #expect(try String(contentsOf: fixture.unrelatedFile, encoding: .utf8) == "unrelated")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.resolverDirectory.path).isEmpty)
+    }
 }
 
 private final class HostRecordingCommandRunner: FixedPrivilegedCommandRunning, @unchecked Sendable {
     private(set) var commands: [FixedPrivilegedCommand] = []
     var output = Data()
+    private let failOn: FixedPrivilegedCommand?
+
+    init(failOn: FixedPrivilegedCommand? = nil) {
+        self.failOn = failOn
+    }
 
     func run(_ command: FixedPrivilegedCommand, package _: OpenRuntimePackageFile?) throws -> Data {
         commands.append(command)
+        if command == failOn {
+            throw HostCommandFailure.rejected
+        }
         return output
     }
+}
+
+private enum HostCommandFailure: Error {
+    case rejected
 }
 
 private final class HostMutationFixture {
@@ -128,6 +213,9 @@ private final class HostMutationFixture {
     let pluginFile: URL
     let unrelatedFile: URL
     let resolverDirectory: URL
+    let packetFilterConfig: URL
+    let packetFilterAnchorsDirectory: URL
+    let packetFilterAnchor: URL
     let manifest: RuntimePackageManifest
 
     init() throws {
@@ -140,9 +228,14 @@ private final class HostMutationFixture {
         pluginFile = containerDirectory.appendingPathComponent("plugin")
         unrelatedFile = binDirectory.appendingPathComponent("unrelated")
         resolverDirectory = root.appendingPathComponent("resolver", isDirectory: true)
+        packetFilterConfig = root.appendingPathComponent("pf.conf")
+        packetFilterAnchorsDirectory = root.appendingPathComponent("pf.anchors", isDirectory: true)
+        packetFilterAnchor = packetFilterAnchorsDirectory.appendingPathComponent("com.apple.container")
         try FileManager.default.createDirectory(at: binDirectory, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: containerDirectory, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: resolverDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: packetFilterAnchorsDirectory, withIntermediateDirectories: true)
+        try Data("set skip on lo0\n".utf8).write(to: packetFilterConfig)
         try Data("runtime".utf8).write(to: runtimeFile)
         try Data("plugin".utf8).write(to: pluginFile)
         try Data("unrelated".utf8).write(to: unrelatedFile)
@@ -174,6 +267,8 @@ private final class HostMutationFixture {
             commandRunner: runner,
             installRoot: root,
             resolverDirectory: resolverDirectory,
+            packetFilterConfig: packetFilterConfig,
+            packetFilterAnchorsDirectory: packetFilterAnchorsDirectory,
             requiredOwner: geteuid()
         )
     }

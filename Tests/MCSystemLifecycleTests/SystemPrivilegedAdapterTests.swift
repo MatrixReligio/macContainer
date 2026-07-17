@@ -104,6 +104,8 @@ struct SystemPrivilegedAdapterTests {
         try adapter.forgetReceipt(identifier: "com.apple.container-installer")
         try adapter.writeResolver(.init(name: "default", nameservers: ["192.168.64.1"]))
         try adapter.removeResolver(name: "default")
+        try adapter.createDNSDomain(.init(name: "dev.example", redirectIPv4: "192.0.2.10"))
+        try adapter.deleteDNSDomain(name: "dev.example")
         try adapter.applyPacketFilter(.init(anchor: "com.apple.container", subnetCIDR: "192.168.64.0/24"))
         try adapter.removePacketFilter(anchor: "com.apple.container")
         #expect(try adapter.packetFilterRulesPresent(anchor: "com.apple.container"))
@@ -111,6 +113,7 @@ struct SystemPrivilegedAdapterTests {
 
         #expect(host.actions == [
             "removePayload", "forgetReceipt", "writeResolver", "removeResolver",
+            "createDNSDomain", "deleteDNSDomain",
             "applyPacketFilter", "removePacketFilter", "auditPacketFilter", "removeKnownEmptyDirectories"
         ])
     }
@@ -160,6 +163,14 @@ private final class RecordingPrivilegedHostMutator: PrivilegedHostMutating, @unc
 
     func removeResolver(name _: String) throws {
         actions.append("removeResolver")
+    }
+
+    func createDNSDomain(_: DNSDomainRequest) throws {
+        actions.append("createDNSDomain")
+    }
+
+    func deleteDNSDomain(name _: String) throws {
+        actions.append("deleteDNSDomain")
     }
 
     func applyPacketFilter(_: PacketFilterRequest) throws {

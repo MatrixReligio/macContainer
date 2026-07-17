@@ -22,6 +22,8 @@ public protocol PrivilegedHostMutating: Sendable {
     func forgetReceipt() throws
     func writeResolver(_ request: ResolverRequest) throws
     func removeResolver(name: String) throws
+    func createDNSDomain(_ request: DNSDomainRequest) throws
+    func deleteDNSDomain(name: String) throws
     func applyPacketFilter(_ request: PacketFilterRequest) throws
     func removePacketFilter() throws
     func packetFilterRulesPresent() throws -> Bool
@@ -139,6 +141,16 @@ public struct SystemPrivilegedAdapter: PrivilegedSystemAdapting {
     public func removeResolver(name: String) throws {
         try PrivilegedRequest.removeResolver(name: name).validate(policy: .runtime110)
         try host.removeResolver(name: name)
+    }
+
+    public func createDNSDomain(_ request: DNSDomainRequest) throws {
+        try PrivilegedRequest.createDNSDomain(request).validate(policy: .runtime110)
+        try host.createDNSDomain(request)
+    }
+
+    public func deleteDNSDomain(name: String) throws {
+        try PrivilegedRequest.deleteDNSDomain(name: name).validate(policy: .runtime110)
+        try host.deleteDNSDomain(name: name)
     }
 
     public func applyPacketFilter(_ request: PacketFilterRequest) throws {
