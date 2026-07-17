@@ -476,7 +476,7 @@ git commit -m "ci: monitor upstream without granting compatibility"
 **Files:**
 - Create: `docs/reviews/stage-7.md`
 
-- [ ] **Step 1: Run the complete automatic-update gate**
+- [x] **Step 1: Run the complete automatic-update gate**
 
 ```bash
 swift test --filter MCCompatibilityTests
@@ -489,11 +489,11 @@ git diff --check
 
 Expected: PASS.
 
-- [ ] **Step 2: Review fail-closed behavior**
+- [x] **Step 2: Review fail-closed behavior**
 
 Verify unknown versions, catalog corruption, signer changes, replay, app-range mismatch, host mismatch, workload races, insufficient rollback space, preflight failure, every postflight domain failure, rollback failure, agent offline/rate-limit, consent revocation, helper revocation, and block supersession. Fix every finding and rerun affected tests.
 
-- [ ] **Step 3: Commit Stage 7 PASS**
+- [x] **Step 3: Commit Stage 7 PASS**
 
 ```bash
 git add docs/reviews/stage-7.md
