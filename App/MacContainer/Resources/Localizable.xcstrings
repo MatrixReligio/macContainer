@@ -137,6 +137,40 @@
         }
       }
     },
+    "A discovered runtime is held for safety. Open MacContainer for details." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A discovered runtime is held for safety. Open MacContainer for details."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検出されたランタイムは安全のため保留されています。詳細は MacContainer で確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "발견된 런타임이 안전을 위해 보류되었습니다. MacContainer에서 세부 정보를 확인하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检测到的运行时已为安全起见暂停。请打开 MacContainer 查看详情。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "偵測到的執行階段已基於安全考量暫停。請開啟 MacContainer 查看詳細資訊。"
+          }
+        }
+      }
+    },
     "Absolute path" : {
       "localizations" : {
         "en" : {
@@ -715,6 +749,40 @@
         }
       }
     },
+    "An approved runtime update is waiting. Open MacContainer for details." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An approved runtime update is waiting. Open MacContainer for details."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "承認済みのランタイムアップデートが保留中です。詳細は MacContainer で確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "승인된 런타임 업데이트가 대기 중입니다. MacContainer에서 세부 정보를 확인하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已批准的运行时更新正在等待。请打开 MacContainer 查看详情。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已核准的執行階段更新正在等候。請開啟 MacContainer 查看詳細資訊。"
+          }
+        }
+      }
+    },
     "Apache License 2.0" : {
       "localizations" : {
         "en" : {
@@ -779,6 +847,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple container · 相容"
+          }
+        }
+      }
+    },
+    "Apple container %@ is compatibility-approved and ready to review." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container %@ is compatibility-approved and ready to review."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container %@ は互換性が確認され、確認できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container %@의 호환성 검증이 완료되어 검토할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container %@ 已通过兼容性验证，可以查看。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container %@ 已通過相容性驗證，可供檢視。"
           }
         }
       }
@@ -4387,6 +4489,40 @@
         }
       }
     },
+    "MacContainer runtime update" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer runtime update"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer ランタイムアップデート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer 런타임 업데이트"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer 运行时更新"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer 執行階段更新"
+          }
+        }
+      }
+    },
     "Machines" : {
       "localizations" : {
         "en" : {
@@ -5131,6 +5267,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟登入項目設定"
+          }
+        }
+      }
+    },
+    "Open MacContainer to review runtime update status." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open MacContainer to review runtime update status."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ランタイムアップデートの状態を MacContainer で確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer에서 런타임 업데이트 상태를 확인하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请打开 MacContainer 查看运行时更新状态。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請開啟 MacContainer 查看執行階段更新狀態。"
           }
         }
       }
@@ -66573,6 +66743,40 @@
         }
       }
     },
+    "Runtime recovery requires attention in MacContainer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runtime recovery requires attention in MacContainer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer でランタイムの復旧対応が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacContainer에서 런타임 복구 조치가 필요합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行时恢复需要在 MacContainer 中处理。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行階段復原需要在 MacContainer 中處理。"
+          }
+        }
+      }
+    },
     "Runtime removed; user data preserved" : {
       "localizations" : {
         "en" : {
@@ -67929,6 +68133,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "終止"
+          }
+        }
+      }
+    },
+    "The runtime update was rolled back. Open MacContainer for recovery details." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The runtime update was rolled back. Open MacContainer for recovery details."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ランタイムアップデートはロールバックされました。復旧の詳細は MacContainer で確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "런타임 업데이트가 롤백되었습니다. MacContainer에서 복구 세부 정보를 확인하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行时更新已回滚。请打开 MacContainer 查看恢复详情。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行階段更新已回復。請開啟 MacContainer 查看復原詳細資訊。"
           }
         }
       }

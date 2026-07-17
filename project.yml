@@ -146,9 +146,12 @@ targets:
     platform: macOS
     sources:
       - Tests/MacContainerIntegrationTests
+      - path: App/UpdateAgent/UpdateAgentLocalization.swift
     dependencies:
       - package: MacContainerCore
         product: MCSystemLifecycle
+      - package: MacContainerCore
+        product: MCCompatibility
       - package: MacContainerCore
         product: MCAppCore
       - package: MacContainerCore

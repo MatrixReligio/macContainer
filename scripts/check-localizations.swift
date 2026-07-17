@@ -37,26 +37,33 @@ private func catalog(at url: URL) throws -> [String: Any] {
     return value
 }
 
-private func staticUIKeys(in sourceRoot: URL) -> Set<String> {
+private func staticUIKeys(in sourceRoots: [URL]) -> Set<String> {
     // swiftlint:disable:next line_length
-    let pattern = #"(?:Text|Label|Button|Toggle|TextField|SecureField|Picker|LabeledContent|Section|GroupBox|Menu|ContentUnavailableView|navigationTitle|help|accessibilityLabel|alert|confirmationDialog)\s*\(\s*"((?:\\.|[^"\\])*)""#
+    let pattern = #"(?:Text|Label|Button|Toggle|TextField|SecureField|Picker|LabeledContent|Section|GroupBox|Menu|ContentUnavailableView|navigationTitle|help|accessibilityLabel|alert|confirmationDialog|localizedString)\s*\(\s*"((?:\\.|[^"\\])*)""#
     guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-    let enumerator = FileManager.default.enumerator(at: sourceRoot, includingPropertiesForKeys: nil)
     var keys = Set<String>()
-    while let url = enumerator?.nextObject() as? URL {
-        guard url.pathExtension == "swift", let source = try? String(contentsOf: url, encoding: .utf8) else { continue }
-        for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
-            guard let range = Range(match.range(at: 1), in: source) else { continue }
-            let key = String(source[range])
-            guard key.contains(#"\("#) == false else { continue }
-            keys.insert(key.replacingOccurrences(of: #"\""#, with: #"""#))
+    for sourceRoot in sourceRoots {
+        let enumerator = FileManager.default.enumerator(at: sourceRoot, includingPropertiesForKeys: nil)
+        while let url = enumerator?.nextObject() as? URL {
+            guard url.pathExtension == "swift",
+                  let source = try? String(contentsOf: url, encoding: .utf8)
+            else { continue }
+            for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+                guard let range = Range(match.range(at: 1), in: source) else { continue }
+                let key = String(source[range])
+                guard key.contains(#"\("#) == false else { continue }
+                keys.insert(key.replacingOccurrences(of: #"\""#, with: #"""#))
+            }
         }
     }
     return keys
 }
 
 let arguments = CommandLine.arguments
-guard arguments.count == 2 else { fail(["usage: check-localizations.swift resources-directory"]) }
+guard arguments.count == 2 || arguments.count == 3 else {
+    fail(["usage: check-localizations.swift resources-directory [app-source-root]"])
+}
+
 let resources = URL(fileURLWithPath: arguments[1], isDirectory: true)
 let names = ["Localizable.xcstrings", "InfoPlist.xcstrings"]
 var errors: [String] = []
@@ -121,8 +128,11 @@ for name in names {
     }
 }
 
-let sourceRoot = resources.deletingLastPathComponent()
-for key in staticUIKeys(in: sourceRoot).sorted() where localizableKeys.contains(key) == false {
+let appSourceRoot = arguments.count == 3
+    ? URL(fileURLWithPath: arguments[2], isDirectory: true)
+    : resources.deletingLastPathComponent().deletingLastPathComponent()
+let sourceRoots = ["MacContainer", "UpdateAgent"].map { appSourceRoot.appending(path: $0, directoryHint: .isDirectory) }
+for key in staticUIKeys(in: sourceRoots).sorted() where localizableKeys.contains(key) == false {
     errors.append("Localizable.xcstrings: static UI key missing: \(key)")
 }
 
