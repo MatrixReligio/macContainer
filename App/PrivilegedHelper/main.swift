@@ -1,4 +1,5 @@
 import Darwin
+import Dispatch
 import Foundation
 import MCSystemLifecycle
 
@@ -18,3 +19,4 @@ let delegate = HelperListenerDelegate { packageOwner in
 
 listener.delegate = delegate
 listener.resume()
+dispatchMain()
