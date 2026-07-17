@@ -64,7 +64,7 @@ struct LanguageControllerTests {
     }
 }
 
-private struct ResolutionFixture: Sendable {
+struct ResolutionFixture: Sendable {
     let selection: AppLanguage
     let preferredLanguages: [String]
     let expected: String

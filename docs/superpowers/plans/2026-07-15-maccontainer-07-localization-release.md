@@ -240,27 +240,27 @@ git commit -m "docs: account for shipped dependencies"
 - Modify: `project.yml`
 - Test: `Tests/MCAppCoreTests/AppUpdateControllerTests.swift`
 
-- [ ] **Step 1: Write failing updater-policy tests**
+- [x] **Step 1: Write failing updater-policy tests**
 
 Test scheduled daily checks, user manual check, disabled automatic checks, relaunch safety with active operations, update errors, appcast URL exactness, and the distinction between app updates (Sparkle) and runtime updates (compatibility coordinator).
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter AppUpdateControllerTests`
 
 Expected: FAIL because controller is undefined.
 
-- [ ] **Step 3: Implement Sparkle controller and create MacContainer-specific EdDSA key**
+- [x] **Step 3: Implement Sparkle controller and create MacContainer-specific EdDSA key**
 
-`AppUpdateController` wraps `SPUStandardUpdaterController`, exposes observable check state, and gates relaunch until drafts/activities are safely saved or cancelled by their own policy. `SUFeedURL` is `https://github.com/matrixreligio/macContainer/releases/latest/download/appcast.xml`; scheduled interval is 86400. Generate a new EdDSA key in the user's login keychain under account `MacContainer`; add only the public `SUPublicEDKey` to `project.yml`. Never read/copy GameMaster's Sparkle private key. CI later uses `SPARKLE_PRIVATE_KEY` configured specifically for this repository.
+`AppUpdateController` wraps `SPUStandardUpdaterController`, exposes observable check state, and gates relaunch until drafts/activities are safely saved or cancelled by their own policy. `SUFeedURL` is `https://github.com/matrixreligio/macContainer/releases/latest/download/appcast.xml`; scheduled interval is 86400. Generate a new EdDSA key in a mode-0600 temporary file, add only the public `SUPublicEDKey` to `project.yml`, migrate the seed directly to the repository's `SPARKLE_PRIVATE_KEY`, then securely delete the temporary file. This avoids changing the developer Mac's login Keychain. Never read/copy GameMaster's Sparkle private key.
 
-- [ ] **Step 4: Build and inspect final Info.plist**
+- [x] **Step 4: Build and inspect final Info.plist**
 
 Run: `xcodegen generate --spec project.yml && xcodebuild -project MacContainer.xcodeproj -scheme MacContainer CODE_SIGNING_ALLOWED=NO build && plutil -p .artifacts/DerivedData/Build/Products/Debug/MacContainer.app/Contents/Info.plist | rg 'SUFeedURL|SUPublicEDKey|SUScheduledCheckInterval'`
 
 Expected: exact feed URL, nonempty MacContainer public key, interval 86400.
 
-- [ ] **Step 5: Commit only the public key/configuration**
+- [x] **Step 5: Commit only the public key/configuration**
 
 ```bash
 git add Sources/MCAppCore/AppUpdateController.swift App/MacContainer project.yml MacContainer.xcodeproj Tests/MCAppCoreTests/AppUpdateControllerTests.swift

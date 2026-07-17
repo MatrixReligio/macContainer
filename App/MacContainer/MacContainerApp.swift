@@ -4,12 +4,21 @@ import SwiftUI
 @main
 struct MacContainerApp: App {
     @State private var state: AppState
+    private let sparkleUpdater: SparkleAppUpdater?
 
     init() {
         let mode: AppEnvironmentMode = ProcessInfo.processInfo.arguments.contains("--fake-runtime")
             ? .fakeRuntime
             : .production
-        _state = State(initialValue: AppState(environment: AppEnvironment(mode: mode)))
+        let state = AppState(environment: AppEnvironment(mode: mode))
+        _state = State(initialValue: state)
+        if mode == .production {
+            let updater = SparkleAppUpdater(state: state)
+            state.appUpdates.attach(driver: updater)
+            sparkleUpdater = updater
+        } else {
+            sparkleUpdater = nil
+        }
     }
 
     var body: some Scene {

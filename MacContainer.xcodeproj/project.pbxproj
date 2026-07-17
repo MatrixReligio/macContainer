@@ -21,6 +21,7 @@
 		2AC901F293BB67BE5834368A /* ResourceFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDDB8BF20B5C9D5762F8156 /* ResourceFixtures.swift */; };
 		38E362E0A1D934CC90FA2C71 /* ParameterFormTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C99C97F26494654C9A668A /* ParameterFormTests.swift */; };
 		3947A292F138A4056AE2D63F /* TerminalScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66EEA68702755924F4CA59A /* TerminalScene.swift */; };
+		3B2AFA188A3FF6B407F9EBF0 /* SparkleAppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E0C82905CD949F57FE4172 /* SparkleAppUpdater.swift */; };
 		3B388AE0E2A8D4886CAD97EA /* container.matrixreligio.com.helper.plist in Resources */ = {isa = PBXBuildFile; fileRef = DA25E9952093076DC5EEDA7B /* container.matrixreligio.com.helper.plist */; };
 		3FE3297CE74837A67CA1612F /* CompatibilitySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4054895B7EDB132AE6804F3 /* CompatibilitySettingsView.swift */; };
 		4745EDA1B319D2781FDFF20B /* MarketingFixturesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7F00233D3F5EAF189281A1F /* MarketingFixturesView.swift */; };
@@ -117,6 +118,7 @@
 		0709F38F0C8DDC711FBF84BB /* BuildSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildSmokeTests.swift; sourceTree = "<group>"; };
 		079028DC65ABD81F07404895 /* PlainProcessOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainProcessOutputView.swift; sourceTree = "<group>"; };
 		0E5EF59FE148D2BBC8A1570B /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		15E0C82905CD949F57FE4172 /* SparkleAppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleAppUpdater.swift; sourceTree = "<group>"; };
 		1894D2B69E749177266C6FA1 /* UninstallRuntimeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallRuntimeView.swift; sourceTree = "<group>"; };
 		18FE87718111DABB047AC214 /* KeyboardNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardNavigationTests.swift; sourceTree = "<group>"; };
 		1F63D3B6EE5E462D3F67C16B /* SettingsScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScene.swift; sourceTree = "<group>"; };
@@ -445,6 +447,7 @@
 				22BC5E1EE46F5B4E162DFE9E /* Info.plist */,
 				D20200AB2227F11B73B20757 /* MacContainer.entitlements */,
 				86F8017A7AF4E5AEFCA21634 /* MacContainerApp.swift */,
+				15E0C82905CD949F57FE4172 /* SparkleAppUpdater.swift */,
 				8732C4FEA79793B59F2ECDDC /* Commands */,
 				F2159A1BDD54B3998A355323 /* Resources */,
 				EDB08A107CA0B2F2CC1779B3 /* Scenes */,
@@ -776,6 +779,7 @@
 				E296281EE028B6DAF297D164 /* SettingsScene.swift in Sources */,
 				DBD0CD199EF64C42C8EC034F /* Sidebar.swift in Sources */,
 				EB5267F9D19CA944A88D09F6 /* SimpleModeView.swift in Sources */,
+				3B2AFA188A3FF6B407F9EBF0 /* SparkleAppUpdater.swift in Sources */,
 				5ADA9E2E1F724C70AE4EFBF9 /* SwiftTermRepresentable.swift in Sources */,
 				1A2126C0D7CDFEB098DF07A4 /* TemplateLibraryView.swift in Sources */,
 				1A6A48F3CFF0FABA36116D6A /* TemplateReviewView.swift in Sources */,

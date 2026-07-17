@@ -54,11 +54,15 @@ public final class AppState {
     public var hasUnsavedWork = false
     public var selectedResource: ResourceSelection?
     public let activities: ActivityCenter
+    public let appUpdates: AppUpdateController
     public let environment: AppEnvironment
 
     public init(environment: AppEnvironment = AppEnvironment()) {
         self.environment = environment
         activities = ActivityCenter(now: environment.now, makeID: environment.makeID)
+        appUpdates = AppUpdateController(
+            automaticallyChecksForUpdates: environment.mode == .production
+        )
         health = environment.mode == .fakeRuntime ? .healthy : .checking
         runtimeUpdateState = environment.mode == .fakeRuntime
             ? .available(version: "1.1.0")

@@ -65,6 +65,20 @@ private func translation(
 }
 
 private let additionalCore = Dictionary(uniqueKeysWithValues: [
+    translation("Application update %@ is available", "MacContainer 应用更新 %@ 可用", "MacContainer 應用程式更新 %@ 可用", "MacContainerアプリのアップデート%@を利用できます", "MacContainer 앱 업데이트 %@을(를) 사용할 수 있습니다"),
+    translation("Application update check failed", "应用更新检查失败", "應用程式更新檢查失敗", "アプリのアップデート確認に失敗しました", "앱 업데이트 확인 실패"),
+    translation("Application update service is not ready", "应用更新服务尚未就绪", "應用程式更新服務尚未就緒", "アプリのアップデートサービスは準備中です", "앱 업데이트 서비스를 사용할 준비가 되지 않았습니다"),
+    translation("Application updates", "应用更新", "應用程式更新", "アプリのアップデート", "앱 업데이트"),
+    translation("Application updates are signed and handled separately from Apple container runtime updates, which always require compatibility approval.", "应用更新经过签名并与 Apple container 运行时更新分开处理；运行时更新始终需要通过兼容性批准。", "應用程式更新經過簽章並與 Apple container 執行階段更新分開處理；執行階段更新一律需要通過相容性核准。", "アプリのアップデートは署名され、Apple containerランタイムの更新とは別に処理されます。ランタイムの更新には常に互換性の承認が必要です。", "앱 업데이트는 서명되며 Apple container 런타임 업데이트와 별도로 처리됩니다. 런타임 업데이트에는 항상 호환성 승인이 필요합니다."),
+    translation("Automatically check for signed application updates", "自动检查已签名的应用更新", "自動檢查已簽章的應用程式更新", "署名済みアプリのアップデートを自動確認", "서명된 앱 업데이트 자동 확인"),
+    translation("Check for Application Updates", "检查应用更新", "檢查應用程式更新", "アプリのアップデートを確認", "앱 업데이트 확인"),
+    translation("Checking for application updates…", "正在检查应用更新…", "正在檢查應用程式更新…", "アプリのアップデートを確認中…", "앱 업데이트 확인 중…"),
+    translation("Continue Update and Relaunch", "继续更新并重新启动", "繼續更新並重新啟動", "アップデートを続行して再起動", "업데이트 계속 및 다시 실행"),
+    translation("MacContainer is up to date", "MacContainer 已是最新版本", "MacContainer 已是最新版本", "MacContainerは最新です", "MacContainer가 최신 상태입니다"),
+    translation("Ready to install and relaunch", "可以安装并重新启动", "可以安裝並重新啟動", "インストールして再起動できます", "설치 후 다시 실행할 준비가 되었습니다"),
+    translation("Save or discard the current draft before relaunching", "重新启动前请保存或放弃当前草稿", "重新啟動前請儲存或捨棄目前的草稿", "再起動する前に現在の下書きを保存または破棄してください", "다시 실행하기 전에 현재 초안을 저장하거나 삭제하십시오"),
+    translation("Status", "状态", "狀態", "状態", "상태"),
+    translation("Wait for active operations and terminals to finish before relaunching", "请等待活动操作和终端结束后再重新启动", "請等待進行中的操作和終端機結束後再重新啟動", "実行中の操作とターミナルが終了してから再起動してください", "진행 중인 작업과 터미널이 끝난 후 다시 실행하십시오"),
     translation("Activity", "活动", "活動", "アクティビティ", "활동"),
     translation("Affected resources", "受影响的资源", "受影響的資源", "影響を受けるリソース", "영향을 받는 리소스"),
     translation("Built in", "内置", "內建", "組み込み", "기본 제공"),
