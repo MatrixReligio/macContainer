@@ -85,12 +85,20 @@ enum PhysicalTestGate {
     }
 
     static func record(_ ids: String...) throws {
-        guard isAuthorized, let runRoot else {
+        guard isAuthorized, let runID,
+              let path = environment["PHYSICAL_RESULTS_ROOT"]
+        else {
             throw PhysicalTestGateError.authorizationMissing
         }
-        let resultsRoot = runRoot.appendingPathComponent("results", isDirectory: true)
-        guard resultsRoot.path == environment["PHYSICAL_RESULTS_ROOT"],
-              FileManager.default.fileExists(atPath: resultsRoot.path)
+        let resultsRoot = URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL
+        let expectedName = "maccontainer-physical-results-\(runID.uuidString.lowercased())"
+        var status = stat()
+        guard resultsRoot.deletingLastPathComponent() == FileManager.default.temporaryDirectory.standardizedFileURL,
+              resultsRoot.lastPathComponent == expectedName,
+              lstat(resultsRoot.path, &status) == 0,
+              status.st_mode & S_IFMT == S_IFDIR,
+              status.st_uid == geteuid(),
+              status.st_mode & 0o077 == 0
         else {
             throw PhysicalTestGateError.resultsRootMissing
         }

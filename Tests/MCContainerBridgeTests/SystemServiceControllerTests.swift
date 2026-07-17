@@ -5,6 +5,13 @@ import Testing
 
 @Suite("System service controller")
 struct SystemServiceControllerTests {
+    @Test func `production launch visibility budget covers a cold service start`() {
+        let policy = LaunchServiceVisibilityRetryPolicy.production
+
+        #expect(policy.maximumAttempts >= 150)
+        #expect(policy.delay >= .milliseconds(100))
+    }
+
     @Test func `production configuration uses the reviewed runtime install root`() {
         let configuration = SystemServiceConfiguration.productionDefault
 

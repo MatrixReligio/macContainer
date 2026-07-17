@@ -28,7 +28,7 @@ policy_check() {
         run_read_only_preflight REFUSED_EXISTING_STATE RUN_UUID 'umask 077' 'chmod 0700'
         'trap cleanup EXIT ZERR HUP INT TERM' verify_digest verify_installer_signature
         "$digest_100" "$digest_110" "$expected_team_id" run_with_timeout 'setopt LOCAL_TRAPS'
-        'cleanup "$command_status"'
+        'maccontainer-physical-results-$RUN_UUID'
         '.artifacts/DerivedData' PHYSICAL_TEST_AUTHORIZATION production_complete_uninstall
         compare-baseline.swift summarize.swift recover.swift
         run_signed_helper_bootstrap run_signed_helper_cleanup
@@ -43,6 +43,10 @@ policy_check() {
     /usr/bin/grep -Eq '^verify_digest\(\) \{' "$candidate" || die "digest verification function missing"
     /usr/bin/grep -Eq '^verify_installer_signature\(\) \{' "$candidate" || die "signature verification function missing"
     /usr/bin/grep -Eq '^trap cleanup EXIT ZERR HUP INT TERM$' "$candidate" || die "cleanup trap missing"
+    local forbidden_cleanup_call='cleanup "$command_''status"'
+    if /usr/bin/grep -Fq -- "$forbidden_cleanup_call" "$candidate"; then
+        die "timeout wrapper must leave failure cleanup to the single ZERR trap"
+    fi
     local forbidden='brew'' install|pip(3)?'' install|npm'' install -g|sudo[[:space:]]+''rm|rm[[:space:]]+''-rf'
     if /usr/bin/grep -Eq -- "($forbidden)" "$candidate"; then
         die "runner contains global install or unguarded recursive cleanup"
@@ -80,6 +84,7 @@ fi
 umask 077
 RUN_UUID="$(/usr/bin/uuidgen | /usr/bin/tr '[:upper:]' '[:lower:]')"
 run_root="$physical_root/$RUN_UUID"
+results_root="${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID"
 preflight_output="${TMPDIR%/}/maccontainer-physical-preflight-$RUN_UUID.json"
 packet_filter_audit_output="${TMPDIR%/}/packet-filter-$RUN_UUID.json"
 helper_bootstrap_output="${TMPDIR%/}/helper-bootstrap-$RUN_UUID.json"
@@ -117,9 +122,10 @@ cleanup() {
     /bin/rm -f -- "$packet_filter_audit_output"
     /bin/rm -f -- "$helper_bootstrap_output"
     /bin/rm -f -- "$helper_cleanup_output"
-    if [[ -n "$summary_results_copy" && -d "$summary_results_copy" && $summary_copy_preserved -eq 0 ]]; then
-        [[ "$summary_results_copy" == "${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID" ]] || return 1
-        /bin/rm -R -- "$summary_results_copy"
+    if [[ -e "$results_root" && $summary_copy_preserved -eq 0 ]]; then
+        [[ "$results_root" == "${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID" ]] || return 1
+        [[ -d "$results_root" && ! -L "$results_root" ]] || return 1
+        /bin/rm -R -- "$results_root"
     fi
     if [[ -d "$run_root" && -f "$run_root/cleanup.jsonl" ]]; then
         if /usr/bin/swift "$script_dir/recover.swift" --run-root "$run_root" --run-id "$RUN_UUID"; then
@@ -162,9 +168,6 @@ run_with_timeout() {
     wait "$command_pid" || command_status=$?
     /bin/kill -TERM "$watchdog_pid" 2>/dev/null || true
     wait "$watchdog_pid" 2>/dev/null || true
-    if (( command_status != 0 )); then
-        cleanup "$command_status" || command_status=1
-    fi
     return $command_status
 }
 
@@ -282,7 +285,7 @@ run_signed_helper_phase() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
-        PHYSICAL_RESULTS_ROOT="$run_root/results" \
+        PHYSICAL_RESULTS_ROOT="$results_root" \
         /usr/bin/xcodebuild \
         -project "$repo_root/MacContainer.xcodeproj" \
         -scheme MacContainer \
@@ -290,7 +293,7 @@ run_signed_helper_phase() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
-        PHYSICAL_RESULTS_ROOT="$run_root/results" \
+        PHYSICAL_RESULTS_ROOT="$results_root" \
         PHYSICAL_TEST_PHASE="$selected_phase" test
 }
 
@@ -299,7 +302,7 @@ run_physical_ui_tests() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
-        PHYSICAL_RESULTS_ROOT="$run_root/results" \
+        PHYSICAL_RESULTS_ROOT="$results_root" \
         /usr/bin/xcodebuild \
         -project "$repo_root/MacContainer.xcodeproj" \
         -scheme MacContainer \
@@ -317,7 +320,7 @@ run_physical_package_tests() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
-        PHYSICAL_RESULTS_ROOT="$run_root/results" \
+        PHYSICAL_RESULTS_ROOT="$results_root" \
         PHYSICAL_TEST_PHASE="$selected_phase" \
         PHYSICAL_TEST_APP="$physical_audit_app" \
         PHYSICAL_PACKAGE_100="$package_100" \
@@ -407,14 +410,11 @@ record_result_at() {
 }
 
 record_result() {
-    record_result_at "$run_root/results" "$1"
+    record_result_at "$results_root" "$1"
 }
 
 finalize_physical_results() {
-    summary_results_copy="${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID"
-    [[ ! -e "$summary_results_copy" ]] || die "physical summary copy already exists"
-    /bin/mkdir -m 0700 "$summary_results_copy"
-    /usr/bin/ditto "$run_root/results" "$summary_results_copy"
+    summary_results_copy="$results_root"
     summary_copy_preserved=1
     cleanup
     [[ ! -e "$run_root" ]] || die "physical run root survived cleanup"
@@ -456,10 +456,8 @@ if [[ "$mode" == "--simulated-host" ]]; then
     exit 0
 fi
 
-results_root="$run_root/results"
-ledger_transition temporary-directory "$results_root" planned
+[[ ! -e "$results_root" ]] || die "physical result root already exists"
 /bin/mkdir -m 0700 "$results_root"
-ledger_transition temporary-directory "$results_root" created
 record_result preflight.host-identity
 record_result preflight.macos-version
 record_result preflight.existing-state-refusal

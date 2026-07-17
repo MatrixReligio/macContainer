@@ -46,7 +46,7 @@ require_text 'Status: signed by a developer certificate issued by Apple for dist
 require_text 'Notarization: trusted by the Apple notary service'
 require_text 'run_with_timeout'
 require_text 'setopt LOCAL_TRAPS'
-require_text 'cleanup "$command_status"'
+require_text 'maccontainer-physical-results-$RUN_UUID'
 require_text '.artifacts/DerivedData'
 require_text 'PHYSICAL_TEST_AUTHORIZATION'
 require_text 'MACCONTAINER_PHYSICAL_CONFIRMATION'
@@ -124,6 +124,12 @@ fi
 
 if /usr/bin/grep -Eq -- 'local([^#\n]|[[:space:]])*\bstatus\b|^[[:space:]]*status=' "$runner"; then
     print -u2 -- "physical runner shadows zsh's read-only status parameter"
+    exit 1
+fi
+
+forbidden_cleanup_call='cleanup "$command_''status"'
+if /usr/bin/grep -Fq -- "$forbidden_cleanup_call" "$runner"; then
+    print -u2 -- "physical runner has a second failure cleanup path"
     exit 1
 fi
 

@@ -367,7 +367,7 @@ protocol LaunchServiceRegistering: Sendable {
 }
 
 struct LaunchServiceVisibilityRetryPolicy: Sendable {
-    static let production = Self(maximumAttempts: 100, delay: .milliseconds(20))
+    static let production = Self(maximumAttempts: 150, delay: .milliseconds(100))
 
     let maximumAttempts: Int
     let delay: Duration

@@ -161,10 +161,17 @@ final class PhysicalRuntimeUITests: XCTestCase {
     }
 
     private func recordPhysicalResult(_ id: String, environment: [String: String]) throws {
-        let runRoot = try URL(fileURLWithPath: XCTUnwrap(environment["PHYSICAL_RUN_ROOT"]), isDirectory: true)
-            .standardizedFileURL
-        let resultsRoot = runRoot.appendingPathComponent("results", isDirectory: true)
-        XCTAssertEqual(resultsRoot.path, environment["PHYSICAL_RESULTS_ROOT"])
+        let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
+        let resultsRoot = try URL(
+            fileURLWithPath: XCTUnwrap(environment["PHYSICAL_RESULTS_ROOT"]),
+            isDirectory: true
+        )
+        .standardizedFileURL
+        XCTAssertEqual(
+            resultsRoot.deletingLastPathComponent(),
+            FileManager.default.temporaryDirectory.standardizedFileURL
+        )
+        XCTAssertEqual(resultsRoot.lastPathComponent, "maccontainer-physical-results-\(runID)")
         let destination = resultsRoot.appendingPathComponent("\(id).json")
         let data = Data("{\"id\":\"\(id)\",\"passed\":true}\n".utf8)
         if FileManager.default.fileExists(atPath: destination.path) {
