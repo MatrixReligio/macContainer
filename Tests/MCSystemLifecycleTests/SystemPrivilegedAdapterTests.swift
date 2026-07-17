@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 @testable import MCSystemLifecycle
 import Testing
@@ -15,6 +16,21 @@ struct SystemPrivilegedAdapterTests {
             PrivilegedHelperService.sanitizedErrorCode(
                 for: FixedPrivilegedCommandError.commandFailed(.installerRejected)
             ) == 24
+        )
+        #expect(
+            PrivilegedHelperService.sanitizedErrorCode(
+                for: SystemPrivilegedHostError.packetFilterConfigurationMissing
+            ) == 74
+        )
+        #expect(
+            PrivilegedHelperService.sanitizedErrorCode(
+                for: NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))
+            ) == 80
+        )
+        #expect(
+            PrivilegedHelperService.sanitizedErrorCode(
+                for: NSError(domain: NSPOSIXErrorDomain, code: Int(ENOENT))
+            ) == 81
         )
     }
 

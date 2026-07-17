@@ -532,4 +532,18 @@ public enum SystemPrivilegedHostError: Error, Equatable, Sendable {
     case resolverNotFound
     case unsafeDirectory
     case unsafeResolver
+
+    var sanitizedCode: Int {
+        switch self {
+        case .invalidCommandOutput: 70
+        case .invalidManagedFile: 71
+        case .managedFileMissing: 72
+        case .managedFileTooLarge: 73
+        case .packetFilterConfigurationMissing: 74
+        case .resolverAlreadyExists: 75
+        case .resolverNotFound: 76
+        case .unsafeDirectory: 77
+        case .unsafeResolver: 78
+        }
+    }
 }

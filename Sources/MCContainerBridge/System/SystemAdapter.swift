@@ -19,6 +19,7 @@ public protocol UnifiedLogReading: Sendable {
 
 public enum SystemAdapterError: Error, Equatable, Sendable {
     case invalidTimeout
+    case invalidRuntimeVersion(String)
 }
 
 public struct SystemAdapter: SystemOperations, Sendable {
@@ -109,7 +110,8 @@ public struct AppleSystemRuntimeBackend: SystemRuntimeBackend, Sendable {
     public func health(timeout: Duration) async throws -> RuntimeHealth? {
         do {
             let health = try await ClientHealthCheck.ping(timeout: timeout)
-            return RuntimeHealth(healthy: true, version: health.apiServerVersion)
+            let version = try Self.semanticVersion(from: health.apiServerVersion)
+            return RuntimeHealth(healthy: true, version: version)
         } catch is CancellationError {
             throw CancellationError()
         } catch {
@@ -123,10 +125,37 @@ public struct AppleSystemRuntimeBackend: SystemRuntimeBackend, Sendable {
 
     public func version() async throws -> RuntimeVersionSummary {
         let health = try await ClientHealthCheck.ping(timeout: .seconds(2))
+        let version = try Self.semanticVersion(from: health.apiServerVersion)
         return RuntimeVersionSummary(
-            version: health.apiServerVersion,
-            apiVersion: health.apiServerVersion
+            version: version,
+            apiVersion: version
         )
+    }
+
+    static func semanticVersion(from releaseDescription: String) throws -> String {
+        let value = releaseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefix = "container-apiserver version "
+        let candidate: String
+        if Self.isSemanticVersion(value) {
+            candidate = value
+        } else if value.hasPrefix(prefix),
+                  let version = value.dropFirst(prefix.count).split(whereSeparator: { $0.isWhitespace }).first
+        {
+            candidate = String(version)
+        } else {
+            throw SystemAdapterError.invalidRuntimeVersion(releaseDescription)
+        }
+        guard Self.isSemanticVersion(candidate) else {
+            throw SystemAdapterError.invalidRuntimeVersion(releaseDescription)
+        }
+        return candidate
+    }
+
+    private static func isSemanticVersion(_ value: String) -> Bool {
+        let components = value.split(separator: ".", omittingEmptySubsequences: false)
+        return components.count == 3 && components.allSatisfy { component in
+            !component.isEmpty && component.allSatisfy(\.isNumber)
+        }
     }
 
     public func logs(

@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 public protocol PrivilegedSystemAdapting: Sendable {
@@ -122,8 +123,23 @@ public final class PrivilegedHelperService: NSObject, MCPrivilegedHelperXPCProto
             error.sanitizedCode
         case let error as SystemPrivilegedAdapterError:
             error.sanitizedCode
+        case let error as SystemPrivilegedHostError:
+            error.sanitizedCode
+        case let error as NSError where error.domain == NSPOSIXErrorDomain:
+            sanitizedPOSIXErrorCode(error.code)
         default:
             5
+        }
+    }
+
+    private static func sanitizedPOSIXErrorCode(_ code: Int) -> Int {
+        switch Int32(code) {
+        case EACCES, EPERM, EROFS: 80
+        case ENOENT: 81
+        case EEXIST: 82
+        case ENOSPC, EMFILE, ENFILE: 83
+        case EIO: 84
+        default: 85
         }
     }
 }
