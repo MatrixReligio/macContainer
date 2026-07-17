@@ -27,10 +27,17 @@ final class PhysicalRuntimeUITests: XCTestCase {
             let routeButton = app.buttons["route.\(route)"]
             XCTAssertTrue(routeButton.waitForExistence(timeout: 5), "Missing production route \(route)")
             routeButton.click()
-            XCTAssertTrue(
-                app.descendants(matching: .any)["resource-table.\(route)"].waitForExistence(timeout: 10),
-                "Production runtime did not expose \(route)"
-            )
+            let authoritativeInventory = app.descendants(matching: .any).matching(
+                NSPredicate(
+                    format: "identifier == %@ OR identifier == %@",
+                    "resource-table.\(route)",
+                    "resource-empty.\(route)"
+                )
+            ).firstMatch
+            XCTAssertTrue(authoritativeInventory.waitForExistence(timeout: 10),
+                          "Production runtime did not expose \(route)")
+            XCTAssertFalse(app.descendants(matching: .any)["resource-error.\(route)"].exists,
+                           "Production runtime reported an error for \(route)")
             XCTAssertTrue(app.buttons["refresh-resources.\(route)"].exists)
         }
         try recordPhysicalResult("ui.production-resource-navigation", environment: environment)
@@ -152,26 +159,36 @@ final class PhysicalRuntimeUITests: XCTestCase {
         let sidebarIcon = issue.auditType == .parentChild && element?.elementType == .group &&
             element?.isEnabled == false && element?.isHittable == false && isUndescribed &&
             frame.width <= 16 && frame.height <= 16
-        let resourceTableCell = route != "overview" &&
+        let resourceTable = app.outlines["resource-table.\(route)"]
+        let resourceTableCell = route != "overview" && resourceTable.exists &&
             issue.auditType == .sufficientElementDescription &&
             element?.elementType == .group && element?.isEnabled == false && isUndescribed &&
-            frame.height <= 24 && app.outlines["resource-table.\(route)"].frame.contains(frame)
+            frame.height <= 24 && resourceTable.frame.contains(frame)
 
         return touchBar || structuralGroup || titlebar || offscreenContrast || sidebarIcon || resourceTableCell
     }
 
     private func recordPhysicalResult(_ id: String, environment: [String: String]) throws {
         let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
-        let resultsRoot = try URL(
+        let requestedRoot = try URL(
             fileURLWithPath: XCTUnwrap(environment["PHYSICAL_RESULTS_ROOT"]),
             isDirectory: true
         )
         .standardizedFileURL
-        XCTAssertEqual(
-            resultsRoot.deletingLastPathComponent(),
-            FileManager.default.temporaryDirectory.standardizedFileURL
+        let expectedRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("maccontainer-physical-results-\(runID)", isDirectory: true)
+            .standardizedFileURL
+        let resultsRoot = try XCTUnwrap(
+            requestedRoot == expectedRoot ? requestedRoot : nil,
+            "Physical UI results must remain inside the test runner sandbox"
         )
-        XCTAssertEqual(resultsRoot.lastPathComponent, "maccontainer-physical-results-\(runID)")
+        if FileManager.default.fileExists(atPath: resultsRoot.path) == false {
+            try FileManager.default.createDirectory(
+                at: resultsRoot,
+                withIntermediateDirectories: false,
+                attributes: [.posixPermissions: 0o700]
+            )
+        }
         let destination = resultsRoot.appendingPathComponent("\(id).json")
         let data = Data("{\"id\":\"\(id)\",\"passed\":true}\n".utf8)
         if FileManager.default.fileExists(atPath: destination.path) {

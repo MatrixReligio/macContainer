@@ -85,6 +85,8 @@ umask 077
 RUN_UUID="$(/usr/bin/uuidgen | /usr/bin/tr '[:upper:]' '[:lower:]')"
 run_root="$physical_root/$RUN_UUID"
 results_root="${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID"
+ui_test_runner_temp="${HOME%/}/Library/Containers/container.matrixreligio.com.ui-tests.xctrunner/Data/tmp"
+ui_results_root="$ui_test_runner_temp/maccontainer-physical-results-$RUN_UUID"
 preflight_output="${TMPDIR%/}/maccontainer-physical-preflight-$RUN_UUID.json"
 packet_filter_audit_output="${TMPDIR%/}/packet-filter-$RUN_UUID.json"
 helper_bootstrap_output="${TMPDIR%/}/helper-bootstrap-$RUN_UUID.json"
@@ -126,6 +128,11 @@ cleanup() {
         [[ "$results_root" == "${TMPDIR%/}/maccontainer-physical-results-$RUN_UUID" ]] || return 1
         [[ -d "$results_root" && ! -L "$results_root" ]] || return 1
         /bin/rm -R -- "$results_root"
+    fi
+    if [[ -e "$ui_results_root" ]]; then
+        [[ "$ui_results_root" == "$ui_test_runner_temp/maccontainer-physical-results-$RUN_UUID" ]] || return 1
+        [[ -d "$ui_results_root" && ! -L "$ui_results_root" ]] || return 1
+        /bin/rm -R -- "$ui_results_root"
     fi
     if [[ -d "$run_root" && -f "$run_root/cleanup.jsonl" ]]; then
         if /usr/bin/swift "$script_dir/recover.swift" --run-root "$run_root" --run-id "$RUN_UUID"; then
@@ -298,11 +305,12 @@ run_signed_helper_phase() {
 }
 
 run_physical_ui_tests() {
+    [[ ! -e "$ui_results_root" ]] || die "physical UI result root already exists"
     run_with_timeout 7200 /usr/bin/env \
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
-        PHYSICAL_RESULTS_ROOT="$results_root" \
+        PHYSICAL_RESULTS_ROOT="$ui_results_root" \
         /usr/bin/xcodebuild \
         -project "$repo_root/MacContainer.xcodeproj" \
         -scheme MacContainer \
@@ -311,6 +319,33 @@ run_physical_ui_tests() {
         CODE_SIGN_IDENTITY="Apple Development" \
         DEVELOPMENT_TEAM=4DUQGD879H \
         -only-testing:MacContainerUITests/PhysicalRuntimeUITests test
+    import_ui_results
+}
+
+import_ui_results() {
+    local expected_ids=(
+        ui.production-resource-navigation
+        ui.production-language-en-accessibility
+        ui.production-language-zh-Hans-accessibility
+        ui.production-language-zh-Hant-accessibility
+        ui.production-language-ja-accessibility
+        ui.production-language-ko-accessibility
+    )
+    [[ "$ui_results_root" == "$ui_test_runner_temp/maccontainer-physical-results-$RUN_UUID" ]] || \
+        die "physical UI result root escaped the test runner sandbox"
+    [[ -d "$ui_results_root" && ! -L "$ui_results_root" ]] || \
+        die "physical UI result root missing or unsafe"
+    local result_entries=("$ui_results_root"/*(N))
+    [[ "${#result_entries[@]}" == "${#expected_ids[@]}" ]] || die "physical UI result count mismatch"
+    local id source expected
+    for id in $expected_ids; do
+        source="$ui_results_root/$id.json"
+        expected="{\"id\":\"$id\",\"passed\":true}"
+        [[ -f "$source" && ! -L "$source" && "$(<"$source")" == "$expected" ]] || \
+            die "physical UI result missing or invalid: $id"
+        record_result "$id"
+    done
+    /bin/rm -R -- "$ui_results_root"
 }
 
 run_physical_package_tests() {

@@ -47,6 +47,8 @@ require_text 'Notarization: trusted by the Apple notary service'
 require_text 'run_with_timeout'
 require_text 'setopt LOCAL_TRAPS'
 require_text 'maccontainer-physical-results-$RUN_UUID'
+require_text 'container.matrixreligio.com.ui-tests.xctrunner/Data/tmp'
+require_text 'import_ui_results'
 require_text '.artifacts/DerivedData'
 require_text 'PHYSICAL_TEST_AUTHORIZATION'
 require_text 'MACCONTAINER_PHYSICAL_CONFIRMATION'
@@ -81,6 +83,11 @@ for language in en zh-Hans zh-Hant ja ko; do
         exit 1
     }
 done
+/usr/bin/grep -Fq -- 'resource-empty.\(route)' \
+    "$repo_root/Tests/MacContainerUITests/PhysicalRuntimeUITests.swift" || {
+    print -u2 -- "physical UI suite does not accept an authoritative empty inventory"
+    exit 1
+}
 /usr/bin/grep -Fq -- '--physical-runtime-language=' \
     "$repo_root/App/MacContainer/MacContainerApp.swift" || {
     print -u2 -- "physical app harness cannot select an isolated test language"

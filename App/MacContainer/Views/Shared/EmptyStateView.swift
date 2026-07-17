@@ -8,7 +8,20 @@ struct EmptyStateView: View {
     let message: String
 
     var body: some View {
-        ContentUnavailableView(title, systemImage: symbol, description: Text(message))
+        VStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 32, weight: .semibold))
+                .accessibilityHidden(true)
+            Text(title)
+                .font(.title3.weight(.semibold))
+            Text(message)
+                .font(.body)
+                .multilineTextAlignment(.center)
+        }
+        .foregroundStyle(Color(nsColor: .labelColor))
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -102,10 +102,10 @@ private struct ResourceInspectorPlaceholder: View {
             .navigationTitle(resource.name)
             .accessibilityIdentifier("resource-inspector")
         } else {
-            ContentUnavailableView(
-                "Nothing Selected",
-                systemImage: "sidebar.right",
-                description: Text("Select a \(route.singularTitle.lowercased()) to inspect its details.")
+            EmptyStateView(
+                symbol: "sidebar.right",
+                title: "Nothing Selected",
+                message: "Select a \(route.singularTitle.lowercased()) to inspect its details."
             )
             .accessibilityIdentifier("resource-inspector")
         }

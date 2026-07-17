@@ -63,6 +63,7 @@ struct ResourceTable: View {
                         title: "Resources unavailable",
                         message: error
                     )
+                    .accessibilityIdentifier("resource-error.\(route.rawValue)")
                 } else {
                     EmptyStateView(
                         symbol: searchText.isEmpty ? "shippingbox" : "magnifyingglass",
@@ -71,6 +72,7 @@ struct ResourceTable: View {
                             ? "Create a resource or refresh after the runtime starts."
                             : "Try a different search."
                     )
+                    .accessibilityIdentifier("resource-empty.\(route.rawValue)")
                 }
             } else {
                 Table(filteredResources, selection: $selection) {
