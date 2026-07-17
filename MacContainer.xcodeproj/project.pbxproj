@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0057AB09E8D3299974976223 /* MCCompatibility in Frameworks */ = {isa = PBXBuildFile; productRef = 581B57738A515A8AE83C748C /* MCCompatibility */; };
+		104985B0301772CF93922BB3 /* apple-container-1.1.0.json in Resources */ = {isa = PBXBuildFile; fileRef = CA68C68CF6247C75575B502A /* apple-container-1.1.0.json */; };
 		12D87378C6D55758D541268B /* PhysicalRuntimeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395F8BBD8F48A6C62571ABF5 /* PhysicalRuntimeUITests.swift */; };
 		15EBE6AB00A1D4FFE22EA985 /* ErrorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC07E5974F1F669EDA3835D2 /* ErrorPresentation.swift */; };
 		16BDF5C61509AE3F46D0D860 /* InstallRuntimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D87B33FD2397B1E945B14C /* InstallRuntimeView.swift */; };
@@ -17,6 +18,7 @@
 		1A6A48F3CFF0FABA36116D6A /* TemplateReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49934915CB5CC4AD87FC140D /* TemplateReviewView.swift */; };
 		1B498E3905F0C3C560DA2EBE /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0E5EF59FE148D2BBC8A1570B /* InfoPlist.xcstrings */; };
 		1EA36A959F2D34BA569CF8C9 /* UpdateAgentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3302C7AE1B3FE9167F1AC865 /* UpdateAgentService.swift */; };
+		210EA05C809DE441AEF01F30 /* apple-container-1.1.0.expectations.json in Resources */ = {isa = PBXBuildFile; fileRef = 8DA28445ED525EF07C92C9E8 /* apple-container-1.1.0.expectations.json */; };
 		23DE208ABC6C47FDA8C55C40 /* TerminalSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBD17210CA4287A21303693 /* TerminalSessionView.swift */; };
 		272859EAC6F5E8A0EDC7446D /* ContractAuditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C68E836B143EF97ACF371E8 /* ContractAuditView.swift */; };
 		2AC901F293BB67BE5834368A /* ResourceFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDDB8BF20B5C9D5762F8156 /* ResourceFixtures.swift */; };
@@ -163,6 +165,7 @@
 		89A6EFCA5375767867916DC4 /* UpdateSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateSchedule.swift; sourceTree = "<group>"; };
 		8AAFCBB0DE089548AE1DA5C0 /* RuntimeSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeSettingsView.swift; sourceTree = "<group>"; };
 		8B63F1C8A341FA1DD67BADF7 /* MacContainerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacContainerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DA28445ED525EF07C92C9E8 /* apple-container-1.1.0.expectations.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "apple-container-1.1.0.expectations.json"; sourceTree = "<group>"; };
 		95760246C864BBE29AAE2E49 /* SimpleModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleModeView.swift; sourceTree = "<group>"; };
 		989F811DF50B5619478CDABA /* SwiftTermRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTermRepresentable.swift; sourceTree = "<group>"; };
 		9BC1A31552E07923EC3F3B11 /* PrivilegedHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrivilegedHelper.entitlements; sourceTree = "<group>"; };
@@ -179,6 +182,7 @@
 		C21B36213EFD6FE5E4C107FE /* AutomaticUpdateUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomaticUpdateUITests.swift; sourceTree = "<group>"; };
 		C442A8E140A00282D3116F8C /* HelperListenerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperListenerDelegate.swift; sourceTree = "<group>"; };
 		C64264378A9BCE7EE8FD44CA /* OperationForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationForm.swift; sourceTree = "<group>"; };
+		CA68C68CF6247C75575B502A /* apple-container-1.1.0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "apple-container-1.1.0.json"; sourceTree = "<group>"; };
 		CB97DC4D57BB6DA454BEA96C /* RootScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootScene.swift; sourceTree = "<group>"; };
 		D1613C212F2D32D3D72EC1F7 /* MacContainerPrivilegedHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = MacContainerPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1D8D5C1D5B8796021370E98 /* ParameterHelpButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParameterHelpButton.swift; sourceTree = "<group>"; };
@@ -297,6 +301,8 @@
 		0CD23B9125250A89966496EA /* attestations */ = {
 			isa = PBXGroup;
 			children = (
+				8DA28445ED525EF07C92C9E8 /* apple-container-1.1.0.expectations.json */,
+				CA68C68CF6247C75575B502A /* apple-container-1.1.0.json */,
 				0928071A42A3A7F39CE4FF99 /* README.md */,
 			);
 			path = attestations;
@@ -736,6 +742,8 @@
 				1B498E3905F0C3C560DA2EBE /* InfoPlist.xcstrings in Resources */,
 				80CF917B7EEDD05A06FBBCD9 /* Localizable.xcstrings in Resources */,
 				92AABF16463A554CE7ACB703 /* README.md in Resources */,
+				210EA05C809DE441AEF01F30 /* apple-container-1.1.0.expectations.json in Resources */,
+				104985B0301772CF93922BB3 /* apple-container-1.1.0.json in Resources */,
 				75BD4C02DBC689E6D3A6A7A5 /* physical-test-plan-v1.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
