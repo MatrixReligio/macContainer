@@ -47,13 +47,8 @@ public struct PhysicalCleanupPolicy: Sendable {
     }
 
     public func validatePath(_ path: String, allowRunRoot: Bool = false) throws {
-        guard path.hasPrefix("/"), !path.split(separator: "/", omittingEmptySubsequences: false).contains("..") else {
-            throw CleanupPolicyError.outsideRunNamespace
-        }
         let standardized = URL(fileURLWithPath: path).standardizedFileURL.path
-        guard let canonical = Self.canonicalPath(standardized) else {
-            throw CleanupPolicyError.outsideRunNamespace
-        }
+        let canonical = try canonicalPathForComparison(path)
         guard canonical != "/", canonical != "/Users", canonical != "/usr/local" else {
             throw CleanupPolicyError.protectedPath
         }
@@ -71,6 +66,17 @@ public struct PhysicalCleanupPolicy: Sendable {
                 throw CleanupPolicyError.ancestorSubstitution
             }
         }
+    }
+
+    func canonicalPathForComparison(_ path: String) throws -> String {
+        guard path.hasPrefix("/"), !path.split(separator: "/", omittingEmptySubsequences: false).contains("..") else {
+            throw CleanupPolicyError.outsideRunNamespace
+        }
+        let standardized = URL(fileURLWithPath: path).standardizedFileURL.path
+        guard let canonical = Self.canonicalPath(standardized) else {
+            throw CleanupPolicyError.outsideRunNamespace
+        }
+        return canonical
     }
 
     private static func canonicalPath(_ path: String) -> String? {
@@ -359,9 +365,17 @@ public struct GuardedCleanupRecovery: Sendable {
 
     private func verifyNoUnledgeredPaths(states: [TestArtifact: CleanupState]) throws {
         let manager = FileManager.default
-        let allowedPaths = Set(states.keys.compactMap(\.fileSystemPath).map {
-            URL(fileURLWithPath: $0).standardizedFileURL.path
-        }).union([ledgerURL.path])
+        var allowedPaths = Set<String>()
+        var descendantRoots = Set<String>()
+        for artifact in states.keys {
+            guard let path = artifact.fileSystemPath else { continue }
+            let canonical = try policy.canonicalPathForComparison(path)
+            allowedPaths.insert(canonical)
+            if artifact.ownsFileSystemDescendants {
+                descendantRoots.insert(canonical)
+            }
+        }
+        try allowedPaths.insert(policy.canonicalPathForComparison(ledgerURL.path))
         guard manager.fileExists(atPath: policy.runRoot.path) else { return }
         guard let enumerator = manager.enumerator(
             at: policy.runRoot,
@@ -371,8 +385,9 @@ public struct GuardedCleanupRecovery: Sendable {
             throw CleanupPolicyError.absenceVerificationFailed
         }
         while let url = enumerator.nextObject() as? URL {
-            let path = url.standardizedFileURL.path
-            guard allowedPaths.contains(path) else {
+            let path = try policy.canonicalPathForComparison(url.path)
+            let ownedByDirectory = descendantRoots.contains { path.hasPrefix("\($0)/") }
+            guard allowedPaths.contains(path) || ownedByDirectory else {
                 throw CleanupPolicyError.outsideRunNamespace
             }
         }

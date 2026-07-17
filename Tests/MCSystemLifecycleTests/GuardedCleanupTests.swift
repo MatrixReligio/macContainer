@@ -198,6 +198,32 @@ struct GuardedCleanupTests {
         }
         #expect(FileManager.default.fileExists(atPath: unknown.path))
     }
+
+    @Test func `recovery accepts descendants owned by a ledgered temporary directory`() async throws {
+        let fixture = try CleanupFixture()
+        defer { fixture.destroy() }
+        let directory = fixture.runRoot.appendingPathComponent("SwiftPM", isDirectory: true)
+        let nested = directory.appendingPathComponent("checkouts/package/source.swift")
+        let artifact = TestArtifact.temporaryDirectory(directory.path)
+        try await fixture.ledger.plan(artifact)
+        try FileManager.default.createDirectory(
+            at: nested.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("fixture".utf8).write(to: nested)
+        try await fixture.ledger.markCreated(artifact)
+        let recovery = GuardedCleanupRecovery(
+            policy: PhysicalCleanupPolicy(runID: fixture.runID, runRoot: fixture.runRoot),
+            ledger: fixture.ledger,
+            cleanup: fixture.cleanup,
+            ledgerURL: fixture.runRoot.appendingPathComponent("cleanup.jsonl")
+        )
+
+        try await recovery.run()
+
+        #expect(!FileManager.default.fileExists(atPath: directory.path))
+        #expect(await fixture.ledger.state(of: artifact) == .verifiedAbsent)
+    }
 }
 
 private enum CleanupCrashBoundary: CaseIterable {

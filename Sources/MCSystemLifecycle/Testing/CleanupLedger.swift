@@ -34,6 +34,15 @@ public enum TestArtifact: Codable, Equatable, Hashable, Sendable {
             false
         }
     }
+
+    var ownsFileSystemDescendants: Bool {
+        switch self {
+        case .temporaryDirectory, .resultBundle:
+            true
+        default:
+            false
+        }
+    }
 }
 
 public enum CleanupState: String, Codable, Equatable, Sendable {

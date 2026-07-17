@@ -254,8 +254,10 @@ verify_installer_signature() {
     local details
     details="$(/usr/sbin/pkgutil --check-signature "$package_path")"
     [[ "$details" == *"$expected_team_id"* ]] || die "package installer Team ID mismatch"
-    [[ "$details" == *"Status: signed by a certificate trusted by Mac OS X"* ]] || \
+    [[ "$details" == *"Status: signed by a developer certificate issued by Apple for distribution"* ]] || \
         die "package installer signature is not trusted"
+    [[ "$details" == *"Notarization: trusted by the Apple notary service"* ]] || \
+        die "package installer notarization is not trusted"
 }
 
 download_verified_package() {
