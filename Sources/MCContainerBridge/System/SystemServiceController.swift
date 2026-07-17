@@ -87,7 +87,10 @@ public struct SystemServiceConfiguration: Equatable, Sendable {
     public static var productionDefault: Self {
         Self(
             applicationRoot: URL(fileURLWithPath: ApplicationRoot.path.string),
-            installRoot: URL(fileURLWithPath: InstallRoot.path.string),
+            installRoot: URL(
+                fileURLWithPath: SystemServiceController.installRootPath,
+                isDirectory: true
+            ),
             logRoot: LogRoot.path.map { URL(fileURLWithPath: $0.string) },
             inheritedEnvironment: ProcessInfo.processInfo.environment
         )
@@ -146,6 +149,7 @@ public enum SystemServiceError: Error, Equatable, Sendable {
 }
 
 public struct SystemServiceController: Sendable {
+    public static let installRootPath = "/usr/local"
     public static let apiServerPath = "/usr/local/bin/container-apiserver"
     public static let apiServerLabel = "com.apple.container.apiserver"
     public static let servicePrefix = "com.apple.container."

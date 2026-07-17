@@ -5,6 +5,12 @@ import Testing
 
 @Suite("System service controller")
 struct SystemServiceControllerTests {
+    @Test func `production configuration uses the reviewed runtime install root`() {
+        let configuration = SystemServiceConfiguration.productionDefault
+
+        #expect(configuration.installRoot.path == "/usr/local")
+    }
+
     @Test func `start uses the installed API server and verifies both APIs`() async throws {
         let services = FakeServiceManager()
         let health = FakeHealthChecker(results: [
