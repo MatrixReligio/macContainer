@@ -41,6 +41,15 @@ if [[ -z "$gate_line" || -z "$metal_line" ]] || (( gate_line >= metal_line )); t
     exit 1
 fi
 
+intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' \
+    "$fixture/.github/workflows/ci.yml" || true)"
+arm_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' \
+    "$fixture/.github/workflows/ci.yml" || true)"
+if [[ "$intel_runner_count" != 1 || "$arm_runner_count" != 1 ]]; then
+    print -u2 -- "expected one 14 GB Intel build runner and one native Apple Silicon UI runner"
+    exit 1
+fi
+
 "$fixture/scripts/check-workflow-policy.sh"
 
 printf '\nenv:\n  UNSAFE: ${{ secrets.TEST_ONLY }}\n' >> "$fixture/.github/workflows/ci.yml"

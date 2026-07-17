@@ -76,11 +76,15 @@ RUBY
     fi
 done
 
-if ! /usr/bin/grep -Eq '^[[:space:]]*runs-on:[[:space:]]*macos-26([[:space:]]|$)' "$ci"; then
-    errors+=("ci.yml must run tests on macos-26")
+if ! /usr/bin/grep -Eq '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' "$ci"; then
+    errors+=("ci.yml must build on the 14 GB macos-26-intel runner")
 fi
-if /usr/bin/grep -E '^[[:space:]]*runs-on:' "$ci" | /usr/bin/grep -Evq 'macos-26([[:space:]]|$)'; then
-    errors+=("ci.yml contains a non-macos-26 runner")
+if ! /usr/bin/grep -Eq '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' "$ci"; then
+    errors+=("ci.yml must run UI tests on native Apple Silicon macos-26")
+fi
+if /usr/bin/grep -E '^[[:space:]]*runs-on:' "$ci" | \
+   /usr/bin/grep -Evq 'macos-26(-intel)?[[:space:]]*$'; then
+    errors+=("ci.yml contains an unapproved runner")
 fi
 if ! /usr/bin/grep -Fq 'scripts/check-repository.sh' "$ci"; then
     errors+=("ci.yml must run scripts/check-repository.sh")
@@ -114,6 +118,10 @@ fi
 
 if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "$release"; then
     errors+=("release.yml must default to read-only contents")
+fi
+release_intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' "$release" || true)"
+if [[ "$release_intel_runner_count" != "2" ]]; then
+    errors+=("release.yml must use 14 GB Intel runners for verification and publication")
 fi
 if ! /usr/bin/grep -Fq 'needs: verify' "$release" || \
    ! /usr/bin/grep -Fq "github.event_name != 'pull_request'" "$release"; then
@@ -159,4 +167,4 @@ if (( ${#errors} > 0 )); then
     exit 1
 fi
 
-print -r -- "Workflow policy PASS: macos-26, least privilege, reviewed action SHAs, no PR secrets"
+print -r -- "Workflow policy PASS: macOS 26 Intel builds, Apple Silicon UI, least privilege, reviewed action SHAs"

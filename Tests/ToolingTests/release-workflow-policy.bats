@@ -56,6 +56,13 @@ if [[ -z "$gate_line" || -z "$reclaim_line" || -z "$metal_line" ]] || \
     exit 1
 fi
 
+intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' \
+    "$release" || true)"
+if [[ "$intel_runner_count" != 2 ]]; then
+    print -u2 -- "release verification and publication must use 14 GB Intel runners"
+    exit 1
+fi
+
 /usr/bin/grep -Fq 'gh release download' "$verification"
 /usr/bin/grep -Fq 'scripts/verify-release.sh' "$verification"
 /usr/bin/grep -Fq 'isDraft' "$verification"
