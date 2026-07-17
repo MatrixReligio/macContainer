@@ -1,5 +1,6 @@
 import Foundation
 @testable import MCSystemLifecycle
+import Security
 import Testing
 
 @Suite("Privileged helper caller validation")
@@ -29,6 +30,13 @@ struct CallerValidatorTests {
         #expect(CodeSigningRequirements.helper.contains(#"identifier "container.matrixreligio.com.helper""#))
         #expect(CodeSigningRequirements.app.contains(#"certificate leaf[subject.OU] = "4DUQGD879H""#))
         #expect(CodeSigningRequirements.app != CodeSigningRequirements.helper)
+    }
+
+    @Test func `dynamic caller validation uses only supported strict validity flags`() {
+        let flags = SecurityCallerIdentityInspector.dynamicValidityFlags
+
+        #expect(flags.rawValue & UInt32(kSecCSStrictValidate) != 0)
+        #expect(flags.rawValue & UInt32(kSecCSCheckAllArchitectures) == 0)
     }
 
     @Test func `rejects a separately signed hardened process with the wrong identifier`() throws {

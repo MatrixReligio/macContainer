@@ -11,10 +11,19 @@ extension HelperClient: PacketFilterAuditing {}
 public struct PhysicalPacketFilterAuditResult: Codable, Equatable, Sendable {
     public let verified: Bool
     public let residuePresent: Bool
+    public let errorDomain: String?
+    public let errorCode: Int?
 
-    public init(verified: Bool, residuePresent: Bool) {
+    public init(
+        verified: Bool,
+        residuePresent: Bool,
+        errorDomain: String? = nil,
+        errorCode: Int? = nil
+    ) {
         self.verified = verified
         self.residuePresent = residuePresent
+        self.errorDomain = errorDomain
+        self.errorCode = errorCode
     }
 }
 
@@ -149,7 +158,13 @@ public struct PhysicalPacketFilterAuditCommand: Sendable {
             let residuePresent = try await helper.hasRules(anchor: "com.apple.container")
             result = .init(verified: true, residuePresent: residuePresent)
         } catch {
-            result = .init(verified: false, residuePresent: false)
+            let error = error as NSError
+            result = .init(
+                verified: false,
+                residuePresent: false,
+                errorDomain: error.domain,
+                errorCode: error.code
+            )
         }
         try writeExclusiveJSON(result, to: outputURL)
     }

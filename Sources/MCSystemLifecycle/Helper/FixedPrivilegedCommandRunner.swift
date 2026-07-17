@@ -106,7 +106,26 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
 
     @discardableResult
     public func run(_ command: FixedPrivilegedCommand, package: OpenRuntimePackageFile?) throws -> Data {
-        guard command.requiresPackageDescriptor == (package != nil) else {
+        try run(
+            FixedPrivilegedCommandInvocation(
+                command: command,
+                packageDescriptor: package?.fileDescriptor
+            ),
+            standardInput: command.standardInput,
+            package: package
+        )
+    }
+
+    @discardableResult
+    func run(
+        _ invocation: FixedPrivilegedCommandInvocation,
+        standardInput input: Data?,
+        package: OpenRuntimePackageFile?
+    ) throws -> Data {
+        let command = invocation.command
+        guard command.requiresPackageDescriptor == (package != nil),
+              invocation.packageDescriptor == package?.fileDescriptor
+        else {
             throw FixedPrivilegedCommandError.invalidPackageDescriptor
         }
         try package?.revalidateIdentity()
@@ -115,19 +134,23 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
         guard Darwin.pipe(&outputPipe) == 0 else { throw posixError() }
         defer { outputPipe.forEach(closeIfOpen) }
 
-        let input = command.standardInput
         var (inputPipe, nullInput) = try makeInputSource(hasData: input != nil)
         defer {
             inputPipe.forEach(closeIfOpen)
             closeIfOpen(nullInput)
         }
+        let nullError = Darwin.open("/dev/null", O_WRONLY | O_CLOEXEC)
+        guard nullError >= 0 else { throw posixError() }
+        defer { closeIfOpen(nullError) }
 
         var actions: posix_spawn_file_actions_t?
         try check(posix_spawn_file_actions_init(&actions))
         defer { posix_spawn_file_actions_destroy(&actions) }
-        try "/".withCString { try check(posix_spawn_file_actions_addchdir(&actions, $0)) }
+        try invocation.workingDirectory.withCString {
+            try check(posix_spawn_file_actions_addchdir(&actions, $0))
+        }
         try check(posix_spawn_file_actions_adddup2(&actions, outputPipe[1], STDOUT_FILENO))
-        try check(posix_spawn_file_actions_adddup2(&actions, outputPipe[1], STDERR_FILENO))
+        try check(posix_spawn_file_actions_adddup2(&actions, nullError, STDERR_FILENO))
         try check(posix_spawn_file_actions_addclose(&actions, outputPipe[0]))
         if let package {
             try check(posix_spawn_file_actions_adddup2(&actions, package.fileDescriptor, 198))
@@ -139,12 +162,16 @@ public struct PosixSpawnFixedPrivilegedCommandRunner: FixedPrivilegedCommandRunn
             try check(posix_spawn_file_actions_adddup2(&actions, nullInput, STDIN_FILENO))
         }
 
-        var arguments = command.arguments.map { strdup($0) }
+        var arguments = invocation.arguments.map { strdup($0) }
         arguments.append(nil)
         defer { arguments.compactMap(\.self).forEach { free($0) } }
-        var environment: [UnsafeMutablePointer<CChar>?] = [nil]
+        var environment = invocation.environment
+            .sorted { $0.key < $1.key }
+            .map { strdup("\($0.key)=\($0.value)") as UnsafeMutablePointer<CChar>? }
+        environment.append(nil)
+        defer { environment.compactMap(\.self).forEach { free($0) } }
         var processID = pid_t()
-        let launchStatus = command.executable.withCString { executable in
+        let launchStatus = invocation.executable.withCString { executable in
             arguments.withUnsafeMutableBufferPointer { arguments in
                 environment.withUnsafeMutableBufferPointer { environment in
                     posix_spawn(

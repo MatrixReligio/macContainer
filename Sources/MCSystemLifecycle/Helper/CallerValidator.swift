@@ -101,6 +101,8 @@ public struct CallerValidator: Sendable {
 }
 
 public struct SecurityCallerIdentityInspector: CallerIdentityInspecting {
+    static let dynamicValidityFlags = SecCSFlags(rawValue: UInt32(kSecCSStrictValidate))
+
     public init() {}
 
     public func inspect(
@@ -133,8 +135,7 @@ public struct SecurityCallerIdentityInspector: CallerIdentityInspecting {
         guard requirementStatus == errSecSuccess, let requirement else {
             throw HelperAuthorizationError.invalidRequirement
         }
-        let validityFlags = SecCSFlags(rawValue: UInt32(kSecCSStrictValidate | kSecCSCheckAllArchitectures))
-        let requirementSatisfied = SecCodeCheckValidity(code, validityFlags, requirement) == errSecSuccess
+        let requirementSatisfied = SecCodeCheckValidity(code, Self.dynamicValidityFlags, requirement) == errSecSuccess
 
         var staticCode: SecStaticCode?
         guard SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode else {

@@ -41,6 +41,37 @@ struct PhysicalPacketFilterAuditCommandTests {
         ) == nil)
     }
 
+    @Test func `packet filter audit persists only a non-sensitive failure identity`() async throws {
+        let runID = UUID()
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-pf-audit-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let output = root.appendingPathComponent("packet-filter-\(runID.uuidString.lowercased()).json")
+        let command = try #require(PhysicalPacketFilterAuditCommand(
+            arguments: ["--physical-pf-audit-output=\(output.path)"],
+            environment: [
+                "PHYSICAL_AUDIT_AUTHORIZATION": runID.uuidString.lowercased(),
+                "PHYSICAL_AUDIT_ROOT": root.path
+            ],
+            helper: FailingPacketFilterAuditor()
+        ))
+
+        try await command.execute()
+        let result = try JSONDecoder().decode(
+            PhysicalPacketFilterAuditResult.self,
+            from: Data(contentsOf: output)
+        )
+        #expect(result.verified == false)
+        #expect(result.residuePresent == false)
+        #expect(result.errorDomain == "MCAppCoreTests.PacketFilterAuditFailure")
+        #expect(result.errorCode == 19)
+    }
+
     @Test func `helper bootstrap reports the exact registration state`() async throws {
         let runID = UUID()
         let root = FileManager.default.temporaryDirectory
@@ -163,6 +194,21 @@ private struct FixturePacketFilterAuditor: PacketFilterAuditing {
 
     func hasRules(anchor _: String) async throws -> Bool {
         residuePresent
+    }
+}
+
+private struct FailingPacketFilterAuditor: PacketFilterAuditing {
+    func hasRules(anchor _: String) async throws -> Bool {
+        throw PacketFilterAuditFailure.connection
+    }
+}
+
+private enum PacketFilterAuditFailure: Int, CustomNSError {
+    case connection = 19
+
+    static let errorDomain = "MCAppCoreTests.PacketFilterAuditFailure"
+    var errorCode: Int {
+        rawValue
     }
 }
 
