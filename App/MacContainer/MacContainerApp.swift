@@ -12,7 +12,7 @@ struct MacContainerApp: App {
             : .production
         let state = AppState(environment: AppEnvironment(mode: mode))
         _state = State(initialValue: state)
-        if mode == .production {
+        if mode == .production || SparkleAppUpdater.hasValidatedTestFeed {
             let updater = SparkleAppUpdater(state: state)
             state.appUpdates.attach(driver: updater)
             sparkleUpdater = updater

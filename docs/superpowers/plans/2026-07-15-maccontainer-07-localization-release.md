@@ -344,17 +344,17 @@ git commit -m "ci: publish verified notarized releases"
 - Create: `Tests/Fixtures/sparkle/seed-expectations.json`
 - Create: `Tests/MacContainerUITests/SparkleUpdateUITests.swift`
 
-- [ ] **Step 1: Add a failing seed-to-release harness policy test**
+- [x] **Step 1: Add a failing seed-to-release harness policy test**
 
 Harness requires a locally signed lower-version seed with the same bundle ID/team/public key/feed, a locally served release appcast/archive signed by the new MacContainer EdDSA key, Sparkle download/verification/install/relaunch, exact upgraded version/build, preserved preferences, no Gatekeeper failure, and cleanup of server/cache/seed/update artifacts.
 
-- [ ] **Step 2: Run policy and verify RED**
+- [x] **Step 2: Run policy and verify RED**
 
 Run: `scripts/verify-sparkle-update.sh --policy-check`
 
 Expected: FAIL until the harness is complete.
 
-- [ ] **Step 3: Implement isolated Sparkle update verification**
+- [x] **Step 3: Implement isolated Sparkle update verification**
 
 Use a unique temporary home/cache under `.artifacts/sparkle-test/${RUN_UUID}`, a loopback-only HTTP server, a generated test appcast signed with the MacContainer key, and XCUITest to press Check for Updates and relaunch. The script captures result summary then deletes app copies, cache, server root, logs, and temporary key files through traps. It never changes `/Applications` or the user's normal Sparkle cache.
 
@@ -364,7 +364,11 @@ Run: `scripts/verify-sparkle-update.sh --seed dist/MacContainer-0.0.1-seed.dmg -
 
 Expected: `Sparkle update PASS: 0.0.1 (seed) -> 0.1.0 (candidate), cleanup empty`.
 
-- [ ] **Step 5: Commit non-secret harness and evidence schema**
+Local Apple Development rehearsal passed with the exact seed/candidate versions, EdDSA feed,
+two-stage install/relaunch flow, preserved preferences, and empty cleanup. The Developer ID,
+notarized, Gatekeeper-required run remains part of the final release gate.
+
+- [x] **Step 5: Commit non-secret harness and evidence schema**
 
 ```bash
 git add scripts/verify-sparkle-update.sh Tests/Fixtures/sparkle Tests/MacContainerUITests/SparkleUpdateUITests.swift

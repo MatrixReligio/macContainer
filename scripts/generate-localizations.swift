@@ -249,7 +249,7 @@ private let additionalCore = Dictionary(uniqueKeysWithValues: [
     translation("Uses local-only, least-privilege defaults", "使用仅限本地、最小权限的默认值", "使用僅限本機、最低權限的預設值", "ローカル限定、最小権限の既定値を使用", "로컬 전용 최소 권한 기본값 사용"),
     translation("Uses the typed runtime bridge; no shell command is generated.", "使用类型安全的运行时桥接；不会生成 shell 命令。", "使用型別安全的執行階段橋接；不會產生 shell 指令。", "型付きランタイムブリッジを使用し、シェルコマンドは生成しません。", "형식화된 런타임 브리지를 사용하며 셸 명령을 생성하지 않습니다."),
     translation("Value", "值", "值", "値", "값"),
-    translation("Version 0.1.0", "版本 0.1.0", "版本 0.1.0", "バージョン 0.1.0", "버전 0.1.0"),
+    translation("Version %@", "版本 %@", "版本 %@", "バージョン %@", "버전 %@"),
     translation("Volume name", "存储卷名称", "儲存卷宗名稱", "ボリューム名", "볼륨 이름"),
     translation("Welcome to MacContainer", "欢迎使用 MacContainer", "歡迎使用 MacContainer", "MacContainerへようこそ", "MacContainer에 오신 것을 환영합니다"),
     translation("What do you want to do?", "你想做什么？", "你想做什麼？", "何をしますか?", "무엇을 하시겠습니까?"),

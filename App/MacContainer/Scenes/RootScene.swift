@@ -11,7 +11,12 @@ struct RootScene: View {
         let arguments = ProcessInfo.processInfo.arguments
 
         Group {
-            if let fixture = MarketingFixture.from(arguments: arguments), arguments.contains("--fake-runtime") {
+            if arguments.contains("--sparkle-test-about"),
+               arguments.contains("--fake-runtime"),
+               SparkleAppUpdater.hasValidatedTestFeed {
+                AboutSettingsView()
+                    .accessibilityIdentifier("sparkle-test-about")
+            } else if let fixture = MarketingFixture.from(arguments: arguments), arguments.contains("--fake-runtime") {
                 MarketingFixturesView(fixture: fixture)
             } else if arguments.contains("--accessibility-fixtures") {
                 AccessibilityAuditFixturesView()

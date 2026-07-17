@@ -6,10 +6,16 @@ final class SparkleAppUpdater: NSObject, AppUpdateDriving, SPUUpdaterDelegate {
     private weak var state: AppState?
     private weak var appUpdateController: AppUpdateController?
     private var standardController: SPUStandardUpdaterController!
+    private let testFeedURL: URL?
+
+    static var hasValidatedTestFeed: Bool {
+        validatedTestFeedURL() != nil
+    }
 
     init(state: AppState) {
         self.state = state
         appUpdateController = state.appUpdates
+        testFeedURL = Self.validatedTestFeedURL()
         super.init()
         standardController = SPUStandardUpdaterController(
             startingUpdater: true,
@@ -40,6 +46,10 @@ final class SparkleAppUpdater: NSObject, AppUpdateDriving, SPUUpdaterDelegate {
         appUpdateController?.didFindUpdate(version: item.displayVersionString)
     }
 
+    func feedURLString(for updater: SPUUpdater) -> String? {
+        testFeedURL?.absoluteString
+    }
+
     func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
         appUpdateController?.didFinishWithoutUpdate()
     }
@@ -66,5 +76,20 @@ final class SparkleAppUpdater: NSObject, AppUpdateDriving, SPUUpdaterDelegate {
             hasActiveOperations: state.activities.hasActiveOperations,
             continuation: installHandler
         )
+    }
+
+    private static func validatedTestFeedURL() -> URL? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let rootArgument = arguments.first(where: { $0.hasPrefix("--sparkle-test-root=") }),
+              let feedArgument = arguments.first(where: { $0.hasPrefix("--sparkle-test-feed-url=") })
+        else { return nil }
+        let root = String(rootArgument.dropFirst("--sparkle-test-root=".count))
+        let feed = String(feedArgument.dropFirst("--sparkle-test-feed-url=".count))
+        guard root.contains("/.artifacts/sparkle-test/"),
+              ProcessInfo.processInfo.environment["CFFIXED_USER_HOME"]?.hasPrefix(root) == true,
+              let url = URL(string: feed), url.scheme == "http", url.host == "127.0.0.1",
+              url.port != nil, url.path == "/appcast.xml"
+        else { return nil }
+        return url
     }
 }

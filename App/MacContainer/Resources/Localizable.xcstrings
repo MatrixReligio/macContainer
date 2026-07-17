@@ -67287,36 +67287,36 @@
         }
       }
     },
-    "Version 0.1.0" : {
+    "Version %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Version 0.1.0"
+            "value" : "Version %@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "バージョン 0.1.0"
+            "value" : "バージョン %@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "버전 0.1.0"
+            "value" : "버전 %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "版本 0.1.0"
+            "value" : "版本 %@"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "版本 0.1.0"
+            "value" : "版本 %@"
           }
         }
       }

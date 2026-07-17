@@ -98,6 +98,31 @@
             value = "$(MARKETING_SCREENSHOT_DIR)"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SPARKLE_TEST_EXPECTED_VERSION"
+            value = "$(SPARKLE_TEST_EXPECTED_VERSION)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SPARKLE_TEST_FEED_URL"
+            value = "$(SPARKLE_TEST_FEED_URL)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SPARKLE_TEST_HOME"
+            value = "$(SPARKLE_TEST_HOME)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SPARKLE_TEST_ROOT"
+            value = "$(SPARKLE_TEST_ROOT)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SPARKLE_TEST_SEED_APP"
+            value = "$(SPARKLE_TEST_SEED_APP)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </TestAction>
    <LaunchAction

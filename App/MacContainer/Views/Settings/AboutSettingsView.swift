@@ -13,7 +13,7 @@ struct AboutSettingsView: View {
                     .accessibilityHidden(true)
                 Text("MacContainer")
                     .font(.largeTitle.bold())
-                Text("Version 0.1.0")
+                Text("Version \(appVersion)")
                     .fontWeight(.semibold)
                     .foregroundStyle(Color(nsColor: .labelColor))
                 Link("contact@matrixreligio.com", destination: URL(string: "mailto:contact@matrixreligio.com")!)
@@ -72,6 +72,10 @@ struct AboutSettingsView: View {
             get: { state.appUpdates.automaticallyChecksForUpdates },
             set: { state.appUpdates.setAutomaticallyChecksForUpdates($0) }
         )
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
     }
 
     private var updateStatus: LocalizedStringKey {

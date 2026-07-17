@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "bundleIdentifier": "container.matrixreligio.com",
+  "teamIdentifier": "4DUQGD879H",
+  "publicEDKey": "SY7+LwKROwq3OPv7vZbnzyQ1a6Be/LeuFU4TO0RWJwU=",
+  "seed": {
+    "version": "0.0.1",
+    "build": "0"
+  },
+  "candidate": {
+    "version": "0.1.0",
+    "build": "1"
+  },
+  "preferenceMarkerKey": "SparkleHarnessMarker"
+}
