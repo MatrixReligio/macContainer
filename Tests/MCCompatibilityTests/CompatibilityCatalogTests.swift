@@ -17,9 +17,22 @@ struct CompatibilityCatalogTests {
         #expect(entry.allowedUpgradeSources == [
             .init(
                 runtimeVersion: "1.0.0",
-                packageSHA256: "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d"
+                package: .init(
+                    runtimeVersion: "1.0.0",
+                    assetName: "container-1.0.0-installer-signed.pkg",
+                    sha256: "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d",
+                    installerTeamID: "UPBK2H6LZM",
+                    signerCommonName: "Developer ID Installer: Apple Inc. - Containerization (UPBK2H6LZM)",
+                    receiptIdentifier: "com.apple.container-installer"
+                ),
+                installLocation: "/usr/local",
+                requiredPreflightProbeIDs: ProbeID.baselineAllCases.map(\.rawValue),
+                storageMigration: .metadataOnly,
+                rollback: .configurationAndMetadata
             )
         ])
+        #expect(entry.allowedUpgradeSources[0].packageSHA256 ==
+            "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d")
         #expect(Set(entry.requiredProbeIDs) == Set(ProbeID.baselineAllCases.map(\.rawValue)))
         #expect(entry.capabilityIDs.count == 61)
     }

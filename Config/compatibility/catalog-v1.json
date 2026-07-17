@@ -4,8 +4,22 @@
       "adapterPackageVersion": "1.1.0",
       "allowedUpgradeSources": [
         {
-          "packageSHA256": "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d",
-          "runtimeVersion": "1.0.0"
+          "installLocation": "/usr/local",
+          "package": {
+            "assetName": "container-1.0.0-installer-signed.pkg",
+            "installerTeamID": "UPBK2H6LZM",
+            "receiptIdentifier": "com.apple.container-installer",
+            "runtimeVersion": "1.0.0",
+            "sha256": "13f45f26da94c354adcbefe1e8f7631e7f126e93c5d4dd6a5a538aa66b4f479d",
+            "signerCommonName": "Developer ID Installer: Apple Inc. - Containerization (UPBK2H6LZM)"
+          },
+          "requiredPreflightProbeIDs": [
+            "health", "containers", "images", "builder", "networks", "volumes", "registries", "machines",
+            "diskUsage", "configuration", "capabilities"
+          ],
+          "rollback": "configurationAndMetadata",
+          "runtimeVersion": "1.0.0",
+          "storageMigration": "metadataOnly"
         }
       ],
       "attestation": {

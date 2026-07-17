@@ -10,7 +10,8 @@ struct AutomaticUpgradeTests {
     @Test func `compatible idle update passes every gate and succeeds`() async throws {
         let fixture = try AutomaticFixture()
 
-        #expect(try await fixture.coordinator.process(.fixture) == .upToDate)
+        let state = try await fixture.coordinator.process(.fixture)
+        #expect(state == .upToDate)
         #expect(fixture.actions.values == ["context", "package", "rollback", "final-idle", "upgrade"])
         #expect(await fixture.blocker.records.isEmpty)
         #expect(await fixture.sink.states == [
@@ -69,7 +70,7 @@ struct AutomaticUpgradeTests {
     @Test func `cancellation before mutation propagates`() async throws {
         let fixture = try AutomaticFixture(rollbackDelay: .seconds(30))
         let task = Task { try await fixture.coordinator.process(.fixture) }
-        await fixture.rollback.waitUntilRequested()
+        try await fixture.rollback.waitUntilRequested()
         task.cancel()
 
         await #expect(throws: CancellationError.self) { _ = try await task.value }
@@ -240,9 +241,14 @@ private actor RecordingRollbackAvailability: AutomaticRollbackAvailabilityChecki
         }
     }
 
-    func waitUntilRequested() async {
+    func waitUntilRequested(timeout: Duration = .seconds(2)) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
         while !requested {
-            await Task.yield()
+            guard clock.now < deadline else {
+                throw AutomaticFixtureError.rollbackWasNotRequested
+            }
+            try await clock.sleep(for: .milliseconds(10))
         }
     }
 }
@@ -294,6 +300,7 @@ private struct FakeAutomaticProbe: CompatibilityProbe {
 
 private enum AutomaticFixtureError: Error {
     case injected
+    case rollbackWasNotRequested
 }
 
 private extension RuntimeReleaseCandidate {

@@ -43,11 +43,30 @@ public struct RuntimePackageIdentity: Codable, Equatable, Sendable {
 
 public struct UpgradeSourceIdentity: Codable, Equatable, Sendable {
     public let runtimeVersion: String
-    public let packageSHA256: String
+    public let package: RuntimePackageIdentity
+    public let installLocation: String
+    public let requiredPreflightProbeIDs: [String]
+    public let storageMigration: StorageMigrationClassification
+    public let rollback: RollbackClassification
 
-    public init(runtimeVersion: String, packageSHA256: String) {
+    public var packageSHA256: String {
+        package.sha256
+    }
+
+    public init(
+        runtimeVersion: String,
+        package: RuntimePackageIdentity,
+        installLocation: String,
+        requiredPreflightProbeIDs: [String],
+        storageMigration: StorageMigrationClassification,
+        rollback: RollbackClassification
+    ) {
         self.runtimeVersion = runtimeVersion
-        self.packageSHA256 = packageSHA256
+        self.package = package
+        self.installLocation = installLocation
+        self.requiredPreflightProbeIDs = requiredPreflightProbeIDs
+        self.storageMigration = storageMigration
+        self.rollback = rollback
     }
 }
 

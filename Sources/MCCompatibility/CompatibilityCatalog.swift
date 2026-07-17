@@ -91,9 +91,17 @@ public struct CompatibilityCatalog: Codable, Equatable, Sendable {
             throw CompatibilityCatalogError.invalidPackageIdentity(entry.runtimeVersion)
         }
         for source in entry.allowedUpgradeSources {
-            guard (try? SemanticVersion(source.runtimeVersion)) != nil,
-                  source.runtimeVersion != runtime.description,
-                  Self.isSHA256(source.packageSHA256)
+            guard let sourceVersion = try? SemanticVersion(source.runtimeVersion),
+                  sourceVersion < runtime,
+                  source.package.runtimeVersion == source.runtimeVersion,
+                  source.package.assetName == "container-\(source.runtimeVersion)-installer-signed.pkg",
+                  Self.isSHA256(source.package.sha256),
+                  source.package.installerTeamID == entry.package.installerTeamID,
+                  source.package.signerCommonName == entry.package.signerCommonName,
+                  source.package.receiptIdentifier == entry.package.receiptIdentifier,
+                  source.installLocation == "/usr/local",
+                  source.requiredPreflightProbeIDs == ProbeID.baselineAllCases.map(\.rawValue),
+                  source.storageMigration != .destructive
             else {
                 throw CompatibilityCatalogError.invalidUpgradeSource(entry.runtimeVersion)
             }
