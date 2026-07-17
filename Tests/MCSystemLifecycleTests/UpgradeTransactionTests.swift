@@ -13,6 +13,7 @@ struct UpgradeTransactionTests {
         #expect(report.runtimeVersion == "1.1.0")
         #expect(fixture.actions.values.filter { $0.hasPrefix("upgrade.") } == UpgradeStage.allCases.map(\.rawValue))
         #expect(fixture.helper.installedVersions == ["1.1.0"])
+        #expect(fixture.retainer.retainedVersions == ["1.1.0"])
         #expect(fixture.probes.runs == [RuntimeUpgradeTarget.upgradeFixture.requiredProbes])
         #expect(fixture.rollback.discardCount == 1)
         #expect(fixture.preparer.cleanupCount == 1)
@@ -113,6 +114,7 @@ private final class UpgradeFixture {
     let diagnostics: RecordingUpgradeDiagnostics
     let consent: RecordingDowngradeConsent
     let journal: RecordingUpgradeJournal
+    let retainer: RecordingUpgradePackageRetainer
     let transaction: UpgradeTransaction
 
     init(
@@ -150,6 +152,7 @@ private final class UpgradeFixture {
         diagnostics = RecordingUpgradeDiagnostics(actions: actions, failingRollbackAt: failingRollbackAt)
         consent = RecordingDowngradeConsent(approved: downgradeApproved)
         journal = RecordingUpgradeJournal(actions: actions)
+        retainer = RecordingUpgradePackageRetainer(actions: actions)
         transaction = UpgradeTransaction(
             packagePreparer: preparer,
             baselineCapture: RecordingUpgradeBaselineCapture(
@@ -174,12 +177,35 @@ private final class UpgradeFixture {
             journal: journal,
             blocker: blocker,
             diagnostics: diagnostics,
-            downgradeConsent: consent
+            downgradeConsent: consent,
+            packageRetainer: retainer
         )
     }
 
     func cleanup() {
         try? FileManager.default.removeItem(at: root)
+    }
+}
+
+private final class RecordingUpgradePackageRetainer: InstallPackageRetaining, @unchecked Sendable {
+    let actions: LockedUpgradeActions
+    private(set) var retainedVersions: [String] = []
+
+    init(actions: LockedUpgradeActions) {
+        self.actions = actions
+    }
+
+    func retain(
+        _ package: VerifiedRuntimePackage,
+        assetName _: String
+    ) async throws -> RetainedRuntimePackage {
+        try actions.stage(.packageRetention)
+        retainedVersions.append(package.runtimeVersion)
+        return .init(
+            url: package.openFile.sourceURL,
+            runtimeVersion: package.runtimeVersion,
+            sha256: package.sha256
+        )
     }
 }
 

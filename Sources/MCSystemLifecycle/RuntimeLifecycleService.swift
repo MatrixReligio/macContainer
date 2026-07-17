@@ -79,7 +79,8 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
                 helper: helper
             ),
             residueAuditor: SystemPartialInstallResidueAuditor(),
-            temporaryDirectories: LocalInstallTemporaryDirectoryProvider()
+            temporaryDirectories: LocalInstallTemporaryDirectoryProvider(),
+            packageRetainer: VerifiedRuntimePackageCache()
         )
         return try await transaction.install(.appleContainer110)
     }

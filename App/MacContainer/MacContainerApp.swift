@@ -60,6 +60,9 @@ struct MacContainerApp: App {
                     } else if let physicalPacketFilterAudit {
                         try? await physicalPacketFilterAudit.execute()
                     } else {
+                        await state.runtimeUpdateAgentRegistration.reconcile(
+                            enabled: state.environment.settings.automaticallyCheckRuntimeUpdates
+                        )
                         return
                     }
                     NSApplication.shared.terminate(nil)

@@ -32,6 +32,13 @@ struct RuntimeUpdateSettingsView: View {
                 )
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color(nsColor: .labelColor))
+                if settings.runtimeUpdatePreferencesPersistenceFailed {
+                    Label("Update preference could not be saved; the previous safe setting was restored.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier("runtime-update-preference-error")
+                }
+                updateAgentStatus
 
                 Divider()
                 updateStatus
@@ -95,6 +102,40 @@ struct RuntimeUpdateSettingsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
+        }
+        .onChange(of: settings.automaticallyCheckRuntimeUpdates) { _, enabled in
+            Task {
+                await state.runtimeUpdateAgentRegistration.reconcile(enabled: enabled)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var updateAgentStatus: some View {
+        switch state.runtimeUpdateAgentRegistration.status {
+        case .enabled:
+            Label("Background update checks are enabled", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case .requiresApproval:
+            HStack {
+                Label("Background checks require approval in System Settings",
+                      systemImage: "person.badge.key.fill")
+                    .foregroundStyle(.orange)
+                Button("Open System Settings") {
+                    state.runtimeUpdateAgentRegistration.openApprovalSettings()
+                }
+                .accessibilityIdentifier("open-update-agent-approval")
+            }
+        case .notRegistered, .notFound:
+            if state.environment.settings.automaticallyCheckRuntimeUpdates {
+                Label("Background update checks are not registered",
+                      systemImage: "exclamationmark.circle")
+                    .foregroundStyle(.orange)
+            }
+        case .unknown:
+            Label("Background update registration could not be verified",
+                  systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
         }
     }
 

@@ -15,12 +15,13 @@ public enum InstallStage: String, CaseIterable, Codable, Sendable {
     case serviceStart = "service.start"
     case kernelEnsure = "kernel.ensure"
     case probeRun = "probes.run"
+    case packageRetention = "package.retain"
     case journalCommit = "journal.commit"
 
     public var isAtOrAfterInstallAttempt: Bool {
         switch self {
         case .helperInstall, .receiptVerification, .payloadVerification, .serviceStart,
-             .kernelEnsure, .probeRun, .journalCommit:
+             .kernelEnsure, .probeRun, .packageRetention, .journalCommit:
             true
         default:
             false
@@ -193,6 +194,28 @@ public protocol InstallTemporaryDirectoryProviding: Sendable {
     func create(transactionID: UUID) throws -> InstallTemporaryDirectory
 }
 
+public protocol InstallPackageRetaining: Sendable {
+    func retain(
+        _ package: VerifiedRuntimePackage,
+        assetName: String
+    ) async throws -> RetainedRuntimePackage
+}
+
+public struct NoOpInstallPackageRetainer: InstallPackageRetaining, Sendable {
+    public init() {}
+
+    public func retain(
+        _ package: VerifiedRuntimePackage,
+        assetName _: String
+    ) async throws -> RetainedRuntimePackage {
+        .init(
+            url: package.openFile.sourceURL,
+            runtimeVersion: package.runtimeVersion,
+            sha256: package.sha256
+        )
+    }
+}
+
 public final class InstallTemporaryDirectory: @unchecked Sendable {
     public let url: URL
     private let lock = NSLock()
@@ -326,6 +349,7 @@ public struct InstallTransaction: Sendable {
     private let partialUninstaller: any PartialInstallUninstalling
     private let residueAuditor: any PartialInstallResidueAuditing
     private let temporaryDirectories: any InstallTemporaryDirectoryProviding
+    private let packageRetainer: any InstallPackageRetaining
 
     public init(
         platform: any InstallPlatformChecking,
@@ -342,7 +366,8 @@ public struct InstallTransaction: Sendable {
         probes: any InstallProbeRunning,
         partialUninstaller: any PartialInstallUninstalling,
         residueAuditor: any PartialInstallResidueAuditing,
-        temporaryDirectories: any InstallTemporaryDirectoryProviding
+        temporaryDirectories: any InstallTemporaryDirectoryProviding,
+        packageRetainer: any InstallPackageRetaining = NoOpInstallPackageRetainer()
     ) {
         self.platform = platform
         self.metadata = metadata
@@ -359,6 +384,7 @@ public struct InstallTransaction: Sendable {
         self.partialUninstaller = partialUninstaller
         self.residueAuditor = residueAuditor
         self.temporaryDirectories = temporaryDirectories
+        self.packageRetainer = packageRetainer
     }
 
     public func install(_ target: RuntimeInstallTarget) async throws -> InstallReport {
@@ -440,6 +466,17 @@ public struct InstallTransaction: Sendable {
 
             currentStage = .probeRun
             try await probes.run(probes: target.requiredProbes)
+
+            currentStage = .packageRetention
+            let retained = try await packageRetainer.retain(
+                verified,
+                assetName: target.manifest.assetName
+            )
+            guard retained.runtimeVersion == verified.runtimeVersion,
+                  retained.sha256 == verified.sha256
+            else {
+                throw InstallError.verificationReportMismatch
+            }
 
             currentStage = .journalCommit
             try await journal.recordVerified(transactionID: transactionID)

@@ -16,6 +16,7 @@ struct InstallTransactionTests {
         #expect(fixture.actions.values == InstallStage.allCases.map(\.rawValue) + ["download.cleanup"])
         #expect(fixture.temporaryDirectories.activePaths.isEmpty)
         #expect(fixture.helper.receivedDescriptor != nil)
+        #expect(fixture.retainer.retainedVersions == ["1.1.0"])
         #expect(fixture.journal.appliedCount == 1)
         #expect(fixture.journal.verifiedCount == 1)
     }
@@ -116,6 +117,7 @@ private final class InstallFixture {
     let temporaryDirectories: RecordingTemporaryDirectoryProvider
     let journal: RecordingInstallJournal
     let helper: RecordingInstallHelper
+    let retainer: RecordingInstallPackageRetainer
     let transaction: InstallTransaction
 
     init(
@@ -131,6 +133,7 @@ private final class InstallFixture {
         temporaryDirectories = RecordingTemporaryDirectoryProvider(base: root, actions: actions)
         journal = RecordingInstallJournal(actions: actions)
         helper = RecordingInstallHelper(actions: actions)
+        retainer = RecordingInstallPackageRetainer(actions: actions)
         transaction = InstallTransaction(
             platform: RecordingPlatformChecker(
                 actions: actions,
@@ -152,12 +155,35 @@ private final class InstallFixture {
             probes: RecordingInstallProbeRunner(actions: actions),
             partialUninstaller: RecordingPartialUninstaller(actions: actions),
             residueAuditor: RecordingPartialResidueAuditor(actions: actions, result: audit),
-            temporaryDirectories: temporaryDirectories
+            temporaryDirectories: temporaryDirectories,
+            packageRetainer: retainer
         )
     }
 
     func cleanup() {
         try? FileManager.default.removeItem(at: root)
+    }
+}
+
+private final class RecordingInstallPackageRetainer: InstallPackageRetaining, @unchecked Sendable {
+    let actions: LockedInstallActions
+    private(set) var retainedVersions: [String] = []
+
+    init(actions: LockedInstallActions) {
+        self.actions = actions
+    }
+
+    func retain(
+        _ package: VerifiedRuntimePackage,
+        assetName _: String
+    ) async throws -> RetainedRuntimePackage {
+        try actions.stage(.packageRetention)
+        retainedVersions.append(package.runtimeVersion)
+        return .init(
+            url: package.openFile.sourceURL,
+            runtimeVersion: package.runtimeVersion,
+            sha256: package.sha256
+        )
     }
 }
 

@@ -56,6 +56,7 @@ public final class AppState {
     public let activities: ActivityCenter
     public let appUpdates: AppUpdateController
     public let runtimeLifecycle: RuntimeLifecycleController
+    public let runtimeUpdateAgentRegistration: RuntimeUpdateAgentRegistrationController
     public let environment: AppEnvironment
 
     public init(environment: AppEnvironment = AppEnvironment()) {
@@ -65,6 +66,9 @@ public final class AppState {
             automaticallyChecksForUpdates: environment.mode == .production
         )
         runtimeLifecycle = RuntimeLifecycleController(service: environment.runtimeLifecycleService)
+        runtimeUpdateAgentRegistration = RuntimeUpdateAgentRegistrationController(
+            service: environment.runtimeUpdateAgentService
+        )
         health = environment.mode == .fakeRuntime ? .healthy : .checking
         runtimeUpdateState = environment.mode == .fakeRuntime
             ? .available(version: "1.1.0")

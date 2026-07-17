@@ -11,6 +11,7 @@ public enum UpgradeStage: String, CaseIterable, Codable, Sendable {
     case targetVerification = "upgrade.target.verify"
     case serviceStart = "upgrade.service.start"
     case targetProbes = "upgrade.probes.run"
+    case packageRetention = "upgrade.package.retain"
     case journalCommit = "upgrade.journal.commit"
 
     public var requiresRollbackOnFailure: Bool {
@@ -290,6 +291,7 @@ public struct UpgradeTransaction: Sendable {
     private let blocker: any UpgradeTargetBlocking
     private let diagnostics: any UpgradeDiagnosticPersisting
     private let downgradeConsent: any UpgradeDowngradeConsentProviding
+    private let packageRetainer: any InstallPackageRetaining
 
     public init(
         packagePreparer: any UpgradePackagePreparing,
@@ -304,7 +306,8 @@ public struct UpgradeTransaction: Sendable {
         journal: any UpgradeJournalWriting,
         blocker: any UpgradeTargetBlocking,
         diagnostics: any UpgradeDiagnosticPersisting,
-        downgradeConsent: any UpgradeDowngradeConsentProviding
+        downgradeConsent: any UpgradeDowngradeConsentProviding,
+        packageRetainer: any InstallPackageRetaining = NoOpInstallPackageRetainer()
     ) {
         self.packagePreparer = packagePreparer
         self.baselineCapture = baselineCapture
@@ -319,6 +322,7 @@ public struct UpgradeTransaction: Sendable {
         self.blocker = blocker
         self.diagnostics = diagnostics
         self.downgradeConsent = downgradeConsent
+        self.packageRetainer = packageRetainer
     }
 
     public func upgrade(to target: RuntimeUpgradeTarget) async throws -> UpgradeReport {
@@ -397,6 +401,17 @@ public struct UpgradeTransaction: Sendable {
 
             currentStage = .targetProbes
             try await probes.run(probes: target.requiredProbes, runtimeVersion: target.version)
+
+            currentStage = .packageRetention
+            let retained = try await packageRetainer.retain(
+                prepared.package,
+                assetName: target.installTarget.manifest.assetName
+            )
+            guard retained.runtimeVersion == prepared.package.runtimeVersion,
+                  retained.sha256 == prepared.package.sha256
+            else {
+                throw UpgradeError.packageVerificationMismatch
+            }
 
             currentStage = .journalCommit
             try await journal.commit(transactionID: transactionID)

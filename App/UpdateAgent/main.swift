@@ -6,15 +6,24 @@ if CommandLine.arguments.contains("--build-smoke-test") {
     exit(EXIT_SUCCESS)
 }
 
-let service = UpdateAgentService(
-    stateStore: PrivateUpdateAgentStateStore(),
-    discovery: GitHubRuntimeReleaseDiscovery(),
-    coordinator: EmbeddedCatalogHandoffCoordinator(),
-    presenter: UpdateAgentPresenter()
-)
 let jitter = Int.random(in: UpdateAgentConfiguration.jitterRange)
 Task {
     do {
+        let preferences = RuntimeUpdatePreferencesStore()
+        guard try preferences.load().automaticallyChecks else {
+            exit(EXIT_SUCCESS)
+        }
+        let presenter = UpdateAgentPresenter()
+        let coordinator = try ProductionRuntimeUpdateCoordinatorFactory.make(
+            stateSink: presenter,
+            preferences: preferences
+        )
+        let service = UpdateAgentService(
+            stateStore: PrivateUpdateAgentStateStore(),
+            discovery: GitHubRuntimeReleaseDiscovery(),
+            coordinator: coordinator,
+            presenter: presenter
+        )
         _ = try await service.check(trigger: .scheduled, jitterSeconds: TimeInterval(jitter))
         exit(EXIT_SUCCESS)
     } catch is CancellationError {
