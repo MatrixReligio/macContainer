@@ -27,7 +27,8 @@ policy_check() {
     local required=(
         run_read_only_preflight REFUSED_EXISTING_STATE RUN_UUID 'umask 077' 'chmod 0700'
         'trap cleanup EXIT HUP INT TERM' verify_digest verify_installer_signature
-        "$digest_100" "$digest_110" "$expected_team_id" run_with_timeout
+        "$digest_100" "$digest_110" "$expected_team_id" run_with_timeout 'setopt LOCAL_TRAPS'
+        'cleanup "$command_status"'
         '.artifacts/DerivedData' PHYSICAL_TEST_AUTHORIZATION production_complete_uninstall
         compare-baseline.swift summarize.swift recover.swift
         run_signed_helper_bootstrap run_signed_helper_cleanup
@@ -96,7 +97,8 @@ upgrade_state=""
 swiftpm_scratch=""
 
 cleanup() {
-    local original_status=$?
+    local trapped_status=$?
+    local original_status="${1:-$trapped_status}"
     (( cleanup_running == 0 )) || return $original_status
     cleanup_running=1
     if (( runtime_mutation_attempted == 1 )); then
@@ -145,6 +147,7 @@ run_with_timeout() {
     "$@" &
     local command_pid=$!
     (
+        setopt LOCAL_TRAPS
         local sleep_pid
         trap '[[ -n "${sleep_pid:-}" ]] && /bin/kill -TERM "$sleep_pid" 2>/dev/null || true; exit 0' TERM INT HUP
         /bin/sleep "$seconds" &
@@ -159,6 +162,9 @@ run_with_timeout() {
     wait "$command_pid" || command_status=$?
     /bin/kill -TERM "$watchdog_pid" 2>/dev/null || true
     wait "$watchdog_pid" 2>/dev/null || true
+    if (( command_status != 0 )); then
+        cleanup "$command_status" || command_status=1
+    fi
     return $command_status
 }
 

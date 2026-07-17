@@ -214,7 +214,8 @@ struct SystemServiceControllerTests {
         let backend = FakeLaunchServiceBackend(registrationVisible: false)
         let manager = AppleServiceManager(
             managedPlistURLs: [SystemServiceController.apiServerLabel: plist],
-            backend: backend
+            backend: backend,
+            visibilityRetryPolicy: .init(maximumAttempts: 2, delay: .milliseconds(1))
         )
         let definition = ServiceDefinition(
             label: SystemServiceController.apiServerLabel,
@@ -232,6 +233,34 @@ struct SystemServiceControllerTests {
         }
         #expect(backend.deregisteredLabels == ["gui/test/\(SystemServiceController.apiServerLabel)"])
         #expect(!FileManager.default.fileExists(atPath: plist.path))
+    }
+
+    @Test func `native registration tolerates delayed launchd visibility`() async throws {
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(".mc-service-test-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let plist = root.appendingPathComponent("apiserver.plist")
+        let backend = FakeLaunchServiceBackend(registrationVisibility: [false, true])
+        let manager = AppleServiceManager(
+            managedPlistURLs: [SystemServiceController.apiServerLabel: plist],
+            backend: backend,
+            visibilityRetryPolicy: .init(maximumAttempts: 2, delay: .milliseconds(1))
+        )
+        let definition = ServiceDefinition(
+            label: SystemServiceController.apiServerLabel,
+            program: URL(fileURLWithPath: SystemServiceController.apiServerPath),
+            arguments: [SystemServiceController.apiServerPath, "start"],
+            environment: [:],
+            plistURL: plist,
+            limitLoadToSessionType: [.aqua, .background, .system],
+            runAtLoad: true,
+            machServices: [SystemServiceController.apiServerLabel]
+        )
+
+        try await manager.register(definition)
+
+        #expect(backend.deregisteredLabels.isEmpty)
+        #expect(FileManager.default.fileExists(atPath: plist.path))
     }
 
     private func makeController(
@@ -273,11 +302,16 @@ struct SystemServiceControllerTests {
 }
 
 private final class FakeLaunchServiceBackend: LaunchServiceRegistering, @unchecked Sendable {
-    private let registrationVisible: Bool
+    private var registrationVisibility: [Bool]
     private(set) var deregisteredLabels: [String] = []
 
     init(registrationVisible: Bool) {
-        self.registrationVisible = registrationVisible
+        registrationVisibility = [registrationVisible]
+    }
+
+    init(registrationVisibility: [Bool]) {
+        precondition(!registrationVisibility.isEmpty)
+        self.registrationVisibility = registrationVisibility
     }
 
     func register(plistPath _: String) throws {}
@@ -287,7 +321,10 @@ private final class FakeLaunchServiceBackend: LaunchServiceRegistering, @uncheck
     }
 
     func isRegistered(fullServiceLabel _: String) throws -> Bool {
-        registrationVisible
+        if registrationVisibility.count > 1 {
+            return registrationVisibility.removeFirst()
+        }
+        return registrationVisibility[0]
     }
 
     func enumerate() throws -> [String] {

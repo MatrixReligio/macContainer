@@ -362,6 +362,13 @@ protocol LaunchServiceRegistering: Sendable {
     func domainString() throws -> String
 }
 
+struct LaunchServiceVisibilityRetryPolicy: Sendable {
+    static let production = Self(maximumAttempts: 100, delay: .milliseconds(20))
+
+    let maximumAttempts: Int
+    let delay: Duration
+}
+
 private struct NativeLaunchServiceBackend: LaunchServiceRegistering {
     func register(plistPath: String) throws {
         try ServiceManager.register(plistPath: plistPath)
@@ -387,18 +394,22 @@ private struct NativeLaunchServiceBackend: LaunchServiceRegistering {
 public actor AppleServiceManager: ServiceManaging {
     private let managedPlistURLs: [String: URL]
     private let backend: any LaunchServiceRegistering
+    private let visibilityRetryPolicy: LaunchServiceVisibilityRetryPolicy
 
     public init(managedPlistURLs: [String: URL]) {
         self.managedPlistURLs = managedPlistURLs
         backend = NativeLaunchServiceBackend()
+        visibilityRetryPolicy = .production
     }
 
     init(
         managedPlistURLs: [String: URL],
-        backend: any LaunchServiceRegistering
+        backend: any LaunchServiceRegistering,
+        visibilityRetryPolicy: LaunchServiceVisibilityRetryPolicy = .production
     ) {
         self.managedPlistURLs = managedPlistURLs
         self.backend = backend
+        self.visibilityRetryPolicy = visibilityRetryPolicy
     }
 
     public func register(_ definition: ServiceDefinition) async throws {
@@ -429,7 +440,7 @@ public actor AppleServiceManager: ServiceManaging {
             )
             try backend.register(plistPath: definition.plistURL.path)
             registrationReturned = true
-            guard try isRegisteredSynchronously(label: definition.label) else {
+            guard try await waitForVisibility(label: definition.label, registered: true) else {
                 throw SystemServiceError.serviceRegistrationFailed
             }
         } catch {
@@ -450,7 +461,7 @@ public actor AppleServiceManager: ServiceManaging {
         try validate(label: label)
         let fullLabel = try fullServiceLabel(label)
         try backend.deregister(fullServiceLabel: fullLabel)
-        guard try !isRegisteredSynchronously(label: label) else {
+        guard try await waitForVisibility(label: label, registered: false) else {
             throw SystemServiceError.serviceDeregistrationFailed
         }
         if let plistURL = managedPlistURLs[label] {
@@ -504,6 +515,20 @@ public actor AppleServiceManager: ServiceManaging {
 
     private func isRegisteredSynchronously(label: String) throws -> Bool {
         try backend.isRegistered(fullServiceLabel: fullServiceLabel(label))
+    }
+
+    private func waitForVisibility(label: String, registered: Bool) async throws -> Bool {
+        precondition(visibilityRetryPolicy.maximumAttempts > 0)
+        let clock = ContinuousClock()
+        for attempt in 0 ..< visibilityRetryPolicy.maximumAttempts {
+            if try isRegisteredSynchronously(label: label) == registered {
+                return true
+            }
+            if attempt + 1 < visibilityRetryPolicy.maximumAttempts {
+                try await clock.sleep(for: visibilityRetryPolicy.delay)
+            }
+        }
+        return false
     }
 }
 
