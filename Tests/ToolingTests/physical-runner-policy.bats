@@ -63,6 +63,18 @@ require_text 'run_physical_package_tests'
 require_text 'CODE_SIGN_STYLE=Automatic'
 require_text 'CODE_SIGN_IDENTITY="Apple Development"'
 require_text 'DEVELOPMENT_TEAM=4DUQGD879H'
+for language in en zh-Hans zh-Hant ja ko; do
+    /usr/bin/grep -Fq -- "ui.production-language-$language-accessibility" \
+        "$repo_root/Tests/MacContainerUITests/PhysicalRuntimeUITests.swift" || {
+        print -u2 -- "physical UI suite missing language accessibility coverage: $language"
+        exit 1
+    }
+done
+/usr/bin/grep -Fq -- '--physical-runtime-language=' \
+    "$repo_root/App/MacContainer/MacContainerApp.swift" || {
+    print -u2 -- "physical app harness cannot select an isolated test language"
+    exit 1
+}
 require_text 'prepare_signed_physical_test_harness'
 require_text 'swift build --package-path "$repo_root" --scratch-path "$swiftpm_scratch" --build-tests'
 require_text '--identifier container.matrixreligio.com'

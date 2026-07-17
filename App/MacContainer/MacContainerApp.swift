@@ -20,9 +20,14 @@ struct MacContainerApp: App {
             arguments.contains("--physical-runtime-ui-test") &&
             Self.isAuthorizedPhysicalTest(environment)
         isPhysicalRuntimeUITest = physicalRuntimeUITest
-        let forcedLanguage = arguments.compactMap(Self.fakeRuntimeLanguage).first
+        let fakeRuntimeLanguage = arguments.compactMap(Self.fakeRuntimeLanguage).first
+        let physicalRuntimeLanguage = physicalRuntimeUITest
+            ? arguments.compactMap(Self.physicalRuntimeLanguage).first
+            : nil
         let languageController = if mode == .fakeRuntime {
-            LanguageController(storage: FixedLanguageSelectionStore(selection: forcedLanguage ?? .english))
+            LanguageController(storage: FixedLanguageSelectionStore(selection: fakeRuntimeLanguage ?? .english))
+        } else if let physicalRuntimeLanguage {
+            LanguageController(storage: FixedLanguageSelectionStore(selection: physicalRuntimeLanguage))
         } else {
             LanguageController()
         }
@@ -101,6 +106,12 @@ struct MacContainerApp: App {
 
     private static func fakeRuntimeLanguage(_ argument: String) -> AppLanguage? {
         let prefix = "--fake-runtime-language="
+        guard argument.hasPrefix(prefix) else { return nil }
+        return AppLanguage(rawValue: String(argument.dropFirst(prefix.count)))
+    }
+
+    private static func physicalRuntimeLanguage(_ argument: String) -> AppLanguage? {
+        let prefix = "--physical-runtime-language="
         guard argument.hasPrefix(prefix) else { return nil }
         return AppLanguage(rawValue: String(argument.dropFirst(prefix.count)))
     }

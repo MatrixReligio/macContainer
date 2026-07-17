@@ -36,6 +36,130 @@ final class PhysicalRuntimeUITests: XCTestCase {
         try recordPhysicalResult("ui.production-resource-navigation", environment: environment)
     }
 
+    func testProductionRuntimePassesFiveLanguageAccessibilityCoverage() throws {
+        let environment = try authorizedEnvironment()
+        let languageCoverage = [
+            (language: "en", label: "Overview", resultID: "ui.production-language-en-accessibility"),
+            (language: "zh-Hans", label: "概览", resultID: "ui.production-language-zh-Hans-accessibility"),
+            (language: "zh-Hant", label: "概覽", resultID: "ui.production-language-zh-Hant-accessibility"),
+            (language: "ja", label: "概要", resultID: "ui.production-language-ja-accessibility"),
+            (language: "ko", label: "개요", resultID: "ui.production-language-ko-accessibility")
+        ]
+        let routes = [
+            "overview", "containers", "images", "builds", "machines",
+            "networks", "volumes", "registries", "system"
+        ]
+
+        for coverage in languageCoverage {
+            let language = coverage.language
+            let app = try launchProductionApp(language: language, environment: environment)
+            defer { app.terminate() }
+
+            let overview = app.buttons["route.overview"]
+            XCTAssertTrue(overview.waitForExistence(timeout: 5), "Missing overview in \(language)")
+            XCTAssertEqual(overview.label, coverage.label)
+
+            for route in routes {
+                let routeButton = app.buttons["route.\(route)"]
+                XCTAssertTrue(routeButton.waitForExistence(timeout: 5), "Missing \(route) in \(language)")
+                routeButton.click()
+                let contentIdentifier = route == "overview" ? "overview-content" : "\(route)-content"
+                XCTAssertTrue(
+                    app.descendants(matching: .any)[contentIdentifier].waitForExistence(timeout: 10),
+                    "Missing \(route) content in \(language)"
+                )
+                try assertProductionAccessibilityAuditPasses(
+                    app: app,
+                    language: language,
+                    route: route
+                )
+            }
+
+            try recordPhysicalResult(coverage.resultID, environment: environment)
+            app.terminate()
+        }
+    }
+
+    private func authorizedEnvironment() throws -> [String: String] {
+        let environment = ProcessInfo.processInfo.environment
+        let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
+        try XCTSkipUnless(
+            environment["PHYSICAL_TEST_AUTHORIZATION"] == runID,
+            "Exact physical UI authorization is required"
+        )
+        return environment
+    }
+
+    private func launchProductionApp(
+        language: String,
+        environment: [String: String]
+    ) throws -> XCUIApplication {
+        let runID = try XCTUnwrap(environment["PHYSICAL_RUN_ID"])
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--physical-runtime-ui-test",
+            "--physical-runtime-language=\(language)"
+        ]
+        app.launchEnvironment = try [
+            "PHYSICAL_RUN_ID": runID,
+            "PHYSICAL_RUN_ROOT": XCTUnwrap(environment["PHYSICAL_RUN_ROOT"]),
+            "PHYSICAL_TEST_AUTHORIZATION": runID
+        ]
+        app.launch()
+        XCTAssertTrue(app.windows["main-window"].waitForExistence(timeout: 15))
+        return app
+    }
+
+    private func assertProductionAccessibilityAuditPasses(
+        app: XCUIApplication,
+        language: String,
+        route: String
+    ) throws {
+        var issues: [String] = []
+        try app.performAccessibilityAudit(for: .all) { issue in
+            if self.isKnownFrameworkAccessibilityArtifact(issue, app: app, route: route) {
+                return true
+            }
+            let element = issue.element.map {
+                "identifier=\($0.identifier), label=\($0.label), type=\($0.elementType.rawValue), frame=\($0.frame)"
+            } ?? "no associated element"
+            issues.append("\(issue.compactDescription): \(element)")
+            return true
+        }
+        XCTAssertTrue(
+            issues.isEmpty,
+            "Production accessibility audit failed for \(language)/\(route):\n\(issues.joined(separator: "\n"))"
+        )
+    }
+
+    private func isKnownFrameworkAccessibilityArtifact(
+        _ issue: XCUIAccessibilityAuditIssue,
+        app: XCUIApplication,
+        route: String
+    ) -> Bool {
+        let element = issue.element
+        let frame = element?.frame ?? .infinite
+        let windowFrame = app.windows["main-window"].frame
+        let isUndescribed = element?.identifier.isEmpty != false && element?.label.isEmpty != false
+
+        let touchBar = element?.elementType == .touchBar && isUndescribed
+        let structuralGroup = issue.auditType == .sufficientElementDescription &&
+            element?.elementType == .group && element?.isEnabled == false && isUndescribed
+        let titlebar = issue.auditType == .contrast && element?.elementType == .staticText &&
+            isUndescribed && abs(frame.minY - windowFrame.minY) <= 2 && frame.height <= 52
+        let offscreenContrast = issue.auditType == .contrast && element?.isHittable == false &&
+            windowFrame.intersects(frame) == false
+        let sidebarIcon = issue.auditType == .parentChild && element?.elementType == .group &&
+            element?.isEnabled == false && element?.isHittable == false && isUndescribed &&
+            frame.width <= 16 && frame.height <= 16
+        let resourceTableCell = route != "overview" &&
+            issue.auditType == .sufficientElementDescription &&
+            element?.elementType == .group && element?.isEnabled == false && isUndescribed &&
+            frame.height <= 24 && app.outlines["resource-table.\(route)"].frame.contains(frame)
+
+        return touchBar || structuralGroup || titlebar || offscreenContrast || sidebarIcon || resourceTableCell
+    }
+
     private func recordPhysicalResult(_ id: String, environment: [String: String]) throws {
         let runRoot = try URL(fileURLWithPath: XCTUnwrap(environment["PHYSICAL_RUN_ROOT"]), isDirectory: true)
             .standardizedFileURL
