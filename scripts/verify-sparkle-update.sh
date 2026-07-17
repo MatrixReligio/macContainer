@@ -26,6 +26,11 @@ policy_check() {
     for text in $required; do
         /usr/bin/grep -Fq -- "$text" "$script_path" || fail "missing policy token: $text"
     done
+    local expected_key configured_key
+    expected_key="$(/usr/bin/plutil -extract publicEDKey raw -o - "$expectations")"
+    configured_key="$(/usr/bin/awk -F': ' '/^[[:space:]]*SUPublicEDKey:/ { print $2; exit }' "$repo_root/project.yml")"
+    [[ -n "$configured_key" && "$expected_key" == "$configured_key" ]] || \
+        fail "seed expectation public key does not match project.yml"
     local applications_path='/'"Applications"
     local kill_all='kill'"all"
     local process_kill='p'"kill"

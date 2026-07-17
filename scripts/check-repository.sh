@@ -38,13 +38,20 @@ require_version() {
 for script in scripts/*.sh Tests/ToolingTests/*.bats; do
     zsh -n "$script"
 done
-zsh Tests/ToolingTests/check-no-container-cli.bats
 zsh Tests/ToolingTests/check-app-icon.bats
-zsh Tests/ToolingTests/check-workflow-policy.bats
-zsh Tests/ToolingTests/upstream-monitor-policy.bats
+zsh Tests/ToolingTests/check-no-container-cli.bats
 zsh Tests/ToolingTests/check-open-source-baseline.bats
+zsh Tests/ToolingTests/check-repository-policy.bats
+zsh Tests/ToolingTests/check-workflow-policy.bats
+zsh Tests/ToolingTests/document-parity.bats
+zsh Tests/ToolingTests/license-policy.bats
+zsh Tests/ToolingTests/localization-policy.bats
 zsh Tests/ToolingTests/physical-runner-policy.bats
 zsh Tests/ToolingTests/physical-summary.bats
+zsh Tests/ToolingTests/release-script-policy.bats
+zsh Tests/ToolingTests/release-workflow-policy.bats
+zsh Tests/ToolingTests/upstream-monitor-policy.bats
+scripts/verify-sparkle-update.sh --policy-check
 scripts/check-no-container-cli.sh
 scripts/check-workflow-policy.sh
 scripts/check-open-source-baseline.sh
