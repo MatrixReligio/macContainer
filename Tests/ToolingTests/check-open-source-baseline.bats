@@ -31,6 +31,15 @@ community_templates=(
 
 mkdir -p "$fixture/scripts" "$fixture/docs/en" "$fixture/.github/ISSUE_TEMPLATE"
 cp "$repo_root/scripts/check-open-source-baseline.sh" "$fixture/scripts/"
+while IFS= read -r markdown; do
+    relative="${markdown#$repo_root/}"
+    mkdir -p "$fixture/${relative:h}"
+    cp "$markdown" "$fixture/$relative"
+done < <(find "$repo_root" -type f -name '*.md' \
+    -not -path "$repo_root/.git/*" \
+    -not -path "$repo_root/.build/*" \
+    -not -path "$repo_root/.tools/*" \
+    -not -path "$repo_root/.worktrees/*" | sort)
 for required_file in "${policy_documents[@]}" "${community_templates[@]}"; do
     cp "$repo_root/$required_file" "$fixture/$required_file"
 done
