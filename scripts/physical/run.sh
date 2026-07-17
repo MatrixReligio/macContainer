@@ -491,7 +491,7 @@ fi
 /bin/chmod 0700 "$run_root"
 
 if [[ "$mode" == "--simulated-host" ]]; then
-    run_with_timeout 1200 /usr/bin/swift build --package-path "$repo_root" \
+    run_with_timeout 3600 /usr/bin/swift build --package-path "$repo_root" \
         --product mc-physical --jobs "$swiftpm_jobs"
     run_with_timeout 180 /usr/bin/swift run --package-path "$repo_root" --skip-build mc-physical simulate-run \
         --run-root "$run_root" --run-id "$RUN_UUID" --plan "$plan"

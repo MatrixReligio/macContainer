@@ -48,7 +48,7 @@ jobs:
       - name: Run all secret-free repository and release policy tests
         run: |
           set -euo pipefail
-          MC_SWIFTPM_JOBS=1 scripts/check-repository.sh
+          MC_SWIFTPM_JOBS=2 scripts/check-repository.sh
           zsh Tests/ToolingTests/release-script-policy.bats
           zsh Tests/ToolingTests/release-workflow-policy.bats
 

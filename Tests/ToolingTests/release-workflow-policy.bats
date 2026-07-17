@@ -42,8 +42,8 @@ for text in $required_release_text; do
     /usr/bin/grep -Fq -- "$text" "$release" || { print -u2 -- "release.yml missing: $text"; exit 1; }
 done
 
-/usr/bin/grep -Fq -- 'MC_SWIFTPM_JOBS=1 scripts/check-repository.sh' "$release" || {
-    print -u2 -- "release verification must use one SwiftPM build job on hosted macOS"
+/usr/bin/grep -Fq -- 'MC_SWIFTPM_JOBS=2 scripts/check-repository.sh' "$release" || {
+    print -u2 -- "release verification must use two SwiftPM build jobs on the 14 GB runner"
     exit 1
 }
 

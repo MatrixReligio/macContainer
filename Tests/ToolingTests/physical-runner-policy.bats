@@ -46,7 +46,7 @@ require_text 'Status: signed by a developer certificate issued by Apple for dist
 require_text 'Notarization: trusted by the Apple notary service'
 require_text 'run_with_timeout'
 require_text 'setopt LOCAL_TRAPS'
-require_text 'run_with_timeout 1200 /usr/bin/swift build --package-path "$repo_root"'
+require_text 'run_with_timeout 3600 /usr/bin/swift build --package-path "$repo_root"'
 require_text '--product mc-physical --jobs "$swiftpm_jobs"'
 require_text 'run_with_timeout 180 /usr/bin/swift run --package-path "$repo_root" --skip-build mc-physical simulate-run'
 require_text 'maccontainer-physical-results-$RUN_UUID'
