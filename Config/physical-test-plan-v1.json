@@ -52,6 +52,7 @@
     {"id":"inventory.registries","category":"registries","phase":"install-and-operations"},
     {"id":"inventory.machines","category":"machines","phase":"install-and-operations"},
     {"id":"inventory.dns","category":"dns","phase":"install-and-operations"},
+    {"id":"dns.production-create-delete","category":"dns","phase":"install-and-operations"},
     {"id":"compatibility.all-domain-probes","category":"compatibility","phase":"install-and-operations"},
     {"id":"upgrade.install-1.0.0","category":"upgrade","phase":"upgrade-rollback"},
     {"id":"upgrade.automatic-1.1.0","category":"upgrade","phase":"upgrade-rollback"},
