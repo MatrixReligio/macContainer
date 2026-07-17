@@ -67,6 +67,9 @@ RUN_UUID="$(/usr/bin/uuidgen | /usr/bin/tr '[:upper:]' '[:lower:]')"
 run_root="$physical_root/$RUN_UUID"
 preflight_output="${TMPDIR%/}/maccontainer-physical-preflight-$RUN_UUID.json"
 cleanup_running=0
+package_100=""
+package_110=""
+upgrade_state=""
 
 cleanup() {
     local original_status=$?
@@ -180,6 +183,10 @@ run_physical_package_tests() {
         PHYSICAL_RUN_ID="$RUN_UUID" \
         PHYSICAL_RUN_ROOT="$run_root" \
         PHYSICAL_TEST_AUTHORIZATION="$RUN_UUID" \
+        PHYSICAL_TEST_PHASE="$phase" \
+        PHYSICAL_PACKAGE_100="$package_100" \
+        PHYSICAL_PACKAGE_110="$package_110" \
+        PHYSICAL_UPGRADE_STATE="$upgrade_state" \
         /usr/bin/swift test --package-path "$repo_root" --filter "$selected_filter"
 }
 
@@ -251,6 +258,10 @@ if [[ "$phase" == "upgrade-rollback" || "$phase" == "all" ]]; then
     ledger_transition runtime-package "$package_110" planned
     download_verified_package "$package_url_110" "$package_110" "$digest_110"
     ledger_transition runtime-package "$package_110" created
+    upgrade_state="$run_root/upgrade-state"
+    ledger_transition temporary-directory "$upgrade_state" planned
+    /bin/mkdir -- "$upgrade_state"
+    ledger_transition temporary-directory "$upgrade_state" created
 fi
 
 case "$phase" in
