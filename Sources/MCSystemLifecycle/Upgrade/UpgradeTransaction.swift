@@ -8,8 +8,8 @@ public enum UpgradeStage: String, CaseIterable, Codable, Sendable {
     case finalIdleCheck = "upgrade.idle.final-check"
     case serviceStop = "upgrade.service.stop"
     case targetInstall = "upgrade.target.install"
-    case targetVerification = "upgrade.target.verify"
     case serviceStart = "upgrade.service.start"
+    case targetVerification = "upgrade.target.verify"
     case targetProbes = "upgrade.probes.run"
     case packageRetention = "upgrade.package.retain"
     case journalCommit = "upgrade.journal.commit"
@@ -390,14 +390,14 @@ public struct UpgradeTransaction: Sendable {
                 digest: prepared.package.sha256
             )
 
+            currentStage = .serviceStart
+            try await services.startRuntime(expectedVersion: target.version)
+
             currentStage = .targetVerification
             let agreement = try await installedRuntimeVerifier.verify(target: target)
             guard agreement.agrees(with: target.version) else {
                 throw UpgradeError.versionAgreementMismatch
             }
-
-            currentStage = .serviceStart
-            try await services.startRuntime(expectedVersion: target.version)
 
             currentStage = .targetProbes
             try await probes.run(probes: target.requiredProbes, runtimeVersion: target.version)

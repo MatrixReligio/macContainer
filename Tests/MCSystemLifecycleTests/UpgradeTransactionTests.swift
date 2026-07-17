@@ -20,7 +20,12 @@ struct UpgradeTransactionTests {
         #expect(fixture.journal.retainedPointIDs == [fixture.rollback.pointID])
         let checkpoint = try #require(fixture.actions.values.firstIndex(of: "journal.rollback-point.retained"))
         let finalIdleCheck = try #require(fixture.actions.values.firstIndex(of: UpgradeStage.finalIdleCheck.rawValue))
+        let serviceStart = try #require(fixture.actions.values.firstIndex(of: UpgradeStage.serviceStart.rawValue))
+        let targetVerification = try #require(
+            fixture.actions.values.firstIndex(of: UpgradeStage.targetVerification.rawValue)
+        )
         #expect(checkpoint < finalIdleCheck)
+        #expect(serviceStart < targetVerification)
     }
 
     @Test func `refuses upgrade when work appears at final idle check`() async throws {
