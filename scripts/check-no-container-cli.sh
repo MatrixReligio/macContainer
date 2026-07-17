@@ -57,11 +57,11 @@ fi
 scan_status=$?
 set -e
 
-# These two exact literals are reviewed payload inventory entries used only for removal.
-# Keep the exception path-, field-, and line-shape-specific so executable references still fail.
+# These exact literals are reviewed payload inventory entries used only for removal.
+# Keep the exception path-, field-, digest-, and line-shape-specific so executable references still fail.
 if (( scan_status == 0 )); then
     matches="$(print -r -- "$matches" | /usr/bin/grep --extended-regexp --invert-match \
-        '/Sources/MCSystemLifecycle/Helper/RuntimePayloadInventory\.swift:[0-9]+:[[:space:]]*relativePath: "bin/(uninstall|update)-container\.sh",?$' || true)"
+        '/Sources/MCSystemLifecycle/Helper/RuntimePayloadInventory\.swift:[0-9]+:([[:space:]]*relativePath: "bin/(uninstall|update)-container\.sh",?|[[:space:]]*"bin/(uninstall|update)-container\.sh": "[0-9a-f]{64}",?)$' || true)"
     if [[ -z "$matches" ]]; then
         scan_status=1
     fi

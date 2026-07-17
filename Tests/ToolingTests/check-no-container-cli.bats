@@ -6,6 +6,7 @@ fixture="$(mktemp -d "${TMPDIR%/}/maccontainer-cli-scan.XXXXXX")"
 trap 'rm -rf "$fixture"' EXIT
 
 mkdir -p "$fixture/Sources" "$fixture/scripts" "$fixture/Tests" "$fixture/docs"
+mkdir -p "$fixture/Sources/MCSystemLifecycle/Helper"
 
 assert_rejected() {
     local source_line="$1"
@@ -34,6 +35,16 @@ assert_rejected \
 assert_rejected \
     'let uninstaller = "uninstall-container.sh"' \
     "$fixture/Sources/BadUninstaller.swift"
+assert_rejected \
+    '"bin/uninstall-container.sh": "51a840ab040bec9855ac66ad7c27b3b48771f69e779cb6d614895a3185a3dbb9",' \
+    "$fixture/Sources/BadInventory.swift"
+
+cat > "$fixture/Sources/MCSystemLifecycle/Helper/RuntimePayloadInventory.swift" <<'EOF'
+let hashes = [
+    "bin/uninstall-container.sh": "51a840ab040bec9855ac66ad7c27b3b48771f69e779cb6d614895a3185a3dbb9",
+    "bin/update-container.sh": "d7c11bde8814f9ee1b6ecb27067d627cb780cc89c1ed300fc9b755c214be9dd3",
+]
+EOF
 
 print -r -- 'let name = "container"' > "$fixture/Sources/Good.swift"
 print -r -- 'let installer = "/usr/sbin/installer"' > "$fixture/Sources/Installer.swift"
