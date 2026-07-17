@@ -31,7 +31,7 @@
 - Create: `Sources/MCAppCore/ActivityCenter.swift`
 - Test: `Tests/MCAppCoreTests/ActivityCenterTests.swift`
 
-- [ ] **Step 1: Write failing lifecycle/progress/cancellation tests**
+- [x] **Step 1: Write failing lifecycle/progress/cancellation tests**
 
 ```swift
 import Testing
@@ -63,13 +63,13 @@ struct ActivityCenterTests {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ActivityCenterTests`
 
 Expected: FAIL because Activity Center types are undefined.
 
-- [ ] **Step 3: Implement observable state**
+- [x] **Step 3: Implement observable state**
 
 ```swift
 public struct ActivityRecord: Identifiable, Equatable, Sendable {
@@ -98,13 +98,13 @@ public final class ActivityCenter {
 
 `AppEnvironment` contains injected bridge, lifecycle manager, compatibility service, settings store, date/UUID providers, and fake/production modes. `AppState` owns selection, resource snapshots, global health, sheets, and Activity Center; all UI mutation occurs on the main actor.
 
-- [ ] **Step 4: Run state tests**
+- [x] **Step 4: Run state tests**
 
 Run: `swift test --filter MCAppCoreTests`
 
 Expected: PASS including progress clamp, cancellation, retry, partial batch failure, elapsed time, and task cleanup.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel/Activity.swift Sources/MCAppCore Tests/MCAppCoreTests
