@@ -99,6 +99,26 @@
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
+            key = "PHYSICAL_RESULTS_ROOT"
+            value = "$(PHYSICAL_RESULTS_ROOT)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "PHYSICAL_RUN_ID"
+            value = "$(PHYSICAL_RUN_ID)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "PHYSICAL_RUN_ROOT"
+            value = "$(PHYSICAL_RUN_ROOT)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "PHYSICAL_TEST_AUTHORIZATION"
+            value = "$(PHYSICAL_TEST_AUTHORIZATION)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
             key = "SPARKLE_TEST_EXPECTED_VERSION"
             value = "$(SPARKLE_TEST_EXPECTED_VERSION)"
             isEnabled = "YES">

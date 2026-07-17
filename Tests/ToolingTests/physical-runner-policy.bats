@@ -68,6 +68,12 @@ require_text 'run_physical_package_tests'
 require_text 'CODE_SIGN_STYLE=Automatic'
 require_text 'CODE_SIGN_IDENTITY="Apple Development"'
 require_text 'DEVELOPMENT_TEAM=4DUQGD879H'
+for variable in PHYSICAL_RUN_ID PHYSICAL_RUN_ROOT PHYSICAL_TEST_AUTHORIZATION PHYSICAL_RESULTS_ROOT; do
+    /usr/bin/grep -Fq -- "$variable: \$($variable)" "$repo_root/project.yml" || {
+        print -u2 -- "physical UI scheme does not propagate $variable"
+        exit 1
+    }
+done
 for language in en zh-Hans zh-Hant ja ko; do
     /usr/bin/grep -Fq -- "ui.production-language-$language-accessibility" \
         "$repo_root/Tests/MacContainerUITests/PhysicalRuntimeUITests.swift" || {
