@@ -127,7 +127,7 @@ git commit -m "feat: embed reviewed runtime compatibility catalog"
 - Create: `Sources/MCCompatibility/CompatibilityDecision.swift`
 - Test: `Tests/MCCompatibilityTests/CompatibilityDecisionTests.swift`
 
-- [ ] **Step 1: Write the full decision table tests**
+- [x] **Step 1: Write the full decision table tests**
 
 ```swift
 @Test(arguments: [
@@ -147,13 +147,13 @@ func exactDecision(_ fixture: DecisionFixture) {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter CompatibilityDecisionTests`
 
 Expected: FAIL because the engine is undefined.
 
-- [ ] **Step 3: Implement explicit outcomes**
+- [x] **Step 3: Implement explicit outcomes**
 
 ```swift
 public enum CompatibilityDecision: Equatable, Sendable {
@@ -169,13 +169,13 @@ public enum HoldReason: String, Codable, Sendable {
 
 Decision order is fixed to prevent misleading output: catalog validity → exact runtime entry → app range → host → package identity → verified attestation → blocked store → migration consent. The engine has no network dependency and never infers compatibility from semantic-version proximity.
 
-- [ ] **Step 4: Run decision and randomized unknown-version tests**
+- [x] **Step 4: Run decision and randomized unknown-version tests**
 
 Run: `swift test --filter CompatibilityDecisionTests`
 
 Expected: PASS; 10,000 generated versions absent from the catalog all produce `.unknownRuntime`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCCompatibility/CompatibilityDecision.swift Tests/MCCompatibilityTests/CompatibilityDecisionTests.swift

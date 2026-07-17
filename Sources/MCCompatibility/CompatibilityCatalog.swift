@@ -108,9 +108,8 @@ public struct CompatibilityCatalog: Codable, Equatable, Sendable {
         guard entry.requiredProbeIDs == ProbeID.baselineAllCases.map(\.rawValue) else {
             throw CompatibilityCatalogError.invalidProbeSet(entry.runtimeVersion)
         }
-        let contractVersion = RuntimeVersion(major: runtime.major, minor: runtime.minor, patch: runtime.patch)
-        guard let contract = try? ContractRepository.bundled(version: contractVersion),
-              entry.capabilityIDs == Set(contract.operations.map(\.id))
+        guard let reviewedCapabilityIDs = Self.reviewedCapabilityIDs[entry.runtimeVersion],
+              entry.capabilityIDs == reviewedCapabilityIDs
         else {
             throw CompatibilityCatalogError.invalidCapabilitySet(entry.runtimeVersion)
         }
@@ -119,6 +118,12 @@ public struct CompatibilityCatalog: Codable, Equatable, Sendable {
     private static func isSHA256(_ value: String) -> Bool {
         value.count == 64 && value.allSatisfy { $0.isHexDigit && !$0.isUppercase }
     }
+
+    private static let reviewedCapabilityIDs: [String: Set<String>] = {
+        let version = RuntimeVersion(major: 1, minor: 1, patch: 0)
+        guard let contract = try? ContractRepository.bundled(version: version) else { return [:] }
+        return [version.description: Set(contract.operations.map(\.id))]
+    }()
 }
 
 public enum CompatibilityCatalogError: Error, Equatable, Sendable {
