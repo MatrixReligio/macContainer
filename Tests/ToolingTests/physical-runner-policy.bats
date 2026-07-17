@@ -99,6 +99,18 @@ require_text 'tracked worktree must be clean for physical attestation'
 require_text 'recover.swift'
 require_text 'cleanup ledger contains only verifiedAbsent states'
 
+/usr/bin/ruby -e '
+  source = File.read(ARGV.fetch(0))
+  all_case = source.index("    all)") or abort "all phase missing"
+  body = source[all_case..]
+  body = body[0...body.index("        ;;")]
+  operations = body.index("run_physical_package_tests PhysicalOperationTests")
+  uninstall = body.index("production_complete_uninstall")
+  upgrade = body.index("run_physical_package_tests PhysicalUpgradeTests")
+  abort "all phase must isolate operations from upgrade with a production uninstall" unless
+    operations && uninstall && upgrade && operations < uninstall && uninstall < upgrade
+' "$runner"
+
 if /usr/bin/grep -Fq -- 'HelperClient()' \
     "$repo_root/Tests/PhysicalHostTests/PhysicalOperationTests.swift" \
     "$repo_root/Tests/PhysicalHostTests/PhysicalUpgradeTests.swift" \

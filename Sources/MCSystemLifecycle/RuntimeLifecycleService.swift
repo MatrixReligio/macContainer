@@ -103,10 +103,7 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
         }
         let target = try await targetResolver.resolve()
         let inventory = makeInventoryRefresher(target: target)
-        let auditChecker = SystemResidueAuditChecker(
-            configuration: .live(manifest: target.manifest),
-            runtimeState: SystemRuntimeStateResidueQuery.live(manifest: target.manifest)
-        )
+        let auditChecker = makeAuditChecker(target: target)
         let transaction = UninstallTransaction(
             target: target,
             operationLock: operationLock,
@@ -140,7 +137,21 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
     private func makeInventoryRefresher(target: RuntimeUninstallTarget) -> SystemUninstallInventoryRefresher {
         SystemUninstallInventoryRefresher(
             target: target,
-            bridge: bridge
+            bridge: bridge,
+            residue: makeAuditChecker(target: target)
+        )
+    }
+
+    private func makeAuditChecker(target: RuntimeUninstallTarget) -> SystemResidueAuditChecker {
+        SystemResidueAuditChecker(
+            configuration: .live(manifest: target.manifest),
+            runtimeState: SystemRuntimeStateResidueQuery(
+                manifest: target.manifest,
+                launchServices: AppleLaunchServiceResidueInspector(),
+                processes: SystemOwnedProcessResidueInspector(),
+                credentials: KeychainCredentialResidueInspector(),
+                packetFilter: helper
+            )
         )
     }
 }
@@ -173,6 +184,7 @@ public struct SystemPartialInstallUninstaller: PartialInstallUninstalling, Senda
         for name in try resolvers.names().sorted() {
             try await helper.removeResolver(name: name)
         }
+        try await helper.removeEmptyResolverDirectory()
         try await helper.removePacketFilter(anchor: "com.apple.container")
         try await helper.removePayload(
             manifestID: ReviewedRuntime110Manifest.identifier,

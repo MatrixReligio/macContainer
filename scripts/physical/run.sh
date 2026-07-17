@@ -530,6 +530,8 @@ case "$phase" in
     all)
         runtime_mutation_attempted=1
         run_physical_package_tests PhysicalOperationTests install-and-operations
+        production_complete_uninstall
+        runtime_mutation_attempted=1
         run_physical_package_tests PhysicalUpgradeTests upgrade-rollback
         run_physical_ui_tests
         production_complete_uninstall

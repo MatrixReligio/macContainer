@@ -196,6 +196,21 @@ public protocol PhysicalPrivilegedOperationExecuting: Sendable {
     func completeUninstall() async throws -> PhysicalCompleteUninstallResult
 }
 
+public enum PhysicalPrivilegedOperationStage: String, Codable, Sendable {
+    case inventoryPreparation = "inventory-preparation"
+    case uninstallTransaction = "uninstall-transaction"
+}
+
+public struct PhysicalPrivilegedOperationStageFailure: Error {
+    public let stage: PhysicalPrivilegedOperationStage
+    public let underlying: any Error
+
+    public init(stage: PhysicalPrivilegedOperationStage, underlying: any Error) {
+        self.stage = stage
+        self.underlying = underlying
+    }
+}
+
 public struct PhysicalOperationExecutor: PhysicalPrivilegedOperationExecuting {
     public init() {}
 
@@ -237,12 +252,28 @@ public struct PhysicalOperationExecutor: PhysicalPrivilegedOperationExecuting {
 
     public func completeUninstall() async throws -> PhysicalCompleteUninstallResult {
         let lifecycle = ProductionRuntimeLifecycle()
-        let inventory = try await lifecycle.prepareUninstall(mode: .complete)
-        let result = try await lifecycle.uninstall(
-            mode: .complete,
-            inventoryFingerprint: inventory.fingerprint,
-            acknowledgesIrreversibleDeletion: true
-        )
+        let inventory: UninstallInventory
+        do {
+            inventory = try await lifecycle.prepareUninstall(mode: .complete)
+        } catch {
+            throw PhysicalPrivilegedOperationStageFailure(
+                stage: .inventoryPreparation,
+                underlying: error
+            )
+        }
+        let result: UninstallResult
+        do {
+            result = try await lifecycle.uninstall(
+                mode: .complete,
+                inventoryFingerprint: inventory.fingerprint,
+                acknowledgesIrreversibleDeletion: true
+            )
+        } catch {
+            throw PhysicalPrivilegedOperationStageFailure(
+                stage: .uninstallTransaction,
+                underlying: error
+            )
+        }
         return PhysicalCompleteUninstallResult(
             completion: result.completion == .complete ? "complete" : "data-preserved",
             auditEmpty: result.audit.isEmpty,
@@ -259,6 +290,7 @@ public struct PhysicalPrivilegedOperationResult: Codable, Equatable, Sendable {
     public let auditEmpty: Bool?
     public let auditComplete: Bool?
     public let preservedCount: Int?
+    public let errorStage: String?
     public let errorDomain: String?
     public let errorCode: Int?
 
@@ -269,6 +301,7 @@ public struct PhysicalPrivilegedOperationResult: Codable, Equatable, Sendable {
         auditEmpty: Bool? = nil,
         auditComplete: Bool? = nil,
         preservedCount: Int? = nil,
+        errorStage: String? = nil,
         errorDomain: String? = nil,
         errorCode: Int? = nil
     ) {
@@ -278,6 +311,7 @@ public struct PhysicalPrivilegedOperationResult: Codable, Equatable, Sendable {
         self.auditEmpty = auditEmpty
         self.auditComplete = auditComplete
         self.preservedCount = preservedCount
+        self.errorStage = errorStage
         self.errorDomain = errorDomain
         self.errorCode = errorCode
     }
@@ -357,10 +391,12 @@ public struct PhysicalPrivilegedOperationCommand: Sendable {
                 )
             }
         } catch {
-            let error = error as NSError
+            let stageFailure = error as? PhysicalPrivilegedOperationStageFailure
+            let error = (stageFailure?.underlying ?? error) as NSError
             result = .init(
                 operation: operation.rawValue,
                 succeeded: false,
+                errorStage: stageFailure?.stage.rawValue,
                 errorDomain: error.domain,
                 errorCode: error.code
             )

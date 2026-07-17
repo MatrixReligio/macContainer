@@ -265,6 +265,23 @@ struct PhysicalPacketFilterAuditCommandTests {
             preservedCount: 0
         ))
     }
+
+    @Test func `signed app uninstall failure identifies its non-sensitive lifecycle stage`() async throws {
+        let fixture = try PhysicalOperationFixture()
+        defer { fixture.cleanup() }
+        let executor = FailingPhysicalUninstallExecutor()
+        let uninstall = try #require(fixture.command(operation: "complete-uninstall", executor: executor))
+
+        try await uninstall.command.execute()
+
+        #expect(try fixture.result(at: uninstall.output) == .init(
+            operation: "complete-uninstall",
+            succeeded: false,
+            errorStage: "inventory-preparation",
+            errorDomain: "MCAppCoreTests.PhysicalUninstallFixtureFailure",
+            errorCode: 7
+        ))
+    }
 }
 
 private struct FixturePacketFilterAuditor: PacketFilterAuditing {
@@ -343,6 +360,27 @@ private actor FixturePhysicalOperationExecutor: PhysicalPrivilegedOperationExecu
 
     func completeUninstall() -> PhysicalCompleteUninstallResult {
         .init(completion: "complete", auditEmpty: true, auditComplete: true, preservedCount: 0)
+    }
+}
+
+private struct FailingPhysicalUninstallExecutor: PhysicalPrivilegedOperationExecuting {
+    func install(version _: String, packageURL _: URL) {}
+    func roundTripDNS(domain _: String) {}
+
+    func completeUninstall() throws -> PhysicalCompleteUninstallResult {
+        throw PhysicalPrivilegedOperationStageFailure(
+            stage: .inventoryPreparation,
+            underlying: PhysicalUninstallFixtureFailure.inventory
+        )
+    }
+}
+
+private enum PhysicalUninstallFixtureFailure: Int, CustomNSError {
+    case inventory = 7
+
+    static let errorDomain = "MCAppCoreTests.PhysicalUninstallFixtureFailure"
+    var errorCode: Int {
+        rawValue
     }
 }
 
