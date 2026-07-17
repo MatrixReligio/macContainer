@@ -7,6 +7,11 @@ mode="$1"
 artifact="${2:A}"
 profile="${MACCONTAINER_NOTARY_PROFILE:-maccontainer-notary}"
 [[ "$profile" == "maccontainer-notary" ]] || die "notary profile must be maccontainer-notary"
+notary_arguments=(--keychain-profile "$profile")
+if [[ -n "${MACCONTAINER_NOTARY_KEYCHAIN:-}" ]]; then
+    require_file "$MACCONTAINER_NOTARY_KEYCHAIN"
+    notary_arguments+=(--keychain "$MACCONTAINER_NOTARY_KEYCHAIN")
+fi
 
 temporary=""
 mountpoint=""
@@ -25,7 +30,7 @@ case "$mode" in
         temporary="$(/usr/bin/mktemp -d "${TMPDIR%/}/maccontainer-app-notary.XXXXXX")"
         archive="$temporary/MacContainer.zip"
         /usr/bin/ditto -c -k --keepParent "$artifact" "$archive"
-        /usr/bin/xcrun notarytool submit "$archive" --keychain-profile "$profile" --wait
+        /usr/bin/xcrun notarytool submit "$archive" $notary_arguments --wait
         /usr/bin/xcrun stapler staple "$artifact"
         /usr/bin/xcrun stapler validate "$artifact"
         /usr/sbin/spctl --assess --type execute --verbose=2 "$artifact"
@@ -33,7 +38,7 @@ case "$mode" in
         ;;
     --dmg)
         require_file "$artifact"
-        /usr/bin/xcrun notarytool submit "$artifact" --keychain-profile "$profile" --wait
+        /usr/bin/xcrun notarytool submit "$artifact" $notary_arguments --wait
         /usr/bin/xcrun stapler staple "$artifact"
         /usr/bin/xcrun stapler validate "$artifact"
         mountpoint="$(/usr/bin/mktemp -d "${TMPDIR%/}/maccontainer-dmg-notary.XXXXXX")"

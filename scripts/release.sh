@@ -51,11 +51,13 @@ case "$mode" in
     --release)
         tag="$label"
         version="${tag#v}"
+        artifact_label="$version"
         ;;
     --local-rehearsal)
         [[ "$label" =~ '^[0-9]+\.[0-9]+\.[0-9]+-seed$' ]] || die "invalid rehearsal label"
         version="${label%-seed}"
         tag="v$version"
+        artifact_label="$label"
         ;;
     *) die "unknown release mode" ;;
 esac
@@ -80,7 +82,7 @@ xcodebuild -quiet -project MacContainer.xcodeproj -scheme MacContainer -configur
 app="$archive/Products/Applications/MacContainer.app"
 "$SCRIPT_DIR/sign.sh" "$app"
 "$SCRIPT_DIR/notarize.sh" --app "$app"
-dmg="$dist/MacContainer-$label.dmg"
+dmg="$dist/MacContainer-$artifact_label.dmg"
 "$SCRIPT_DIR/package.sh" "$app" "$dmg"
 "$SCRIPT_DIR/notarize.sh" --dmg "$dmg"
 

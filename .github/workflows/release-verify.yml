@@ -1,0 +1,53 @@
+name: Verify public MacContainer release
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: zsh {0}
+
+jobs:
+  verify-public:
+    name: Verify downloaded public assets without secrets
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the exact public tag
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Require a public non-draft release and download every asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]]
+          metadata="$(gh release view "$RELEASE_TAG" --json isDraft,tagName,url)"
+          [[ "$(jq -r '.isDraft' <<< "$metadata")" == false ]]
+          [[ "$(jq -r '.tagName' <<< "$metadata")" == "$RELEASE_TAG" ]]
+          mkdir -p dist
+          gh release download "$RELEASE_TAG" --dir dist
+
+      - name: Independently verify notarization, signatures, appcast, and supply-chain metadata
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: scripts/verify-release.sh dist "${RELEASE_TAG#v}"

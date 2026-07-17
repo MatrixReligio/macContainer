@@ -1,0 +1,175 @@
+name: Publish verified notarized release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact release tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: zsh {0}
+
+jobs:
+  verify:
+    name: Secret-free release verification
+    runs-on: macos-26
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the requested source revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag input against project version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]]
+          version="${RELEASE_TAG#v}"
+          project_version="$(awk -F': ' '/^[[:space:]]*MARKETING_VERSION:/ { gsub(/"/, "", $2); print $2; exit }' project.yml)"
+          [[ "$version" == "$project_version" ]]
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            print -u2 -- "Release tag already exists: $RELEASE_TAG"
+            exit 1
+          fi
+
+      - name: Bootstrap checksum-pinned XcodeGen and quality tools
+        run: scripts/bootstrap-tools.sh
+
+      - name: Install the Xcode Metal toolchain component
+        run: xcodebuild -downloadComponent MetalToolchain
+
+      - name: Run all secret-free repository and release policy tests
+        run: |
+          set -euo pipefail
+          scripts/check-repository.sh
+          zsh Tests/ToolingTests/release-script-policy.bats
+          zsh Tests/ToolingTests/release-workflow-policy.bats
+          xcodebuild -quiet -project MacContainer.xcodeproj -scheme MacContainer \
+            -configuration Release -derivedDataPath .build/release-verification \
+            -clonedSourcePackagesDirPath .build/xcode-packages \
+            ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+
+  release:
+    name: Sign, notarize, verify, then publish
+    needs: verify
+    if: github.event_name != 'pull_request'
+    runs-on: macos-26
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the verified revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Bootstrap checksum-pinned XcodeGen and quality tools
+        run: scripts/bootstrap-tools.sh
+
+      - name: Install the Xcode Metal toolchain component
+        run: xcodebuild -downloadComponent MetalToolchain
+
+      - name: Download checksum-pinned Sparkle 2.9.4 release tools
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/Sparkle-2.9.4.tar.xz"
+          expected='ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9'
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            'https://github.com/sparkle-project/Sparkle/releases/download/2.9.4/Sparkle-2.9.4.tar.xz' \
+            --output "$archive"
+          print -r -- "$expected  $archive" | shasum -a 256 -c -
+          mkdir -p .tools/sparkle
+          tar -xJf "$archive" -C .tools/sparkle --strip-components=1
+          test -x .tools/sparkle/bin/generate_appcast
+
+      - name: Use ephemeral credentials, verify artifacts, and publish only after verification
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          for value in "$DEVELOPER_ID_CERT_P12" "$DEVELOPER_ID_CERT_PASSWORD" \
+            "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$SPARKLE_PRIVATE_KEY"; do
+            test -n "$value"
+            print -r -- "::add-mask::$value"
+          done
+          test -n "$ASC_KEY_P8"
+
+          keychain="$RUNNER_TEMP/maccontainer-${GITHUB_RUN_ID}-${RANDOM}.keychain-db"
+          certificate="$RUNNER_TEMP/maccontainer-developer-id.p12"
+          asc_key="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          sparkle_key="$RUNNER_TEMP/maccontainer-sparkle.seed"
+          keychain_password="$(openssl rand -hex 32)"
+          print -r -- "::add-mask::$keychain_password"
+          original_keychains=("${(@f)$(security list-keychains -d user | sed -E 's/^[[:space:]]*"([^"]+)".*/\1/')}")
+
+          cleanup() {
+            security list-keychains -d user -s $original_keychains >/dev/null 2>&1 || true
+            security delete-keychain "$keychain" >/dev/null 2>&1 || true
+            rm -f "$certificate" "$asc_key" "$sparkle_key"
+          }
+          trap cleanup EXIT INT TERM
+
+          print -rn -- "$DEVELOPER_ID_CERT_P12" | /usr/bin/base64 -D > "$certificate"
+          print -rn -- "$ASC_KEY_P8" > "$asc_key"
+          print -rn -- "$SPARKLE_PRIVATE_KEY" > "$sparkle_key"
+          chmod 600 "$certificate" "$asc_key" "$sparkle_key"
+
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -k "$keychain" -P "$DEVELOPER_ID_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s \
+            -k "$keychain_password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $original_keychains
+          xcrun notarytool store-credentials maccontainer-notary \
+            --key "$asc_key" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" \
+            --keychain "$keychain"
+
+          version="${RELEASE_TAG#v}"
+          git tag "$RELEASE_TAG"
+          SPARKLE_PRIVATE_KEY_FILE="$sparkle_key" \
+            SPARKLE_GENERATE_APPCAST="$GITHUB_WORKSPACE/.tools/sparkle/bin/generate_appcast" \
+            MACCONTAINER_NOTARY_PROFILE=maccontainer-notary \
+            MACCONTAINER_NOTARY_KEYCHAIN="$keychain" \
+            scripts/release.sh --release "$RELEASE_TAG"
+          scripts/verify-release.sh dist "$version"
+
+          git push origin "refs/tags/$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" \
+            "dist/MacContainer-$version.dmg" \
+            dist/appcast.xml dist/checksums.txt dist/sbom-checksums.txt \
+            dist/MacContainer.cdx.json dist/MacContainer.spdx.json \
+            dist/THIRD_PARTY_NOTICES \
+            --title "MacContainer $version" \
+            --notes-file dist/release-notes.md \
+            --verify-tag
+          published="$(gh release view "$RELEASE_TAG" --json isDraft,tagName)"
+          [[ "$(jq -r '.isDraft' <<< "$published")" == false ]]
+          [[ "$(jq -r '.tagName' <<< "$published")" == "$RELEASE_TAG" ]]
+
+  verify-public-release:
+    name: Re-download and verify the public release
+    needs: release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/release-verify.yml
+    with:
+      tag: ${{ inputs.tag }}

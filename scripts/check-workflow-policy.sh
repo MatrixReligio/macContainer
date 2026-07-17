@@ -6,10 +6,14 @@ repo_root="${script_dir:h}"
 ci="$repo_root/.github/workflows/ci.yml"
 upstream="$repo_root/.github/workflows/upstream-monitor.yml"
 verification="$repo_root/.github/workflows/verify-compatibility-pr.yml"
+release="$repo_root/.github/workflows/release.yml"
+release_verification="$repo_root/.github/workflows/release-verify.yml"
 approved_upload_artifact_sha="043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
 errors=()
 
-for workflow in "$ci" "$upstream" "$verification"; do
+workflows=("$ci" "$upstream" "$verification" "$release" "$release_verification")
+
+for workflow in $workflows; do
     if [[ ! -f "$workflow" ]]; then
         errors+=("missing workflow: ${workflow#$repo_root/}")
     fi
@@ -20,7 +24,7 @@ if (( ${#errors} > 0 )); then
     exit 1
 fi
 
-for workflow in "$ci" "$upstream" "$verification"; do
+for workflow in $workflows; do
     relative="${workflow#$repo_root/}"
     if ! /usr/bin/ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0))' "$workflow"; then
         errors+=("invalid YAML: $relative")
@@ -107,6 +111,48 @@ if ! /usr/bin/grep -Fq 'scripts/verify-physical-attestation.swift' "$verificatio
    ! /usr/bin/grep -Fq 'pulls.listReviews' "$verification"; then
     errors+=("compatibility verification must check signed proof and reviewer approval")
 fi
+
+if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "$release"; then
+    errors+=("release.yml must default to read-only contents")
+fi
+if ! /usr/bin/grep -Fq 'needs: verify' "$release" || \
+   ! /usr/bin/grep -Fq "github.event_name != 'pull_request'" "$release"; then
+    errors+=("release secret-bearing job must follow secret-free verify and exclude pull requests")
+fi
+if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*write([[:space:]]|$)' "$release"; then
+    errors+=("release publish job requires scoped contents write access")
+fi
+for secret in DEVELOPER_ID_CERT_P12 DEVELOPER_ID_CERT_PASSWORD ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID SPARKLE_PRIVATE_KEY; do
+    if ! /usr/bin/grep -Fq "secrets.$secret" "$release"; then
+        errors+=("release.yml missing repository secret contract: $secret")
+    fi
+done
+for required in '::add-mask::' 'security create-keychain' 'security delete-keychain' \
+    'trap cleanup EXIT INT TERM' 'maccontainer-notary' 'scripts/release.sh --release' \
+    'scripts/verify-release.sh' 'gh release create' 'Sparkle-2.9.4.tar.xz' \
+    'ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9'; do
+    if ! /usr/bin/grep -Fq -- "$required" "$release"; then
+        errors+=("release.yml missing guarded release step: $required")
+    fi
+done
+if /usr/bin/grep -Eq 'pull_request_target|brew[[:space:]]+install|login\.keychain|GameMaster|GAMEMASTER' \
+    "$release" "$release_verification"; then
+    errors+=("release workflows contain forbidden trigger, mutable install, persistent keychain, or foreign key material")
+fi
+verify_line="$(/usr/bin/grep -nF 'scripts/verify-release.sh' "$release" | /usr/bin/tail -1 | /usr/bin/cut -d: -f1)"
+publish_line="$(/usr/bin/grep -nF 'gh release create' "$release" | /usr/bin/tail -1 | /usr/bin/cut -d: -f1)"
+if [[ -z "$verify_line" || -z "$publish_line" ]] || (( verify_line >= publish_line )); then
+    errors+=("release publication must occur only after independent verification")
+fi
+if /usr/bin/grep -Fq '${{ secrets.' "$release_verification" || \
+   /usr/bin/grep -Eq 'contents:[[:space:]]*write' "$release_verification"; then
+    errors+=("public release verification must be secret-free and read-only")
+fi
+for required in 'gh release download' 'isDraft' 'scripts/verify-release.sh'; do
+    if ! /usr/bin/grep -Fq -- "$required" "$release_verification"; then
+        errors+=("release-verify.yml missing public verification step: $required")
+    fi
+done
 
 if (( ${#errors} > 0 )); then
     printf '%s\n' "${errors[@]}" | LC_ALL=C sort -u >&2

@@ -310,27 +310,27 @@ git commit -m "build: sign notarize and verify releases"
 - Modify: `.github/workflows/ci.yml`
 - Test: `Tests/ToolingTests/release-workflow-policy.bats`
 
-- [ ] **Step 1: Write failing workflow secret/supply-chain tests**
+- [x] **Step 1: Write failing workflow secret/supply-chain tests**
 
 Reject release permissions before verification, fork/PR secret access, mutable third-party action refs, floating tool downloads, Homebrew in secret-bearing jobs, unmasked secrets, persistent keychain, missing cleanup, unverified assets, tag/input/version mismatch, or use of GameMaster appcast key material.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `zsh Tests/ToolingTests/release-workflow-policy.bats`
 
 Expected: FAIL until workflows are complete.
 
-- [ ] **Step 3: Implement the release workflow using the shared certificate secret contract**
+- [x] **Step 3: Implement the release workflow using the shared certificate secret contract**
 
 Manual input is strict `vMAJOR.MINOR.PATCH`. A secret-free verification job runs all tests first. The release job uses `macos-26`, downloads checksum-pinned XcodeGen 2.45.4 and Sparkle 2.9.4 tools, imports `DEVELOPER_ID_CERT_P12` with `DEVELOPER_ID_CERT_PASSWORD` into a random ephemeral keychain, stores `ASC_KEY_P8`/`ASC_KEY_ID`/`ASC_ISSUER_ID` under `maccontainer-notary`, exposes repository-specific `SPARKLE_PRIVATE_KEY` only to appcast generation, runs release/independent verification, creates tag/release only after all artifact checks, uploads DMG/appcast/checksums/SBOM/release notes, then verifies the public non-draft release. Cleanup always deletes keychain and credential files.
 
-- [ ] **Step 4: Run policy and GitHub workflow syntax checks**
+- [x] **Step 4: Run policy and GitHub workflow syntax checks**
 
 Run: `zsh Tests/ToolingTests/release-workflow-policy.bats && scripts/check-workflow-policy.sh`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows Tests/ToolingTests/release-workflow-policy.bats
