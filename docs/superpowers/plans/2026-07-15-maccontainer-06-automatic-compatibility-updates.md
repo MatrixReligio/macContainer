@@ -249,7 +249,7 @@ git commit -m "feat: probe every runtime API domain"
 - Test: `Tests/MCSystemLifecycleTests/RuntimeUpdatePolicyTests.swift`
 - Test: `Tests/MCSystemLifecycleTests/BlockedVersionStoreTests.swift`
 
-- [ ] **Step 1: Write failing mode/idle/block tests**
+- [x] **Step 1: Write failing mode/idle/block tests**
 
 ```swift
 @Test(arguments: [
@@ -266,13 +266,13 @@ func policyOutcome(_ fixture: PolicyFixture) {
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter 'RuntimeUpdatePolicyTests|BlockedVersionStoreTests'`
 
 Expected: FAIL because update policy/store are absent.
 
-- [ ] **Step 3: Implement three modes and durable block supersession**
+- [x] **Step 3: Implement three modes and durable block supersession**
 
 ```swift
 public enum RuntimeUpdateMode: String, Codable, Sendable { case checkOnly, downloadAndNotify, automaticWhenIdle }
@@ -283,13 +283,13 @@ public enum RuntimeUpdateAction: Equatable, Sendable {
 
 Automatic mode requires explicit stored consent version + currently valid helper authorization. Idle requires no containers, machines, builds, builder, lifecycle transaction, or destructive operation; policy rechecks immediately before stop through `UpgradeTransaction`. `BlockedVersionStore` persists runtime version, app/catalog revision, probe failure, and timestamp; a target remains blocked until a newer signed app catalog entry has a different attestation ID and explicitly supersedes the block.
 
-- [ ] **Step 4: Run policy/store tests**
+- [x] **Step 4: Run policy/store tests**
 
 Run: `swift test --filter 'RuntimeUpdatePolicyTests|BlockedVersionStoreTests'`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCSystemLifecycle/Updates Tests/MCSystemLifecycleTests/RuntimeUpdatePolicyTests.swift Tests/MCSystemLifecycleTests/BlockedVersionStoreTests.swift
