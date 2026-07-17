@@ -338,7 +338,7 @@ public struct SystemPrivilegedHostMutator: PrivilegedHostMutating {
                 try removeManagedFile(named: anchorName, in: anchorsDirectory, missingIsSuccess: true)
             } else {
                 try writeManagedFile(
-                    Data(anchorLines.joined(separator: "\n").utf8),
+                    Data((anchorLines.joined(separator: "\n") + "\n").utf8),
                     named: anchorName,
                     in: anchorsDirectory,
                     replacing: originalAnchor != nil

@@ -133,9 +133,8 @@ struct SystemPrivilegedHostMutatorTests {
         port 1053
         options localhost:192.0.2.10
         """)
-        #expect(try String(contentsOf: fixture.packetFilterAnchor, encoding: .utf8).contains(
-            "rdr inet from any to 192.0.2.10 -> 127.0.0.1 # dev.example"
-        ))
+        #expect(try String(contentsOf: fixture.packetFilterAnchor, encoding: .utf8) ==
+            "rdr inet from any to 192.0.2.10 -> 127.0.0.1 # dev.example\n")
         let config = try String(contentsOf: fixture.packetFilterConfig, encoding: .utf8)
         #expect(config.contains(#"rdr-anchor "com.apple.container""#))
         #expect(config.contains(
