@@ -305,6 +305,33 @@ public struct MachineBaseline: Codable, Equatable, Sendable {
         reasons.append(contentsOf: verificationErrors.map { "verification-error:\($0)" })
         return reasons
     }
+
+    public func applyingTrustedPacketFilterAudit(residuePresent: Bool) -> Self {
+        let rules = residuePresent ? ["helper-audited-residue-present"] : []
+        return Self(
+            schemaVersion: schemaVersion,
+            hostHardware: hostHardware,
+            macOSVersion: macOSVersion,
+            packageReceipt: packageReceipt,
+            usrLocalPayload: usrLocalPayload,
+            launchServices: launchServices,
+            runtimeProcesses: runtimeProcesses,
+            runtimePaths: runtimePaths,
+            defaults: defaults,
+            keychainItems: keychainItems,
+            resolvers: resolvers,
+            packetFilter: .init(
+                anchor: packetFilter.anchor,
+                normalizedRules: rules,
+                verified: true
+            ),
+            testCaches: testCaches,
+            verificationErrors: verificationErrors.filter {
+                $0 != "packet-filter-command" && $0 != "packet-filter-read"
+            },
+            capturedAt: capturedAt
+        )
+    }
 }
 
 public enum PhysicalPreflightPermission: String, Codable, Equatable, Sendable {

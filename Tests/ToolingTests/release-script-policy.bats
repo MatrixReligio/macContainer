@@ -24,14 +24,20 @@ require_text() {
 require_text scripts/release-common.sh 'Developer ID Application: MatrixReligio LLC (4DUQGD879H)'
 require_text scripts/release-common.sh '4DUQGD879H'
 require_text scripts/release-common.sh 'require_clean_tracked_worktree'
+require_text project.yml 'PRODUCT_NAME: container.matrixreligio.com.helper'
+require_text project.yml 'PRODUCT_NAME: container.matrixreligio.com.update-agent'
+require_text project.yml 'codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --identifier "container.matrixreligio.com.helper"'
+require_text project.yml 'codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --identifier "container.matrixreligio.com.update-agent"'
 require_text scripts/sign.sh '--options runtime'
 require_text scripts/sign.sh 'Contents/Frameworks/Sparkle.framework'
-require_text scripts/sign.sh 'Contents/Library/PrivilegedHelperTools/container.matrixreligio.com.helper'
-require_text scripts/sign.sh 'Contents/Library/LoginItems/container.matrixreligio.com.update-agent'
+require_text scripts/sign.sh 'Contents/MacOS/container.matrixreligio.com.helper'
+require_text scripts/sign.sh 'Contents/MacOS/container.matrixreligio.com.update-agent'
 require_text scripts/sign.sh 'container.matrixreligio.com.helper'
 require_text scripts/sign.sh 'container.matrixreligio.com.update-agent'
 require_text scripts/sign.sh 'container.matrixreligio.com'
 require_text scripts/sign.sh 'verify_designated_requirement'
+require_text App/PrivilegedHelper/container.matrixreligio.com.helper.plist 'Contents/MacOS/container.matrixreligio.com.helper'
+require_text App/UpdateAgent/container.matrixreligio.com.update-agent.plist 'Contents/MacOS/container.matrixreligio.com.update-agent'
 require_text scripts/package.sh 'trap cleanup EXIT INT TERM'
 require_text scripts/package.sh '/Applications'
 require_text scripts/notarize.sh 'maccontainer-notary'
@@ -52,6 +58,12 @@ require_text scripts/release.sh 'checksums.txt'
 require_text scripts/verify-release.sh 'verify-sparkle-signature.swift'
 require_text scripts/verify-release.sh 'sbom-checksums.txt'
 require_text scripts/verify-release.sh 'spctl --assess --type execute'
+
+if /usr/bin/grep -Fq 'SMPrivilegedExecutables' "$repo_root/project.yml" \
+    || /usr/bin/grep -Fq 'SMPrivilegedExecutables' "$repo_root/App/MacContainer/Info.plist"; then
+    print -u2 -- "legacy SMJobBless metadata must not coexist with SMAppService"
+    exit 1
+fi
 
 if /usr/bin/grep -REn -- '(set -x|print.*PRIVATE|echo.*PRIVATE|security dump-keychain)' \
     "$repo_root/scripts/release-common.sh" \

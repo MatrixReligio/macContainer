@@ -34,11 +34,6 @@
 	<string>26.0</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2026 MatrixReligio LLC. Licensed under Apache-2.0.</string>
-	<key>SMPrivilegedExecutables</key>
-	<dict>
-		<key>container.matrixreligio.com.helper</key>
-		<string>anchor apple generic and identifier "container.matrixreligio.com.helper" and certificate leaf[subject.OU] = "4DUQGD879H"</string>
-	</dict>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedURL</key>

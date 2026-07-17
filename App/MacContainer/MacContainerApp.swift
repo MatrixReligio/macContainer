@@ -1,3 +1,4 @@
+import AppKit
 import MCAppCore
 import SwiftUI
 
@@ -5,6 +6,8 @@ import SwiftUI
 struct MacContainerApp: App {
     @State private var state: AppState
     private let sparkleUpdater: SparkleAppUpdater?
+    private let physicalHelperBootstrap: PhysicalHelperBootstrapCommand?
+    private let physicalPacketFilterAudit: PhysicalPacketFilterAuditCommand?
 
     init() {
         let arguments = ProcessInfo.processInfo.arguments
@@ -22,6 +25,18 @@ struct MacContainerApp: App {
             languageController: languageController
         ))
         _state = State(initialValue: state)
+        physicalHelperBootstrap = mode == .production
+            ? PhysicalHelperBootstrapCommand(
+                arguments: arguments,
+                environment: ProcessInfo.processInfo.environment
+            )
+            : nil
+        physicalPacketFilterAudit = mode == .production
+            ? PhysicalPacketFilterAuditCommand(
+                arguments: arguments,
+                environment: ProcessInfo.processInfo.environment
+            )
+            : nil
         if mode == .production || SparkleAppUpdater.hasValidatedTestFeed {
             let updater = SparkleAppUpdater(state: state)
             state.appUpdates.attach(driver: updater)
@@ -39,6 +54,16 @@ struct MacContainerApp: App {
                     \.locale,
                     Locale(identifier: state.environment.languageController.resolvedIdentifier)
                 )
+                .task {
+                    if let physicalHelperBootstrap {
+                        try? await physicalHelperBootstrap.execute()
+                    } else if let physicalPacketFilterAudit {
+                        try? await physicalPacketFilterAudit.execute()
+                    } else {
+                        return
+                    }
+                    NSApplication.shared.terminate(nil)
+                }
         }
         .defaultSize(width: 1180, height: 760)
         .commands {

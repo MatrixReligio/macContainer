@@ -21,12 +21,14 @@ struct PrivilegedHelperRegistrarTests {
     }
 
     @Test func `missing helper and ambiguous post registration status fail closed`() async {
+        let missingBackend = RecordingHelperRegistrationBackend(statuses: [.notFound, .notFound])
         let missing = PrivilegedHelperRegistrar(
-            backend: RecordingHelperRegistrationBackend(statuses: [.notFound])
+            backend: missingBackend
         )
         await #expect(throws: PrivilegedHelperRegistrationError.helperMissing) {
             try await missing.ensureAvailable()
         }
+        #expect(missingBackend.actions == ["status", "register", "status"])
 
         let ambiguous = PrivilegedHelperRegistrar(
             backend: RecordingHelperRegistrationBackend(statuses: [.notRegistered, .notRegistered])

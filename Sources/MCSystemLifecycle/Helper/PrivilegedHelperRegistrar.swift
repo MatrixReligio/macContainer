@@ -47,7 +47,7 @@ public actor PrivilegedHelperRegistrar: PrivilegedHelperRegistering {
         case .requiresApproval:
             return .requiresApproval
         case .notFound:
-            throw PrivilegedHelperRegistrationError.helperMissing
+            try backend.register()
         case .unknown:
             throw PrivilegedHelperRegistrationError.ambiguousStatus
         case .notRegistered:

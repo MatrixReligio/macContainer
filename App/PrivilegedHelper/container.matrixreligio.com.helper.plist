@@ -10,7 +10,7 @@
         <true/>
     </dict>
     <key>BundleProgram</key>
-    <string>Contents/Library/PrivilegedHelperTools/container.matrixreligio.com.helper</string>
+    <string>Contents/MacOS/container.matrixreligio.com.helper</string>
     <key>RunAtLoad</key>
     <false/>
     <key>KeepAlive</key>

@@ -57,6 +57,38 @@ struct MachineBaselineTests {
         #expect(try DefaultsSnapshot.exported(domain: "fixture", data: empty) == nil)
         #expect(try DefaultsSnapshot.exported(domain: "fixture", data: populated) != nil)
     }
+
+    @Test func `trusted helper packet filter audit replaces only direct permission failure`() {
+        let baseline = MachineBaseline(
+            schemaVersion: MachineBaseline.emptyFixture.schemaVersion,
+            hostHardware: MachineBaseline.emptyFixture.hostHardware,
+            macOSVersion: MachineBaseline.emptyFixture.macOSVersion,
+            packageReceipt: nil,
+            usrLocalPayload: [],
+            launchServices: [],
+            runtimeProcesses: [],
+            runtimePaths: [],
+            defaults: nil,
+            keychainItems: [],
+            resolvers: [],
+            packetFilter: .init(anchor: "com.apple.container", normalizedRules: [], verified: false),
+            testCaches: [],
+            verificationErrors: ["packet-filter-command", "unrelated"],
+            capturedAt: Date(timeIntervalSince1970: 0)
+        )
+
+        let empty = baseline.applyingTrustedPacketFilterAudit(residuePresent: false)
+        #expect(empty.packetFilter == .init(
+            anchor: "com.apple.container",
+            normalizedRules: [],
+            verified: true
+        ))
+        #expect(empty.verificationErrors == ["unrelated"])
+
+        let present = baseline.applyingTrustedPacketFilterAudit(residuePresent: true)
+        #expect(present.packetFilter.normalizedRules == ["helper-audited-residue-present"])
+        #expect(present.existingStateReasons.contains("packet-filter-rules"))
+    }
 }
 
 private actor RecordingPhysicalPreflightEnvironment: PhysicalPreflightEnvironment {

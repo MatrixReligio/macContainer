@@ -79,31 +79,32 @@ targets:
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 86400
         SUPublicEDKey: SY7+LwKROwq3OPv7vZbnzyQ1a6Be/LeuFU4TO0RWJwU=
-        SMPrivilegedExecutables:
-          container.matrixreligio.com.helper: anchor apple generic and identifier "container.matrixreligio.com.helper" and certificate leaf[subject.OU] = "4DUQGD879H"
     postCompileScripts:
       - name: Embed helper and update agent
         inputFiles:
-          - $(BUILT_PRODUCTS_DIR)/MacContainerPrivilegedHelper
-          - $(BUILT_PRODUCTS_DIR)/MacContainerUpdateAgent
+          - $(BUILT_PRODUCTS_DIR)/container.matrixreligio.com.helper
+          - $(BUILT_PRODUCTS_DIR)/container.matrixreligio.com.update-agent
           - $(SRCROOT)/App/PrivilegedHelper/container.matrixreligio.com.helper.plist
           - $(SRCROOT)/App/UpdateAgent/container.matrixreligio.com.update-agent.plist
         outputFiles:
-          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/PrivilegedHelperTools/container.matrixreligio.com.helper
-          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LoginItems/container.matrixreligio.com.update-agent
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/MacOS/container.matrixreligio.com.helper
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/MacOS/container.matrixreligio.com.update-agent
           - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchDaemons/container.matrixreligio.com.helper.plist
           - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/container.matrixreligio.com.update-agent.plist
         script: |
           set -euo pipefail
-          helper_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/PrivilegedHelperTools"
-          agent_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LoginItems"
+          executable_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/MacOS"
           daemon_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
           launch_agent_dir="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchAgents"
-          mkdir -p "$helper_dir" "$agent_dir" "$daemon_dir" "$launch_agent_dir"
-          ditto "$BUILT_PRODUCTS_DIR/MacContainerPrivilegedHelper" "$helper_dir/container.matrixreligio.com.helper"
-          ditto "$BUILT_PRODUCTS_DIR/MacContainerUpdateAgent" "$agent_dir/container.matrixreligio.com.update-agent"
+          mkdir -p "$executable_dir" "$daemon_dir" "$launch_agent_dir"
+          ditto "$BUILT_PRODUCTS_DIR/container.matrixreligio.com.helper" "$executable_dir/container.matrixreligio.com.helper"
+          ditto "$BUILT_PRODUCTS_DIR/container.matrixreligio.com.update-agent" "$executable_dir/container.matrixreligio.com.update-agent"
           ditto "$SRCROOT/App/PrivilegedHelper/container.matrixreligio.com.helper.plist" "$daemon_dir/container.matrixreligio.com.helper.plist"
           ditto "$SRCROOT/App/UpdateAgent/container.matrixreligio.com.update-agent.plist" "$launch_agent_dir/container.matrixreligio.com.update-agent.plist"
+          if [[ "${CODE_SIGNING_ALLOWED:-YES}" == YES && -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]]; then
+            codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --identifier "container.matrixreligio.com.helper" --options runtime --entitlements "$SRCROOT/App/PrivilegedHelper/PrivilegedHelper.entitlements" "$executable_dir/container.matrixreligio.com.helper"
+            codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --identifier "container.matrixreligio.com.update-agent" --options runtime --entitlements "$SRCROOT/App/UpdateAgent/UpdateAgent.entitlements" "$executable_dir/container.matrixreligio.com.update-agent"
+          fi
   MacContainerPrivilegedHelper:
     type: tool
     platform: macOS
@@ -117,7 +118,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: container.matrixreligio.com.helper
-        PRODUCT_NAME: MacContainerPrivilegedHelper
+        PRODUCT_NAME: container.matrixreligio.com.helper
         CODE_SIGN_ENTITLEMENTS: App/PrivilegedHelper/PrivilegedHelper.entitlements
   MacContainerUpdateAgent:
     type: tool
@@ -134,7 +135,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: container.matrixreligio.com.update-agent
-        PRODUCT_NAME: MacContainerUpdateAgent
+        PRODUCT_NAME: container.matrixreligio.com.update-agent
         CODE_SIGN_ENTITLEMENTS: App/UpdateAgent/UpdateAgent.entitlements
   MacContainerIntegrationTests:
     type: bundle.unit-test

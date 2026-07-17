@@ -28,6 +28,8 @@ policy_check() {
         "$digest_100" "$digest_110" "$expected_team_id" run_with_timeout
         '.artifacts/DerivedData' PHYSICAL_TEST_AUTHORIZATION production_complete_uninstall
         compare-baseline.swift summarize.swift recover.swift
+        run_signed_helper_bootstrap run_signed_helper_cleanup
+        --physical-helper-bootstrap-output= --physical-helper-cleanup-output=
         'cleanup ledger contains only verifiedAbsent states'
     )
     local item
@@ -66,6 +68,11 @@ umask 077
 RUN_UUID="$(/usr/bin/uuidgen | /usr/bin/tr '[:upper:]' '[:lower:]')"
 run_root="$physical_root/$RUN_UUID"
 preflight_output="${TMPDIR%/}/maccontainer-physical-preflight-$RUN_UUID.json"
+packet_filter_audit_output="${TMPDIR%/}/packet-filter-$RUN_UUID.json"
+helper_bootstrap_output="${TMPDIR%/}/helper-bootstrap-$RUN_UUID.json"
+helper_cleanup_output="${TMPDIR%/}/helper-cleanup-$RUN_UUID.json"
+physical_audit_app="${MACCONTAINER_PHYSICAL_AUDIT_APP:-}"
+helper_registration_attempted=0
 cleanup_running=0
 package_100=""
 package_110=""
@@ -75,7 +82,16 @@ cleanup() {
     local original_status=$?
     (( cleanup_running == 0 )) || return $original_status
     cleanup_running=1
+    if (( helper_registration_attempted == 1 )); then
+        if ! run_signed_helper_cleanup "$physical_audit_app"; then
+            print -u2 -- "signed helper cleanup failed; preserving failure status"
+            original_status=1
+        fi
+    fi
     /bin/rm -f -- "$preflight_output"
+    /bin/rm -f -- "$packet_filter_audit_output"
+    /bin/rm -f -- "$helper_bootstrap_output"
+    /bin/rm -f -- "$helper_cleanup_output"
     if [[ -d "$run_root" && -f "$run_root/cleanup.jsonl" ]]; then
         if /usr/bin/swift "$script_dir/recover.swift" --run-root "$run_root" --run-id "$RUN_UUID"; then
             # Recovery proves the cleanup ledger contains only verifiedAbsent states before bootstrap removal.
@@ -130,8 +146,68 @@ run_read_only_preflight() {
     print -r -- "$output"
     if (( rc != 0 )); then
         [[ "$output" == *REFUSED_EXISTING_STATE* ]] || die "read-only preflight failed without refusal evidence"
+        if [[ -n "$physical_audit_app" ]]; then
+            run_signed_packet_filter_audit "$physical_audit_app" || return $?
+            return 0
+        fi
         return $rc
     fi
+}
+
+verify_signed_physical_app() {
+    local app="$1"
+    [[ -d "$app" && -x "$app/Contents/MacOS/MacContainer" ]] || \
+        die "MACCONTAINER_PHYSICAL_AUDIT_APP is invalid"
+    /usr/bin/codesign --verify --deep --strict --verbose=2 "$app"
+    /usr/bin/codesign --verify --strict \
+        --test-requirement '=designated => anchor apple generic and identifier "container.matrixreligio.com" and certificate leaf[subject.OU] = "4DUQGD879H"' \
+        "$app"
+}
+
+run_signed_helper_bootstrap() {
+    local app="$1"
+    local status
+    verify_signed_physical_app "$app"
+    helper_registration_attempted=1
+    /bin/rm -f -- "$helper_bootstrap_output"
+    run_with_timeout 60 /usr/bin/open -n -W \
+        --env "PHYSICAL_AUDIT_AUTHORIZATION=$RUN_UUID" \
+        --env "PHYSICAL_AUDIT_ROOT=${TMPDIR%/}" \
+        "$app" --args "--physical-helper-bootstrap-output=$helper_bootstrap_output"
+    [[ -f "$helper_bootstrap_output" ]] || die "signed helper bootstrap produced no result"
+    status="$(/usr/bin/plutil -extract status raw -o - "$helper_bootstrap_output")"
+    case "$status" in
+        enabled) print -r -- "Signed helper bootstrap PASS" ;;
+        requires-approval) die "privileged helper requires approval in System Settings > Login Items & Extensions" ;;
+        *) die "signed helper bootstrap failed: $status" ;;
+    esac
+}
+
+run_signed_helper_cleanup() {
+    local app="$1"
+    local status
+    [[ -d "$app" && -x "$app/Contents/MacOS/MacContainer" ]] || return 1
+    /bin/rm -f -- "$helper_cleanup_output"
+    run_with_timeout 60 /usr/bin/open -n -W \
+        --env "PHYSICAL_AUDIT_AUTHORIZATION=$RUN_UUID" \
+        --env "PHYSICAL_AUDIT_ROOT=${TMPDIR%/}" \
+        "$app" --args "--physical-helper-cleanup-output=$helper_cleanup_output" || return 1
+    [[ -f "$helper_cleanup_output" ]] || return 1
+    status="$(/usr/bin/plutil -extract status raw -o - "$helper_cleanup_output")"
+    [[ "$status" == unregistered ]]
+}
+
+run_signed_packet_filter_audit() {
+    local app="$1"
+    verify_signed_physical_app "$app"
+    /bin/rm -f -- "$packet_filter_audit_output"
+    run_with_timeout 60 /usr/bin/open -n -W \
+        --env "PHYSICAL_AUDIT_AUTHORIZATION=$RUN_UUID" \
+        --env "PHYSICAL_AUDIT_ROOT=${TMPDIR%/}" \
+        "$app" --args "--physical-pf-audit-output=$packet_filter_audit_output"
+    [[ -f "$packet_filter_audit_output" ]] || die "signed packet-filter audit produced no result"
+    /usr/bin/swift run --package-path "$repo_root" mc-physical apply-pf-audit \
+        "$preflight_output" "$packet_filter_audit_output"
 }
 
 verify_digest() {
@@ -212,6 +288,10 @@ summarize_results() {
     /usr/bin/swift "$script_dir/summarize.swift" \
         --input "$run_root/raw-results.json" --output "$run_root/physical-summary.json"
 }
+
+if [[ "$mode" != "--simulated-host" && -n "$physical_audit_app" ]]; then
+    run_signed_helper_bootstrap "$physical_audit_app"
+fi
 
 preflight_status=0
 run_read_only_preflight || preflight_status=$?

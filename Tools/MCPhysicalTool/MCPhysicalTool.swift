@@ -13,6 +13,8 @@ enum MCPhysicalTool {
         switch command {
         case "preflight":
             try await preflight(arguments)
+        case "apply-pf-audit":
+            try applyPacketFilterAudit(arguments)
         case "compare-baseline":
             try compareBaseline(arguments)
         case "recover":
@@ -26,6 +28,36 @@ enum MCPhysicalTool {
         default:
             throw UsageError()
         }
+    }
+
+    private static func applyPacketFilterAudit(_ arguments: [String]) throws {
+        guard arguments.count == 2 else { throw UsageError() }
+        let baselineURL = URL(fileURLWithPath: arguments[0]).standardizedFileURL
+        let auditURL = URL(fileURLWithPath: arguments[1]).standardizedFileURL
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let baseline = try decoder.decode(MachineBaseline.self, from: Data(contentsOf: baselineURL))
+        let audit = try decoder.decode(
+            PhysicalPacketFilterAuditFile.self,
+            from: Data(contentsOf: auditURL)
+        )
+        guard audit.verified else {
+            print("PACKET_FILTER_AUDIT_UNVERIFIED")
+            Foundation.exit(2)
+        }
+        let updated = baseline.applyingTrustedPacketFilterAudit(
+            residuePresent: audit.residuePresent
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        try encoder.encode(updated).write(to: baselineURL, options: .atomic)
+        let reasons = updated.existingStateReasons
+        guard reasons.isEmpty else {
+            print("REFUSED_EXISTING_STATE: \(reasons.joined(separator: ","))")
+            Foundation.exit(2)
+        }
+        print("SAFE_TO_TEST")
     }
 
     private static func preflight(_ arguments: [String]) async throws {
@@ -175,6 +207,11 @@ enum MCPhysicalTool {
         }
         print("NO_ACTIVE_LEDGER: \(ledgerCount) completed ledger(s)")
     }
+}
+
+private struct PhysicalPacketFilterAuditFile: Decodable {
+    let verified: Bool
+    let residuePresent: Bool
 }
 
 private struct UsageError: Error, CustomStringConvertible {
