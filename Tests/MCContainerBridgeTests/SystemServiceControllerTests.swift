@@ -272,6 +272,10 @@ struct SystemServiceControllerTests {
 
         try await manager.register(definition)
 
+        #expect(backend.registrationQueries == [
+            SystemServiceController.apiServerLabel,
+            SystemServiceController.apiServerLabel
+        ])
         #expect(backend.deregisteredLabels.isEmpty)
         #expect(FileManager.default.fileExists(atPath: plist.path))
     }
@@ -317,6 +321,7 @@ struct SystemServiceControllerTests {
 private final class FakeLaunchServiceBackend: LaunchServiceRegistering, @unchecked Sendable {
     private var registrationVisibility: [Bool]
     private(set) var deregisteredLabels: [String] = []
+    private(set) var registrationQueries: [String] = []
 
     init(registrationVisible: Bool) {
         registrationVisibility = [registrationVisible]
@@ -333,7 +338,8 @@ private final class FakeLaunchServiceBackend: LaunchServiceRegistering, @uncheck
         deregisteredLabels.append(fullServiceLabel)
     }
 
-    func isRegistered(fullServiceLabel _: String) throws -> Bool {
+    func isRegistered(label: String) throws -> Bool {
+        registrationQueries.append(label)
         if registrationVisibility.count > 1 {
             return registrationVisibility.removeFirst()
         }

@@ -361,7 +361,7 @@ public struct SystemServiceController: Sendable {
 protocol LaunchServiceRegistering: Sendable {
     func register(plistPath: String) throws
     func deregister(fullServiceLabel: String) throws
-    func isRegistered(fullServiceLabel: String) throws -> Bool
+    func isRegistered(label: String) throws -> Bool
     func enumerate() throws -> [String]
     func domainString() throws -> String
 }
@@ -382,8 +382,8 @@ private struct NativeLaunchServiceBackend: LaunchServiceRegistering {
         try ServiceManager.deregister(fullServiceLabel: fullServiceLabel)
     }
 
-    func isRegistered(fullServiceLabel: String) throws -> Bool {
-        try ServiceManager.isRegistered(fullServiceLabel: fullServiceLabel)
+    func isRegistered(label: String) throws -> Bool {
+        try ServiceManager.isRegistered(fullServiceLabel: label)
     }
 
     func enumerate() throws -> [String] {
@@ -518,7 +518,7 @@ public actor AppleServiceManager: ServiceManaging {
     }
 
     private func isRegisteredSynchronously(label: String) throws -> Bool {
-        try backend.isRegistered(fullServiceLabel: fullServiceLabel(label))
+        try backend.isRegistered(label: label)
     }
 
     private func waitForVisibility(label: String, registered: Bool) async throws -> Bool {
