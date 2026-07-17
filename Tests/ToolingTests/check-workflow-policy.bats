@@ -19,9 +19,25 @@ if ! /usr/bin/grep -Fq "$approved_upload_artifact" "$fixture/.github/workflows/c
     exit 1
 fi
 
-if ! /usr/bin/grep -Fq -- 'swift test --jobs 2 --enable-code-coverage --parallel' \
+if ! /usr/bin/grep -Fq -- 'swift test --jobs 1 --enable-code-coverage --parallel' \
     "$fixture/.github/workflows/ci.yml"; then
     print -u2 -- "expected coverage compilation to respect the macOS runner resource limit"
+    exit 1
+fi
+
+if ! /usr/bin/grep -Fq -- \
+    'MC_REQUIRE_CLEAN_WORKTREE=1 MC_SWIFTPM_JOBS=1 scripts/check-repository.sh' \
+    "$fixture/.github/workflows/ci.yml"; then
+    print -u2 -- "expected the repository gate to use one build job on hosted macOS"
+    exit 1
+fi
+
+gate_line="$(/usr/bin/grep -nF 'scripts/check-repository.sh' \
+    "$fixture/.github/workflows/ci.yml" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+metal_line="$(/usr/bin/grep -nF 'xcodebuild -downloadComponent MetalToolchain' \
+    "$fixture/.github/workflows/ci.yml" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+if [[ -z "$gate_line" || -z "$metal_line" ]] || (( gate_line >= metal_line )); then
+    print -u2 -- "expected SwiftPM verification before the disk-heavy Metal component"
     exit 1
 fi
 

@@ -42,6 +42,20 @@ for text in $required_release_text; do
     /usr/bin/grep -Fq -- "$text" "$release" || { print -u2 -- "release.yml missing: $text"; exit 1; }
 done
 
+/usr/bin/grep -Fq -- 'MC_SWIFTPM_JOBS=1 scripts/check-repository.sh' "$release" || {
+    print -u2 -- "release verification must use one SwiftPM build job on hosted macOS"
+    exit 1
+}
+
+gate_line="$(/usr/bin/grep -nF 'scripts/check-repository.sh' "$release" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+reclaim_line="$(/usr/bin/grep -nF 'rm -rf .build' "$release" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+metal_line="$(/usr/bin/grep -nF 'xcodebuild -downloadComponent MetalToolchain' "$release" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+if [[ -z "$gate_line" || -z "$reclaim_line" || -z "$metal_line" ]] || \
+   (( gate_line >= reclaim_line || reclaim_line >= metal_line )); then
+    print -u2 -- "release verification must reclaim SwiftPM storage before installing Metal"
+    exit 1
+fi
+
 /usr/bin/grep -Fq 'gh release download' "$verification"
 /usr/bin/grep -Fq 'scripts/verify-release.sh' "$verification"
 /usr/bin/grep -Fq 'isDraft' "$verification"

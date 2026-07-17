@@ -25,11 +25,8 @@ jobs:
       - name: Bootstrap checksum-pinned tools
         run: scripts/bootstrap-tools.sh
 
-      - name: Install the Xcode Metal toolchain component
-        run: xcodebuild -downloadComponent MetalToolchain
-
       - name: Run the deterministic repository gate
-        run: MC_REQUIRE_CLEAN_WORKTREE=1 scripts/check-repository.sh
+        run: MC_REQUIRE_CLEAN_WORKTREE=1 MC_SWIFTPM_JOBS=1 scripts/check-repository.sh
 
       - name: Enforce release script and workflow supply-chain policy
         run: |
@@ -37,7 +34,13 @@ jobs:
           zsh Tests/ToolingTests/release-workflow-policy.bats
 
       - name: Run package tests with coverage
-        run: swift test --jobs 2 --enable-code-coverage --parallel
+        run: swift test --jobs 1 --enable-code-coverage --parallel
+
+      - name: Reclaim SwiftPM build storage before Xcode builds
+        run: rm -rf .build
+
+      - name: Install the Xcode Metal toolchain component
+        run: xcodebuild -downloadComponent MetalToolchain
 
       - name: Build unsigned Debug application
         run: >-
@@ -45,6 +48,9 @@ jobs:
           -configuration Debug -derivedDataPath .build/ci-debug
           -clonedSourcePackagesDirPath .build/xcode-packages
           ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+
+      - name: Reclaim Debug build storage
+        run: rm -rf .build/ci-debug
 
       - name: Build unsigned Release application
         run: >-
