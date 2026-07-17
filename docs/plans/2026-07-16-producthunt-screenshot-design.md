@@ -11,7 +11,7 @@ compatibility-gated runtime upgrades with rollback, and complete uninstall verif
 
 1. **XCUITest window capture (selected).** Capture the identified app window after deterministic
    fake-runtime setup. This is repeatable, excludes desktop privacy, and can be regenerated for
-   every supported locale.
+   whenever the English UI changes.
 2. OS-level `screencapture`. This preserves the window shadow but depends on window placement,
    Screen Recording permission, and the current desktop state.
 3. Manual screenshots. This offers flexible art direction but is not reproducible and is easy to
@@ -28,9 +28,9 @@ The English baseline contains six app-window PNG files:
 - `05-terminal-safety.png` — direct terminal session with blocked remote side effects.
 - `06-actionable-error.png` — diagnostic detail and recovery actions.
 
-Stage 7 regenerates the same set for English, Simplified Chinese, Traditional Chinese, Japanese,
-and German after localization is complete. A manifest records locale, app version, dimensions,
-capture test, suggested Product Hunt caption, and SHA-256 digest.
+A manifest records the English locale, app version, dimensions, capture test, suggested Product
+Hunt caption, and SHA-256 digest. Product Hunt screenshots are English-only; Stage 7 localization
+testing does not generate additional marketing variants.
 
 ## Capture architecture
 
@@ -48,4 +48,3 @@ manifest, and removes temporary build/test artifacts.
 - Screenshots must contain no audit sidebar, cursor, alert prompt, debug overlay, or clipped text.
 - Window size, color scheme, contrast, and reduced-motion settings are explicit test inputs.
 - PNG dimensions and digests are verified; each final image is inspected before handoff.
-
