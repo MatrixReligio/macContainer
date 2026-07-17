@@ -468,7 +468,7 @@ git commit -m "feat: add direct interactive terminal sessions"
 - Create: `App/MacContainer/Views/Shared/ErrorPresentation.swift`
 - Test: `Tests/MCAppCoreTests/ErrorMapperTests.swift`
 
-- [ ] **Step 1: Write failing redaction/recovery tests**
+- [x] **Step 1: Write failing redaction/recovery tests**
 
 ```swift
 @Test func mapsAuthenticationFailureWithoutSecret() {
@@ -481,23 +481,23 @@ git commit -m "feat: add direct interactive terminal sessions"
 }
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `swift test --filter ErrorMapperTests`
 
 Expected: FAIL because mapper/types are absent.
 
-- [ ] **Step 3: Implement errors and presentation**
+- [x] **Step 3: Implement errors and presentation**
 
 `UserFacingError` contains domain, operation ID, title/explanation localization keys, redacted detail, safe-retry flag, concrete recovery actions, activity ID, and timestamp. `ErrorPresentation` uses an alert for immediate local errors and an inspector/activity detail for long-running/partial errors; batch results remain per-resource.
 
-- [ ] **Step 4: Run error and diagnostic tests**
+- [x] **Step 4: Run error and diagnostic tests**
 
 Run: `swift test --filter ErrorMapperTests`
 
 Expected: PASS for credentials, environment variables, authorization headers, usernames, private paths, malformed upstream data, and helper failures.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/MCModel/UserFacingError.swift Sources/MCAppCore/ErrorMapper.swift App/MacContainer/Views/Shared/ErrorPresentation.swift Tests/MCAppCoreTests/ErrorMapperTests.swift
