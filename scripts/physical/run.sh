@@ -26,7 +26,7 @@ policy_check() {
     [[ -f "$candidate" ]] || die "runner missing from policy root"
     local required=(
         run_read_only_preflight REFUSED_EXISTING_STATE RUN_UUID 'umask 077' 'chmod 0700'
-        'trap cleanup EXIT HUP INT TERM' verify_digest verify_installer_signature
+        'trap cleanup EXIT ZERR HUP INT TERM' verify_digest verify_installer_signature
         "$digest_100" "$digest_110" "$expected_team_id" run_with_timeout 'setopt LOCAL_TRAPS'
         'cleanup "$command_status"'
         '.artifacts/DerivedData' PHYSICAL_TEST_AUTHORIZATION production_complete_uninstall
@@ -42,7 +42,7 @@ policy_check() {
     /usr/bin/grep -Eq '^run_read_only_preflight\(\) \{' "$candidate" || die "preflight function missing"
     /usr/bin/grep -Eq '^verify_digest\(\) \{' "$candidate" || die "digest verification function missing"
     /usr/bin/grep -Eq '^verify_installer_signature\(\) \{' "$candidate" || die "signature verification function missing"
-    /usr/bin/grep -Eq '^trap cleanup EXIT HUP INT TERM$' "$candidate" || die "cleanup trap missing"
+    /usr/bin/grep -Eq '^trap cleanup EXIT ZERR HUP INT TERM$' "$candidate" || die "cleanup trap missing"
     local forbidden='brew'' install|pip(3)?'' install|npm'' install -g|sudo[[:space:]]+''rm|rm[[:space:]]+''-rf'
     if /usr/bin/grep -Eq -- "($forbidden)" "$candidate"; then
         die "runner contains global install or unguarded recursive cleanup"
@@ -139,7 +139,7 @@ cleanup() {
     /bin/rmdir -- "$physical_root" 2>/dev/null || true
     return $original_status
 }
-trap cleanup EXIT HUP INT TERM
+trap cleanup EXIT ZERR HUP INT TERM
 
 run_with_timeout() {
     local seconds="$1"

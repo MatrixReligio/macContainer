@@ -36,7 +36,7 @@ require_text 'REFUSED_EXISTING_STATE'
 require_text 'RUN_UUID'
 require_text 'umask 077'
 require_text 'chmod 0700'
-require_text 'trap cleanup EXIT HUP INT TERM'
+require_text 'trap cleanup EXIT ZERR HUP INT TERM'
 require_text 'verify_digest'
 require_text 'verify_installer_signature'
 require_text '0ca1c42a2269c2557efb1d82b1b38ac553e6a3a3da1b1179c439bcee1e7d6714'
@@ -131,6 +131,23 @@ if /usr/bin/grep -Eq -- '(brew install|pip(3)? install|npm install -g|sudo[[:spa
     print -u2 -- "physical runner contains global install or unsafe cleanup"
     exit 1
 fi
+
+trap_probe="$(mktemp "${TMPDIR%/}/maccontainer-zerr-trap.XXXXXX")"
+if /bin/zsh -c '
+    set -e
+    cleanup() { print -r -- "cleanup:$?"; }
+    trap cleanup EXIT ZERR
+    fail_inside_function() { return 7; }
+    fail_inside_function
+' > "$trap_probe" 2>&1; then
+    print -u2 -- "zsh failure probe unexpectedly succeeded"
+    exit 1
+fi
+[[ "$(< "$trap_probe")" == "cleanup:7" ]] || {
+    print -u2 -- "ZERR trap did not preserve cleanup for a function failure"
+    exit 1
+}
+/bin/rm -f -- "$trap_probe"
 
 "$runner" --policy-check
 
