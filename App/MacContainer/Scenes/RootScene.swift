@@ -17,6 +17,8 @@ struct RootScene: View {
                 OnboardingView()
             } else if arguments.contains("--simple-mode-audit") {
                 SimpleModeView()
+            } else if arguments.contains("--lifecycle-audit") {
+                RuntimeLifecycleAuditView()
             } else {
                 NavigationSplitView(columnVisibility: $state.columnVisibility) {
                     Sidebar(selection: $state.selection)

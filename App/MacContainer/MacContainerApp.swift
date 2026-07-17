@@ -27,5 +27,10 @@ struct MacContainerApp: App {
                 .background(WindowAccessibilityIdentifier("activity-center"))
         }
         .defaultSize(width: 680, height: 460)
+
+        Settings {
+            SettingsScene()
+                .environment(state)
+        }
     }
 }

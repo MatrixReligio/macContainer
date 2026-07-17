@@ -378,27 +378,27 @@ git commit -m "feat: add safe Simple Mode workflows"
 - Create: `App/MacContainer/Views/Lifecycle/UninstallRuntimeView.swift`
 - Test: `Tests/MacContainerUITests/RuntimeLifecycleUITests.swift`
 
-- [ ] **Step 1: Write failing lifecycle UX tests**
+- [x] **Step 1: Write failing lifecycle UX tests**
 
 Tests cover install trust summary/admin explanation, manual update, unknown-version hold, rollback history, helper authorization, complete-uninstall inventory/irreversibility, distinct preserve-data action, inaccessible residue, and exact “Uninstall incomplete” recovery details. Assert no UI claims success before postflight/audit.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/RuntimeLifecycleUITests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because lifecycle settings are absent.
 
-- [ ] **Step 3: Implement all settings panes and lifecycle presentations**
+- [x] **Step 3: Implement all settings panes and lifecycle presentations**
 
 Use a standard macOS `Settings` scene with General, Runtime, Runtime Updates, Compatibility, Defaults & Templates, Advanced, and About tabs. Install view displays exact version/source/signer/disk impact/digest status before admin approval. Complete uninstall requires fresh inventory, a typed confirmation phrase localized by meaning but compared to a stable confirmation token, and displays every residue result. Preserve-data action uses different title, explanation, result model, and accessibility identifier.
 
-- [ ] **Step 4: Run lifecycle UX tests**
+- [x] **Step 4: Run lifecycle UX tests**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerUITests/RuntimeLifecycleUITests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: PASS for success, partial failure, rollback, held update, and residue cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/MacContainer/Scenes/SettingsScene.swift App/MacContainer/Views/Settings App/MacContainer/Views/Lifecycle Tests/MacContainerUITests/RuntimeLifecycleUITests.swift
