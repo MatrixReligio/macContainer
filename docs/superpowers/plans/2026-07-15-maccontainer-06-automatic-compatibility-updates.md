@@ -307,27 +307,27 @@ git commit -m "feat: coordinate safe runtime update policy"
 - Create: `Sources/MCSystemLifecycle/Updates/RuntimeUpdateCoordinator.swift`
 - Test: `Tests/MacContainerIntegrationTests/UpdateAgentTests.swift`
 
-- [ ] **Step 1: Write failing scheduling and coordination tests**
+- [x] **Step 1: Write failing scheduling and coordination tests**
 
 Test 24-hour minimum interval, deterministic injected jitter range 0...60 minutes, manual check bypass of interval, offline backoff, GitHub rate-limit response, app-running handoff, app-not-running notification, workload-busy pending state, helper unauthorized, and cancellation. Verify the agent never calls helper install directly without coordinator/decision/preflight.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerIntegrationTests/UpdateAgentTests CODE_SIGNING_ALLOWED=NO test`
 
 Expected: FAIL because update agent service is absent.
 
-- [ ] **Step 3: Implement a least-privilege scheduled agent**
+- [x] **Step 3: Implement a least-privilege scheduled agent**
 
 The agent has outgoing network access only for GitHub release metadata/package download, no privilege, no shell, and app-group-like shared state located in the app-owned Application Support directory with `0600` files. It checks daily plus injected jitter, observes ETag/Last-Modified/rate limits, asks `CompatibilityDecisionEngine`, downloads only approved identity, then asks the update coordinator to install only when policy/idle/helper/preflight allow. If app UI is running, it publishes typed status over XPC; otherwise it uses a local notification with no secret/path detail.
 
-- [ ] **Step 4: Run agent integration and no-CLI checks**
+- [x] **Step 4: Run agent integration and no-CLI checks**
 
 Run: `xcodebuild -project MacContainer.xcodeproj -scheme MacContainer -only-testing:MacContainerIntegrationTests/UpdateAgentTests CODE_SIGNING_ALLOWED=NO test && scripts/check-no-container-cli.sh .`
 
 Expected: PASS and no temp package remains in failure/cancellation cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add App/UpdateAgent Sources/MCSystemLifecycle/Updates Tests/MacContainerIntegrationTests/UpdateAgentTests.swift project.yml MacContainer.xcodeproj

@@ -10,5 +10,11 @@
     <integer>86400</integer>
     <key>RunAtLoad</key>
     <false/>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>900</integer>
 </dict>
 </plist>
