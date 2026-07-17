@@ -296,6 +296,9 @@ run_physical_ui_tests() {
         -project "$repo_root/MacContainer.xcodeproj" \
         -scheme MacContainer \
         -derivedDataPath "$derived_data" \
+        CODE_SIGN_STYLE=Automatic \
+        CODE_SIGN_IDENTITY="Apple Development" \
+        DEVELOPMENT_TEAM=4DUQGD879H \
         -only-testing:MacContainerUITests/PhysicalRuntimeUITests test
 }
 
