@@ -432,7 +432,7 @@ summarize_results() {
 record_result_at() {
     local root="$1"
     local id="$2"
-    [[ "$id" =~ '^[a-z0-9.-]+$' ]] || die "invalid physical result ID"
+    [[ "$id" =~ '^[A-Za-z0-9.-]+$' ]] || die "invalid physical result ID"
     [[ -d "$root" ]] || die "physical result root missing"
     local destination="$root/$id.json"
     local expected="{\"id\":\"$id\",\"passed\":true}"

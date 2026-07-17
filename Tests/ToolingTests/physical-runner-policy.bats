@@ -49,6 +49,7 @@ require_text 'setopt LOCAL_TRAPS'
 require_text 'maccontainer-physical-results-$RUN_UUID'
 require_text 'container.matrixreligio.com.ui-tests.xctrunner/Data/tmp'
 require_text 'import_ui_results'
+require_text "[[ \"\$id\" =~ '^[A-Za-z0-9.-]+\$' ]]"
 require_text '.artifacts/DerivedData'
 require_text 'PHYSICAL_TEST_AUTHORIZATION'
 require_text 'MACCONTAINER_PHYSICAL_CONFIRMATION'
