@@ -4,6 +4,39 @@ import Testing
 
 @Suite("Fixed privileged command runner")
 struct FixedPrivilegedCommandRunnerTests {
+    @Test func `staged package is immutable to users and readable by the installer service`() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mc-installer-permissions-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source.pkg")
+        let expected = Data("reviewed-package-permissions".utf8)
+        try expected.write(to: source, options: .withoutOverwriting)
+        let handle = try FileHandle(forReadingFrom: source)
+        defer { try? handle.close() }
+        let package = try OpenRuntimePackageFile(duplicating: handle.fileDescriptor)
+        let stager = PrivatePackageStager(rootDirectory: root, requiredRootOwner: geteuid())
+
+        try stager.withStagedPackage(package) { stagedPackage in
+            let directoryAttributes = try FileManager.default.attributesOfItem(
+                atPath: stagedPackage.deletingLastPathComponent().path
+            )
+            let packageAttributes = try FileManager.default.attributesOfItem(atPath: stagedPackage.path)
+
+            #expect(directoryAttributes[.ownerAccountID] as? Int == Int(geteuid()))
+            #expect(directoryAttributes[.posixPermissions] as? Int == 0o755)
+            #expect(packageAttributes[.ownerAccountID] as? Int == Int(geteuid()))
+            #expect(packageAttributes[.posixPermissions] as? Int == 0o644)
+            #expect(try Data(contentsOf: stagedPackage) == expected)
+        }
+
+        #expect(try FileManager.default.contentsOfDirectory(atPath: root.path) == ["source.pkg"])
+    }
+
     @Test func `installer receives an immutable private path instead of a process descriptor`() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("mc-installer-stage-\(UUID().uuidString)", isDirectory: true)

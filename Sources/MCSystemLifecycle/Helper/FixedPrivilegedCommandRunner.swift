@@ -361,12 +361,18 @@ struct PrivatePackageStager: Sendable {
             guard Darwin.fsync(output) == 0 else {
                 throw FixedPrivilegedCommandError.packageStagingFailed
             }
+            guard Darwin.fchmod(output, 0o644) == 0 else {
+                throw FixedPrivilegedCommandError.packageStagingFailed
+            }
         } catch {
             Darwin.close(output)
             throw error
         }
         Darwin.close(output)
         try package.revalidateIdentity()
+        guard Darwin.chmod(directory.path, 0o755) == 0 else {
+            throw FixedPrivilegedCommandError.packageStagingFailed
+        }
         let result = Result { try operation(stagedPackage) }
         guard Darwin.unlink(stagedPackage.path) == 0,
               Darwin.rmdir(directory.path) == 0
