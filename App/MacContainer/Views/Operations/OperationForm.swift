@@ -45,7 +45,7 @@ struct OperationForm: View {
 
                     ForEach(Array(issues.enumerated()), id: \.offset) { _, issue in
                         Label {
-                            Text(issue.messageKey)
+                            Text(LocalizedStringKey(issue.messageKey))
                                 .foregroundStyle(.primary)
                         } icon: {
                             Image(systemName: "exclamationmark.circle")
@@ -76,7 +76,7 @@ struct OperationForm: View {
         }
         .navigationTitle(operation.id)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Configure \(operation.domain.rawValue.capitalized) operation")
+        .accessibilityLabel("Configure native operation")
         .accessibilityIdentifier("operation-form.\(operation.id)")
         .sheet(isPresented: $reviewPresented) {
             OperationReview(
@@ -103,7 +103,7 @@ struct OperationForm: View {
                     .readableForeground()
             }
             Spacer()
-            Text(operation.risk.rawValue.capitalized)
+            Text(operation.risk.localizedTitle)
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
@@ -148,6 +148,36 @@ struct OperationForm: View {
         case .readOnly: .blue
         case .mutating: .accentColor
         case .destructive, .privileged: .orange
+        }
+    }
+}
+
+extension RiskLevel {
+    var localizedTitle: LocalizedStringKey {
+        switch self {
+        case .readOnly: "Read only"
+        case .mutating: "Mutating"
+        case .destructive: "Destructive"
+        case .privileged: "Privileged"
+        }
+    }
+}
+
+extension OperationDomain {
+    var localizedTitle: LocalizedStringKey {
+        switch self {
+        case .core: "Core"
+        case .containers: "Containers"
+        case .images: "Images"
+        case .builder: "Builder"
+        case .networks: "Networks"
+        case .volumes: "Volumes"
+        case .registries: "Registries"
+        case .machines: "Machines"
+        case .system: "System"
+        case .dns: "DNS"
+        case .kernel: "Kernel"
+        case .configuration: "Configuration"
         }
     }
 }

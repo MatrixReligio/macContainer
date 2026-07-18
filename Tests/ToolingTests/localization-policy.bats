@@ -77,6 +77,18 @@ if swift "$repo_root/scripts/check-localizations.swift" "$fixture/resources" "$r
     exit 1
 fi
 
+mkdir -p "$fixture/app/MacContainer"
+cat > "$fixture/app/MacContainer/DynamicCopy.swift" <<'SWIFT'
+import SwiftUI
+
+let dynamicCopy = LocalizedStringKey("Dynamic localization key")
+SWIFT
+if swift "$repo_root/scripts/check-localizations.swift" \
+    "$fixture/resources" "$fixture/app" >/dev/null 2>&1; then
+    print -u2 -- "checker accepted a missing LocalizedStringKey initializer"
+    exit 1
+fi
+
 parameter_key="$(/usr/bin/jq -r '.operations[0].parameters[0].detailedHelpKey' "$contract")"
 cp "$catalog" "$fixture/parameter.xcstrings"
 /usr/bin/jq --arg key "$parameter_key" 'del(.strings[$key])' \

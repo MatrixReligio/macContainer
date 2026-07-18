@@ -6,14 +6,13 @@ import SwiftUI
 
 struct SimpleModeView: View {
     @Environment(AppState.self) private var state
+    @Environment(\.dismiss) private var dismiss
 
-    @State private var selectedTemplateID = "quick-run"
+    @State private var selectedTemplateID: String
     @State private var imageReference = "alpine:latest"
     @State private var workspaceDirectory = "/tmp/maccontainer-workspace"
     @State private var volumeName = "maccontainer-data"
     @State private var hostPort = "8080"
-    @State private var homeSharingConsent = false
-    @State private var nestedVirtualizationConsent = false
     @State private var advancedPresented = false
     @State private var reviewPresented = false
     @State private var libraryPresented = false
@@ -27,24 +26,44 @@ struct SimpleModeView: View {
         case configuration
     }
 
+    init(initialTemplateID: String = "quick-run") {
+        _selectedTemplateID = State(initialValue: initialTemplateID)
+    }
+
     var body: some View {
-        GeometryReader { proxy in
-            if proxy.size.width >= 900 {
-                HSplitView {
-                    templateList
-                        .frame(minWidth: 300, idealWidth: 360)
-                    configuration
-                        .frame(minWidth: 420, idealWidth: 560)
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button("Close", systemImage: "xmark") {
+                    dismiss()
                 }
-            } else {
-                VStack(spacing: 0) {
-                    compactSectionPicker
-                    Divider()
-                    switch compactSection {
-                    case .templates:
+                .keyboardShortcut(.cancelAction)
+                .accessibilityIdentifier("close-simple-mode")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(.bar)
+
+            Divider()
+
+            GeometryReader { proxy in
+                if proxy.size.width >= 900 {
+                    HSplitView {
                         templateList
-                    case .configuration:
+                            .frame(minWidth: 300, idealWidth: 360)
                         configuration
+                            .frame(minWidth: 420, idealWidth: 560)
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        compactSectionPicker
+                        Divider()
+                        switch compactSection {
+                        case .templates:
+                            templateList
+                        case .configuration:
+                            configuration
+                        }
                     }
                 }
             }
@@ -93,7 +112,7 @@ struct SimpleModeView: View {
     }
 
     private func compactSectionButton(
-        _ title: String,
+        _ title: LocalizedStringKey,
         symbol: String,
         section: CompactSection,
         identifier: String
@@ -254,21 +273,9 @@ struct SimpleModeView: View {
         case "cross-architecture":
             safetyLabel("Rosetta is required and will be checked before run.", symbol: "checkmark.shield.fill")
         case "linux-machine-workspace":
-            Toggle("Share my home folder", isOn: $homeSharingConsent)
-                .toggleStyle(.switch)
-                .accessibilityIdentifier("consent.home-sharing")
-                .accessibilityValue(Text(homeSharingConsent ? "On" : "Off"))
-            Toggle("Enable nested virtualization", isOn: $nestedVirtualizationConsent)
-                .toggleStyle(.switch)
-                .accessibilityIdentifier("consent.nested-virtualization")
-                .accessibilityValue(Text(nestedVirtualizationConsent ? "On" : "Off"))
-            Text(
-                "Home sharing: \(homeSharingConsent ? "On" : "Off") · " +
-                    "Nested virtualization: \(nestedVirtualizationConsent ? "On" : "Off")"
-            )
-            .font(.caption.bold())
-            .accessibilityIdentifier("consent.virtualization-status")
-            Text("Both high-impact capabilities remain off unless you explicitly enable them.")
+            safetyLabel("Home sharing disabled during creation", symbol: "house.fill")
+            safetyLabel("Nested virtualization disabled during creation", symbol: "cpu")
+            Text("Use Configure after creation to enable either capability with explicit consent.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         default:
@@ -276,7 +283,7 @@ struct SimpleModeView: View {
         }
     }
 
-    private func safetyLabel(_ text: String, symbol: String) -> some View {
+    private func safetyLabel(_ text: LocalizedStringKey, symbol: String) -> some View {
         Label(text, systemImage: symbol)
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -378,52 +385,60 @@ struct SimpleModeView: View {
 }
 
 private struct TemplateMetadata {
-    let title: String
-    let summary: String
-    let shortSummary: String
+    let title: LocalizedStringKey
+    let summary: LocalizedStringKey
+    let shortSummary: LocalizedStringKey
     let symbol: String
 
     init(_ template: ScenarioTemplate) {
         switch template.id {
         case "quick-run":
             (title, summary, shortSummary, symbol) = (
-                "Run once", "Start one container in the foreground with conservative resources.",
-                "Fast foreground run", "play.circle.fill"
+                LocalizedStringKey("Run once"),
+                LocalizedStringKey("Start one container in the foreground with conservative resources."),
+                LocalizedStringKey("Fast foreground run"), "play.circle.fill"
             )
         case "interactive-shell":
             (title, summary, shortSummary, symbol) = (
-                "Interactive shell", "Open the image's supported shell and remove the container on exit.",
-                "Temporary shell session", "terminal.fill"
+                LocalizedStringKey("Interactive shell"),
+                LocalizedStringKey("Open the image's supported shell and remove the container on exit."),
+                LocalizedStringKey("Temporary shell session"), "terminal.fill"
             )
         case "web-service":
             (title, summary, shortSummary, symbol) = (
-                "Web service", "Run a background service bound only to localhost by default.",
-                "Local web endpoint", "network"
+                LocalizedStringKey("Web service"),
+                LocalizedStringKey("Run a background service bound only to localhost by default."),
+                LocalizedStringKey("Local web endpoint"), "network"
             )
         case "development-workspace":
             (title, summary, shortSummary, symbol) = (
-                "Development workspace", "Mount one selected project folder into an isolated workspace.",
-                "Code in a container", "hammer.fill"
+                LocalizedStringKey("Development workspace"),
+                LocalizedStringKey("Mount one selected project folder into an isolated workspace."),
+                LocalizedStringKey("Code in a container"), "hammer.fill"
             )
         case "local-database":
             (title, summary, shortSummary, symbol) = (
-                "Local database", "Keep database files in a named volume and stop gracefully.",
-                "Persistent local data", "cylinder.fill"
+                LocalizedStringKey("Local database"),
+                LocalizedStringKey("Keep database files in a named volume and stop gracefully."),
+                LocalizedStringKey("Persistent local data"), "cylinder.fill"
             )
         case "restricted-secure":
             (title, summary, shortSummary, symbol) = (
-                "Restricted workload", "Use a read-only filesystem with capabilities and networking removed.",
-                "Maximum isolation", "lock.shield.fill"
+                LocalizedStringKey("Restricted workload"),
+                LocalizedStringKey("Use a read-only filesystem with capabilities and networking removed."),
+                LocalizedStringKey("Maximum isolation"), "lock.shield.fill"
             )
         case "cross-architecture":
             (title, summary, shortSummary, symbol) = (
-                "Intel workload", "Run an amd64 Linux image only after Rosetta compatibility checks pass.",
-                "Checked Rosetta run", "cpu.fill"
+                LocalizedStringKey("Intel workload"),
+                LocalizedStringKey("Run an amd64 Linux image only after Rosetta compatibility checks pass."),
+                LocalizedStringKey("Checked Rosetta run"), "cpu.fill"
             )
         default:
             (title, summary, shortSummary, symbol) = (
-                "Linux machine", "Create a persistent Linux machine with sharing and nesting disabled.",
-                "Persistent VM workspace", "desktopcomputer"
+                LocalizedStringKey("Linux machine"),
+                LocalizedStringKey("Create a persistent Linux machine with sharing and nesting disabled."),
+                LocalizedStringKey("Persistent VM workspace"), "desktopcomputer"
             )
         }
     }

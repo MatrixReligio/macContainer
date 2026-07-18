@@ -9,8 +9,16 @@ struct PlainProcessOutputView: View {
 
     var body: some View {
         HSplitView {
-            outputPane(title: "Standard output", text: stdout, identifier: "plain-stdout")
-            outputPane(title: "Standard error", text: stderr, identifier: "plain-stderr")
+            outputPane(
+                title: LocalizedStringKey("Standard output"),
+                text: stdout,
+                identifier: "plain-stdout"
+            )
+            outputPane(
+                title: LocalizedStringKey("Standard error"),
+                text: stderr,
+                identifier: "plain-stderr"
+            )
         }
         .task {
             await controller.start { event in
@@ -28,11 +36,15 @@ struct PlainProcessOutputView: View {
         }
     }
 
-    private func outputPane(title: String, text: String, identifier: String) -> some View {
+    private func outputPane(
+        title: LocalizedStringKey,
+        text: String,
+        identifier: String
+    ) -> some View {
         VStack(alignment: .leading) {
             Text(title).font(.headline)
             ScrollView {
-                Text(text)
+                Text(verbatim: text)
                     .font(.body.monospaced())
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .topLeading)

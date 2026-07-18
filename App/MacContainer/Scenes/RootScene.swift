@@ -45,7 +45,10 @@ struct RootScene: View {
                     openWindow(id: "activity-center")
                 }
                 .sheet(isPresented: $state.simpleModePresented) {
-                    SimpleModeView()
+                    SimpleModeView(initialTemplateID: state.simpleModeInitialTemplateID)
+                        .onDisappear {
+                            state.simpleModeInitialTemplateID = "quick-run"
+                        }
                 }
             }
         }
@@ -94,7 +97,10 @@ private struct ResourceInspectorPlaceholder: View {
                     LabeledContent("Kind", value: resource.kind)
                 }
                 Section("State") {
-                    Label(resource.status, systemImage: resource.status == "Running" ? "play.fill" : "circle")
+                    Label(
+                        LocalizedStringKey(resource.status),
+                        systemImage: resource.status == "Running" ? "play.fill" : "circle"
+                    )
                 }
                 Section("Activity") {
                     Text("No recent activity")
@@ -108,7 +114,7 @@ private struct ResourceInspectorPlaceholder: View {
             EmptyStateView(
                 symbol: "sidebar.right",
                 title: "Nothing Selected",
-                message: "Select a \(route.singularTitle.lowercased()) to inspect its details."
+                message: "Select a resource to inspect its details."
             )
             .accessibilityIdentifier("resource-inspector")
         }

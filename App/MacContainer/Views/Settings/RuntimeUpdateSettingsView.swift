@@ -165,7 +165,7 @@ struct RuntimeUpdateSettingsView: View {
             if stage == .targetProbes {
                 status("Upgrade installed; full compatibility postflight pending", symbol: "hourglass")
             } else {
-                status("Installing approved runtime — \(stage.rawValue)", symbol: "gearshape.2")
+                status("Installing approved runtime — \(stage.localizedTitle)", symbol: "gearshape.2")
             }
         case let .held(reason):
             status(heldText(reason), symbol: "pause.circle.fill", color: .orange)
@@ -176,7 +176,7 @@ struct RuntimeUpdateSettingsView: View {
                     symbol: "arrow.uturn.backward.circle.fill"
                 )
                 if let failedProbeID {
-                    Text("Failed compatibility probe: \(failedProbeID.rawValue)")
+                    Text("Failed compatibility probe: \(failedProbeID.localizedTitle)")
                         .font(.caption.monospaced())
                 }
             }
@@ -246,6 +246,43 @@ struct RuntimeUpdateSettingsView: View {
         case .catalogInvalid: "Update held — embedded compatibility catalog is invalid"
         case .rollbackUnavailable: "Update held — a verified rollback point cannot be created"
         case .preflightFailed: "Update held — compatibility preflight failed"
+        }
+    }
+}
+
+private extension UpgradeStage {
+    var localizedTitle: String {
+        switch self {
+        case .packagePreparation: String(localized: "Package preparation")
+        case .baselineCapture: String(localized: "Baseline capture")
+        case .previousPackageVerification: String(localized: "Previous package verification")
+        case .rollbackPointCreation: String(localized: "Rollback point creation")
+        case .finalIdleCheck: String(localized: "Final idle check")
+        case .serviceStop: String(localized: "Runtime shutdown")
+        case .targetInstall: String(localized: "Package installation")
+        case .serviceStart: String(localized: "Runtime startup")
+        case .targetVerification: String(localized: "Installed runtime verification")
+        case .targetProbes: String(localized: "Compatibility checks")
+        case .packageRetention: String(localized: "Rollback package retention")
+        case .journalCommit: String(localized: "Install completion")
+        }
+    }
+}
+
+private extension ProbeID {
+    var localizedTitle: String {
+        switch self {
+        case .health: String(localized: "Health")
+        case .containers: String(localized: "Containers")
+        case .images: String(localized: "Images")
+        case .builder: String(localized: "Builder")
+        case .networks: String(localized: "Networks")
+        case .volumes: String(localized: "Volumes")
+        case .registries: String(localized: "Registries")
+        case .machines: String(localized: "Machines")
+        case .diskUsage: String(localized: "Disk usage")
+        case .configuration: String(localized: "Configuration")
+        case .capabilities: String(localized: "Capabilities")
         }
     }
 }

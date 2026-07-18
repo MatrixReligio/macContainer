@@ -46,4 +46,30 @@ struct BridgeOperationDispatcherTests {
         #expect(!result.summary.contains("super-secret"))
         #expect(result.summary == "Signed in to registry.example")
     }
+
+    @Test func `machine create boots by default and honors no boot`() async throws {
+        let bootingBridge = FakeRuntimeBridge()
+        let bootingDispatcher = BridgeOperationDispatcher(bridge: bootingBridge)
+        _ = try await bootingDispatcher.dispatch(machineCreateDraft(name: "booted", noBoot: false))
+
+        #expect(await bootingBridge.recordedInvocations().map(\.operationID) == [
+            "machines.create", "machines.start"
+        ])
+
+        let stoppedBridge = FakeRuntimeBridge()
+        let stoppedDispatcher = BridgeOperationDispatcher(bridge: stoppedBridge)
+        _ = try await stoppedDispatcher.dispatch(machineCreateDraft(name: "stopped", noBoot: true))
+
+        #expect(await stoppedBridge.recordedInvocations().map(\.operationID) == ["machines.create"])
+    }
+
+    private func machineCreateDraft(name: String, noBoot: Bool) -> OperationDraft {
+        OperationDraft(operationID: "machines.create", fields: [
+            "image": .init(value: .string("ghcr.io/example/machine:1"), source: .userOverride),
+            "name": .init(value: .string(name), source: .userOverride),
+            "cpus": .init(value: .integer(2), source: .hostRecommendation),
+            "memory": .init(value: .bytes(2_147_483_648), source: .hostRecommendation),
+            "noBoot": .init(value: .bool(noBoot), source: .scenarioRule)
+        ])
+    }
 }

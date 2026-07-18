@@ -174,6 +174,21 @@ struct KernelAdapterTests {
         }
     }
 
+    @Test func `production archive validator accepts harmless root directory marker`() async throws {
+        let root = try makeRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let archive = root.appending(path: "root-marker.tar")
+        try makeTar(entries: [
+            (.init(name: "./", type: "5", link: nil), Data()),
+            (.init(name: "opt/kernel", type: "0", link: nil), Data("kernel".utf8))
+        ]).write(to: archive)
+
+        try await AppleKernelArchiveValidator().validate(
+            archive: archive,
+            binaryPath: "opt/kernel"
+        )
+    }
+
     private func makeRoot() throws -> URL {
         let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appending(path: ".mc-kernel-adapter-test-\(UUID().uuidString)")

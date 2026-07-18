@@ -4,8 +4,8 @@ import SwiftUI
 struct TerminalSessionView: View {
     let controller: TerminalSessionController
 
-    @State private var status = "Connected"
-    @State private var readerStatus = "Reader task active"
+    @State private var status = TerminalPresentationStatus.connected
+    @State private var readerActive = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -19,12 +19,12 @@ struct TerminalSessionView: View {
                 }
                 Spacer()
                 Label {
-                    Text(status)
+                    Text(status.title)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color(nsColor: .labelColor))
                 } icon: {
-                    Image(systemName: status == "Connected" ? "checkmark.circle.fill" : "info.circle.fill")
-                        .foregroundStyle(status == "Connected" ? .green : .orange)
+                    Image(systemName: status.symbol)
+                        .foregroundStyle(status.tint)
                 }
             }
             .padding()
@@ -42,9 +42,11 @@ struct TerminalSessionView: View {
                     Text("Reduced motion: terminal output updates without decorative animation.")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color(nsColor: .labelColor))
-                    Text(readerStatus)
-                        .font(.subheadline.monospaced().weight(.semibold))
-                        .foregroundStyle(Color(nsColor: .labelColor))
+                    Text(LocalizedStringKey(
+                        readerActive ? "Reader task active" : "Reader task stopped"
+                    ))
+                    .font(.subheadline.monospaced().weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
                 }
                 Spacer()
                 Button("Detach") {
@@ -69,16 +71,50 @@ struct TerminalSessionView: View {
         Task {
             do {
                 try await controller.close(choice)
-                readerStatus = "Reader task stopped"
+                readerActive = false
                 switch choice {
                 case .detach:
-                    status = "Detached — workload keeps running"
+                    status = .detached
                 case let .terminate(signal):
-                    status = "Terminated with SIG\(signal.uppercased().replacingOccurrences(of: "SIG", with: ""))"
+                    status = .terminated(
+                        signal.uppercased().replacingOccurrences(of: "SIG", with: "")
+                    )
                 }
             } catch {
-                status = "Close failed — session state unchanged"
+                status = .closeFailed
             }
+        }
+    }
+}
+
+private enum TerminalPresentationStatus {
+    case connected
+    case detached
+    case terminated(String)
+    case closeFailed
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .connected: "Connected"
+        case .detached: "Detached — workload keeps running"
+        case let .terminated(signal): "Terminated with SIG\(signal)"
+        case .closeFailed: "Close failed — session state unchanged"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .connected: "checkmark.circle.fill"
+        case .detached, .terminated: "info.circle.fill"
+        case .closeFailed: "exclamationmark.triangle.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .connected: .green
+        case .detached, .terminated: .orange
+        case .closeFailed: .red
         }
     }
 }

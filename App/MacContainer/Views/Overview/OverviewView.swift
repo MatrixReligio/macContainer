@@ -66,8 +66,8 @@ struct OverviewView: View {
 }
 
 private struct HealthSummary: View {
-    let title: String
-    let value: String
+    let title: LocalizedStringKey
+    let value: LocalizedStringKey
     let symbol: String
     let identifier: String
 
@@ -95,7 +95,7 @@ private struct HealthSummary: View {
 }
 
 private struct MetricSummary: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     let symbol: String
 
@@ -110,7 +110,7 @@ private struct MetricSummary: View {
                     Text(title)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color(nsColor: .labelColor))
-                    Text(value)
+                    Text(verbatim: value)
                         .font(.headline.monospacedDigit())
                         .readableForeground()
                 }

@@ -49,15 +49,15 @@ extension AppRoute {
 
     var singularTitle: String {
         switch self {
-        case .overview: "item"
-        case .containers: "container"
-        case .images: "image"
-        case .builds: "build"
-        case .machines: "machine"
-        case .networks: "network"
-        case .volumes: "volume"
-        case .registries: "registry"
-        case .system: "system item"
+        case .overview: String(localized: "item")
+        case .containers: String(localized: "container")
+        case .images: String(localized: "image")
+        case .builds: String(localized: "build")
+        case .machines: String(localized: "machine")
+        case .networks: String(localized: "network")
+        case .volumes: String(localized: "volume")
+        case .registries: String(localized: "registry")
+        case .system: String(localized: "system item")
         }
     }
 

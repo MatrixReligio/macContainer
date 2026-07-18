@@ -585,7 +585,7 @@ public struct InstallTransaction: Sendable {
             return .incompleteRecovery
         }
         if installAttempted {
-            return .postflightFailed
+            return .postflightFailed(stage: stage)
         }
         if let installError = error as? InstallError {
             return installError
@@ -677,7 +677,7 @@ public enum InstallError: Error, Equatable, Sendable {
     case invalidReleaseMetadata
     case invalidTarget
     case journalUnavailable
-    case postflightFailed
+    case postflightFailed(stage: InstallStage)
     case receiptMismatch
     case stageFailed(InstallStage)
     case temporaryCleanupFailed

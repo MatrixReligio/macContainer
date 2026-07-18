@@ -20,7 +20,9 @@ struct OperationReview: View {
                 Section("Operation") {
                     LabeledContent("Action", value: operation.id)
                     LabeledContent("Runtime", value: runtimeVersion.description)
-                    LabeledContent("Risk", value: operation.risk.rawValue.capitalized)
+                    LabeledContent("Risk") {
+                        Text(operation.risk.localizedTitle)
+                    }
                 }
                 Section("Effective values") {
                     ForEach(operation.parameters) { parameter in
@@ -33,7 +35,7 @@ struct OperationReview: View {
                                         .font(.body.monospaced())
                                         .privacySensitive(field.value.containsSecret)
                                 }
-                                Text(field.source.rawValue)
+                                Text(field.source.localizedTitle)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

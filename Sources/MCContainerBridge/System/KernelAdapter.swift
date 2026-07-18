@@ -328,6 +328,10 @@ public struct AppleKernelArchiveValidator: KernelArchiveValidating, Sendable {
         while let (entry, _) = iterator.next() {
             try Task.checkCancellation()
             guard let rawPath = entry.path else { continue }
+            if rawPath == "." || rawPath == "./" {
+                try Self.validateRootDirectoryMarker(fileType: entry.fileType)
+                continue
+            }
             let path = try Self.normalizedMember(rawPath)
             entries.insert(path)
             if types[path] == nil {
@@ -358,6 +362,12 @@ public struct AppleKernelArchiveValidator: KernelArchiveValidating, Sendable {
             }
         } else if types[target] != .regular || (sizes[target] ?? 0) <= 0 || hardlinks.contains(target) {
             throw KernelAdapterError.invalidKernelEntry
+        }
+    }
+
+    private static func validateRootDirectoryMarker(fileType: URLFileResourceType) throws {
+        guard fileType == .directory else {
+            throw KernelAdapterError.archiveTraversal
         }
     }
 

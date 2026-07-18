@@ -7,7 +7,9 @@ import Testing
 @Suite("Runtime lifecycle controller")
 struct RuntimeLifecycleControllerTests {
     @Test func `helper approval is shown before installation can begin`() async {
-        let service = FixtureLifecycleService(installError: .helperApprovalRequired)
+        let service = FixtureLifecycleService(
+            installError: RuntimeLifecycleServiceError.helperApprovalRequired
+        )
         let controller = RuntimeLifecycleController(service: service)
 
         await controller.install()
@@ -23,6 +25,17 @@ struct RuntimeLifecycleControllerTests {
         await controller.install()
 
         #expect(controller.state == .installed(version: "1.1.0"))
+    }
+
+    @Test func `install failure preserves the safe failing stage code`() async {
+        let service = FixtureLifecycleService(
+            installError: InstallError.postflightFailed(stage: .kernelEnsure)
+        )
+        let controller = RuntimeLifecycleController(service: service)
+
+        await controller.install()
+
+        #expect(controller.state == .failed(code: "lifecycle.install.kernel.ensure"))
     }
 
     @Test func `complete uninstall uses the fresh inventory fingerprint`() async throws {
@@ -44,11 +57,11 @@ struct RuntimeLifecycleControllerTests {
 
 private final class FixtureLifecycleService: RuntimeLifecycleServicing, @unchecked Sendable {
     private let lock = NSLock()
-    private let installError: RuntimeLifecycleServiceError?
+    private let installError: (any Error)?
     private var storedInstallCalls = 0
     private var storedUninstallFingerprint: String?
 
-    init(installError: RuntimeLifecycleServiceError? = nil) {
+    init(installError: (any Error)? = nil) {
         self.installError = installError
     }
 

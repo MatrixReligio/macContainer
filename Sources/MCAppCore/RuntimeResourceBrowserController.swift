@@ -3,30 +3,48 @@ import MCContainerBridge
 import MCModel
 import Observation
 
-public struct RuntimeResourceSnapshot: Identifiable, Hashable, Sendable {
+public struct RuntimeMachineConfigurationSnapshot: Equatable, Sendable {
+    public let resources: RuntimeResources
+    public let homeMount: String
+    public let nestedVirtualization: Bool
+
+    public init(resources: RuntimeResources, homeMount: String, nestedVirtualization: Bool) {
+        self.resources = resources
+        self.homeMount = homeMount
+        self.nestedVirtualization = nestedVirtualization
+    }
+}
+
+public struct RuntimeResourceSnapshot: Identifiable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let status: String
     public let detail: String
     public let isProtected: Bool
+    public let machineConfiguration: RuntimeMachineConfigurationSnapshot?
 
     public init(
         id: String,
         name: String,
         status: String,
         detail: String,
-        isProtected: Bool = false
+        isProtected: Bool = false,
+        machineConfiguration: RuntimeMachineConfigurationSnapshot? = nil
     ) {
         self.id = id
         self.name = name
         self.status = status
         self.detail = detail
         self.isProtected = isProtected
+        self.machineConfiguration = machineConfiguration
     }
 }
 
 public protocol RuntimeResourceProviding: Sendable {
     func load(_ route: AppRoute) async throws -> [RuntimeResourceSnapshot]
+    func configureMachine(id: String, request: MachineSetRequest) async throws
+    func start(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult]
+    func stop(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult]
     func delete(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult]
 }
 
@@ -69,15 +87,25 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
                 isProtected: builder.state == .running
             )]
         case .machines:
-            return try await bridge.machines.list().map {
-                .init(
-                    id: $0.id,
-                    name: $0.name,
-                    status: Self.status($0.state),
-                    detail: Self.resourceDescription($0.resources) + ($0.isDefault ? " · Default" : ""),
-                    isProtected: false
-                )
+            let summaries = try await bridge.machines.list()
+            var snapshots: [RuntimeResourceSnapshot] = []
+            snapshots.reserveCapacity(summaries.count)
+            for summary in summaries {
+                let detail = try await bridge.machines.inspect(id: summary.id)
+                snapshots.append(.init(
+                    id: summary.id,
+                    name: summary.name,
+                    status: Self.status(summary.state),
+                    detail: Self.resourceDescription(summary.resources) + (summary.isDefault ? " · Default" : ""),
+                    isProtected: false,
+                    machineConfiguration: .init(
+                        resources: summary.resources,
+                        homeMount: detail.homeMount,
+                        nestedVirtualization: detail.nestedVirtualization
+                    )
+                ))
             }
+            return snapshots
         case .networks:
             return try await bridge.networks.list().map {
                 .init(
@@ -148,6 +176,24 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
         }
     }
 
+    public func start(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult] {
+        guard route == .machines else { throw RuntimeResourceProviderError.unsupportedAction }
+        return try await bridge.machines.start(ids: ids).map(Self.activityResult)
+    }
+
+    public func configureMachine(id: String, request: MachineSetRequest) async throws {
+        _ = try await bridge.machines.set(id: id, request: request)
+    }
+
+    public func stop(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult] {
+        guard route == .machines else { throw RuntimeResourceProviderError.unsupportedAction }
+        return try await bridge.machines.stop(ids: ids, force: false).map(Self.activityResult)
+    }
+
+    private static func activityResult(_ result: BatchItemResult) -> ActivityItemResult {
+        .init(resourceID: result.id, outcome: result.succeeded ? .succeeded : .failed)
+    }
+
     private static func status(_ state: RuntimeResourceState) -> String {
         switch state {
         case .stopped: "Stopped"
@@ -170,6 +216,7 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
 
 public enum RuntimeResourceProviderError: Error, Equatable, Sendable {
     case unsupportedDeletion
+    case unsupportedAction
 }
 
 @MainActor
@@ -233,6 +280,65 @@ public final class RuntimeResourceBrowserController {
             activities.finish(activity, outcome: .failed)
         }
     }
+
+    public func start(_ route: AppRoute, ids: [String]) async {
+        await perform(route, ids: ids, action: "start") {
+            try await self.provider.start(route, ids: ids)
+        }
+    }
+
+    public func stop(_ route: AppRoute, ids: [String]) async {
+        await perform(route, ids: ids, action: "stop") {
+            try await self.provider.stop(route, ids: ids)
+        }
+    }
+
+    @discardableResult
+    public func configureMachine(id: String, request: MachineSetRequest) async -> Bool {
+        let activity = activities.start(titleKey: "activity.machines.configure")
+        do {
+            try await provider.configureMachine(id: id, request: request)
+            errors[AppRoute.machines.rawValue] = nil
+            activities.finish(
+                activity,
+                outcome: .succeeded,
+                itemResults: [.init(resourceID: id, outcome: .succeeded)]
+            )
+            await refresh(.machines)
+            return true
+        } catch is CancellationError {
+            activities.finish(activity, outcome: .cancelled)
+            return false
+        } catch {
+            errors[AppRoute.machines.rawValue] = "resources.configure.failed"
+            activities.finish(activity, outcome: .failed)
+            return false
+        }
+    }
+
+    private func perform(
+        _ route: AppRoute,
+        ids: [String],
+        action: String,
+        operation: () async throws -> [ActivityItemResult]
+    ) async {
+        guard !ids.isEmpty else { return }
+        let activity = activities.start(titleKey: "activity.\(route.rawValue).\(action)")
+        do {
+            let results = try await operation()
+            let outcome: ActivityOutcome = results.allSatisfy { $0.outcome == .succeeded }
+                ? .succeeded
+                : .partiallySucceeded
+            activities.finish(activity, outcome: outcome, itemResults: results)
+            errors[route.rawValue] = nil
+            await refresh(route)
+        } catch is CancellationError {
+            activities.finish(activity, outcome: .cancelled)
+        } catch {
+            errors[route.rawValue] = "resources.\(action).failed"
+            activities.finish(activity, outcome: .failed)
+        }
+    }
 }
 
 public actor SimulatedRuntimeResourceProvider: RuntimeResourceProviding {
@@ -250,7 +356,17 @@ public actor SimulatedRuntimeResourceProvider: RuntimeResourceProviding {
                 .init(id: "builder", name: "Apple container builder", status: "Ready", detail: "Default resources")
             ],
             AppRoute.machines.rawValue: [
-                .init(id: "default", name: "default", status: "Running", detail: "4 CPU · 4 GB")
+                .init(
+                    id: "default",
+                    name: "default",
+                    status: "Running",
+                    detail: "4 CPU · 4 GB",
+                    machineConfiguration: .init(
+                        resources: .init(cpuCount: 4, memoryBytes: 4_294_967_296),
+                        homeMount: "none",
+                        nestedVirtualization: false
+                    )
+                )
             ],
             AppRoute.networks.rawValue: [
                 .init(id: "default", name: "default", status: "Ready", detail: "Built in", isProtected: true)
@@ -279,6 +395,36 @@ public actor SimulatedRuntimeResourceProvider: RuntimeResourceProviding {
 
     public func delete(_ route: AppRoute, ids: [String]) -> [ActivityItemResult] {
         snapshots[route.rawValue]?.removeAll { ids.contains($0.id) }
+        return ids.map { .init(resourceID: $0, outcome: .succeeded) }
+    }
+
+    public func configureMachine(id _: String, request _: MachineSetRequest) {}
+
+    public func start(_ route: AppRoute, ids: [String]) throws -> [ActivityItemResult] {
+        try updateMachineStatus(route, ids: ids, status: "Running")
+    }
+
+    public func stop(_ route: AppRoute, ids: [String]) throws -> [ActivityItemResult] {
+        try updateMachineStatus(route, ids: ids, status: "Stopped")
+    }
+
+    private func updateMachineStatus(
+        _ route: AppRoute,
+        ids: [String],
+        status: String
+    ) throws -> [ActivityItemResult] {
+        guard route == .machines else { throw RuntimeResourceProviderError.unsupportedAction }
+        snapshots[route.rawValue] = snapshots[route.rawValue]?.map { snapshot in
+            guard ids.contains(snapshot.id) else { return snapshot }
+            return RuntimeResourceSnapshot(
+                id: snapshot.id,
+                name: snapshot.name,
+                status: status,
+                detail: snapshot.detail,
+                isProtected: snapshot.isProtected,
+                machineConfiguration: snapshot.machineConfiguration
+            )
+        }
         return ids.map { .init(resourceID: $0, outcome: .succeeded) }
     }
 }

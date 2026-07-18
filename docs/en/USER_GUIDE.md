@@ -33,6 +33,13 @@ Switch to Advanced controls whenever you need the complete Apple contract. Value
 
 Select a resource row to inspect details. **Refresh** reloads the current domain. Destructive actions display an explicit confirmation with the affected resource and recovery expectation.
 
+<a id="machine-workflow"></a>
+## Machine workflow
+
+Open **Machines** and select **New Machine**. Simple Mode opens with **Linux machine** selected; review the generated machine name, image, CPU, and memory, then select **Run**. The machine is created and started by default. Home-folder sharing and nested virtualization remain disabled during creation.
+
+Select one machine to use **Configure**, where you can change CPU and memory or explicitly enable read-only home-folder sharing and nested virtualization. **Start** and **Stop** act on the selected machines. **Delete** always shows the affected machine identifiers before removal.
+
 <a id="parameters"></a>
 ## Parameters and review
 

@@ -180,6 +180,12 @@ public struct MachineAdapter: MachineOperations, Sendable {
         }
     }
 
+    public func start(ids: [String]) async throws -> [BatchItemResult] {
+        try await mutate(ids: ids, force: false, failureCode: "machine.start.failed") { id, _ in
+            _ = try await client.boot(id: id)
+        }
+    }
+
     public func run(_ request: MachineRunRequest) async throws -> any ProcessSession {
         try await coordinator.withLock(.machine(request.create.name)) {
             let plan = try await createPlan(request.create)

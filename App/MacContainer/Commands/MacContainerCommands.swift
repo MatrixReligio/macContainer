@@ -19,6 +19,7 @@ struct MacContainerCommands: Commands {
 
         CommandGroup(after: .newItem) {
             Button("New…") {
+                state.simpleModeInitialTemplateID = "quick-run"
                 state.simpleModePresented = true
             }
             .keyboardShortcut("n", modifiers: .command)
@@ -37,7 +38,11 @@ struct MacContainerCommands: Commands {
         }
     }
 
-    private func routeButton(_ title: String, route: AppRoute, key: KeyEquivalent) -> some View {
+    private func routeButton(
+        _ title: LocalizedStringKey,
+        route: AppRoute,
+        key: KeyEquivalent
+    ) -> some View {
         Button(title) {
             state.selection = route
         }

@@ -50,6 +50,7 @@ public final class AppState {
     public var columnVisibility: NavigationSplitViewVisibility = .all
     public var activityCenterPresented = false
     public var simpleModePresented = false
+    public var simpleModeInitialTemplateID = "quick-run"
     public var health: HealthState = .checking
     public var hasUnsavedWork = false
     public var selectedResource: ResourceSelection?

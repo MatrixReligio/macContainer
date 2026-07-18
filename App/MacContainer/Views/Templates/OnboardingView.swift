@@ -77,7 +77,11 @@ struct OnboardingView: View {
         .accessibilityIdentifier("onboarding")
     }
 
-    private func readinessCard(symbol: String, title: String, detail: String) -> some View {
+    private func readinessCard(
+        symbol: String,
+        title: LocalizedStringKey,
+        detail: LocalizedStringKey
+    ) -> some View {
         GroupBox {
             HStack(spacing: 10) {
                 Image(systemName: symbol)
