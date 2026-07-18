@@ -60,7 +60,7 @@ struct InstallRuntimeView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!isAuditMode && appState.runtimeLifecycle.isBusy)
+            .disabled(!isAuditMode && !appState.runtimeLifecycle.canInstall)
             .accessibilityIdentifier("install-runtime")
 
             if isAuditMode, phase == .postflightPending {
@@ -85,6 +85,7 @@ struct InstallRuntimeView: View {
         .task {
             guard !isAuditMode else { return }
             await appState.runtimeLifecycle.refreshHelperStatus()
+            await appState.runtimeLifecycle.refreshInstallationStatus()
         }
     }
 

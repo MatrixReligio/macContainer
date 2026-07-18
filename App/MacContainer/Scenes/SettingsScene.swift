@@ -30,12 +30,6 @@ struct SettingsScene: View {
                 .accessibilityLabel("Settings content")
                 .accessibilityIdentifier("settings-content.\(selection.rawValue)")
         }
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text(selection.title)
-                    .font(.headline)
-            }
-        }
         .frame(minWidth: 760, minHeight: 620)
         .accessibilityIdentifier("settings-scene")
     }

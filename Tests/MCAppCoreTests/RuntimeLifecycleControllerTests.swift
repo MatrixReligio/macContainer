@@ -27,6 +27,28 @@ struct RuntimeLifecycleControllerTests {
         #expect(controller.state == .installed(version: "1.1.0"))
     }
 
+    @Test func `installed runtime cannot be installed a second time`() async {
+        let service = FixtureLifecycleService()
+        let controller = RuntimeLifecycleController(service: service)
+
+        await controller.install()
+        await controller.install()
+
+        #expect(controller.state == .installed(version: "1.1.0"))
+        #expect(service.installCalls == 1)
+    }
+
+    @Test func `refresh recognizes an already installed reviewed runtime`() async {
+        let service = FixtureLifecycleService(installedVersion: "1.1.0")
+        let controller = RuntimeLifecycleController(service: service)
+
+        await controller.refreshInstallationStatus()
+        await controller.install()
+
+        #expect(controller.state == .installed(version: "1.1.0"))
+        #expect(service.installCalls == 0)
+    }
+
     @Test func `install failure preserves the safe failing stage code`() async {
         let service = FixtureLifecycleService(
             installError: InstallError.postflightFailed(stage: .kernelEnsure)
@@ -58,11 +80,13 @@ struct RuntimeLifecycleControllerTests {
 private final class FixtureLifecycleService: RuntimeLifecycleServicing, @unchecked Sendable {
     private let lock = NSLock()
     private let installError: (any Error)?
+    private let installedVersion: String?
     private var storedInstallCalls = 0
     private var storedUninstallFingerprint: String?
 
-    init(installError: (any Error)? = nil) {
+    init(installError: (any Error)? = nil, installedVersion: String? = nil) {
         self.installError = installError
+        self.installedVersion = installedVersion
     }
 
     var installCalls: Int {
@@ -75,6 +99,10 @@ private final class FixtureLifecycleService: RuntimeLifecycleServicing, @uncheck
 
     func helperStatus() async -> PrivilegedHelperRegistrationStatus {
         .enabled
+    }
+
+    func installedReviewedRuntimeVersion() async throws -> String? {
+        installedVersion
     }
 
     func requestHelperAvailability() async throws -> PrivilegedHelperRegistrationStatus {

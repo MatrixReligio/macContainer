@@ -139,6 +139,10 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
             return await finish(state)
         }
 
+        if reviewed.context.installedRuntimeVersion == candidate.version {
+            return await finish(.upToDate)
+        }
+
         await stateSink.publish(.available(version: candidate.version))
         switch updateAction(reviewed: reviewed, activity: reviewed.context.activity) {
         case .notify:

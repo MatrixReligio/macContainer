@@ -13,6 +13,7 @@ struct ResourceTable: View {
     @State private var selection: Set<RuntimeResourceSnapshot.ID> = []
     @State private var confirmationPresented = false
     @State private var machineConfigurationPresented = false
+    @State private var registryLoginPresented = false
 
     private var filteredResources: [RuntimeResourceSnapshot] {
         guard searchText.isEmpty == false else { return resources }
@@ -41,6 +42,15 @@ struct ResourceTable: View {
 
                 if route == .machines {
                     machineActions
+                }
+
+                if route == .registries {
+                    Button {
+                        registryLoginPresented = true
+                    } label: {
+                        Label("Log In", systemImage: "person.badge.key")
+                    }
+                    .accessibilityIdentifier("login-registry")
                 }
 
                 Button {
@@ -74,9 +84,9 @@ struct ResourceTable: View {
                 } else {
                     EmptyStateView(
                         symbol: searchText.isEmpty ? "shippingbox" : "magnifyingglass",
-                        title: searchText.isEmpty ? "No resources" : "No Results",
+                        title: emptyTitle,
                         message: searchText.isEmpty
-                            ? "Create a resource or refresh after the runtime starts."
+                            ? emptyMessage
                             : "Try a different search."
                     )
                     .accessibilityIdentifier("resource-empty.\(route.rawValue)")
@@ -165,7 +175,33 @@ struct ResourceTable: View {
                 )
             }
         }
+        .sheet(isPresented: $registryLoginPresented) {
+            if let operation = Self.contract?.operation(id: "registries.login") {
+                DismissibleOperationSheet(
+                    operation: operation,
+                    runtimeVersion: .init(major: 1, minor: 1, patch: 0),
+                    draft: OperationDraftFactory().makeDraft(for: operation),
+                    isPresented: $registryLoginPresented
+                )
+            }
+        }
     }
+
+    private var emptyTitle: LocalizedStringKey {
+        guard searchText.isEmpty else { return "No Results" }
+        return route == .registries ? "No registry credentials" : "No resources"
+    }
+
+    private var emptyMessage: LocalizedStringKey {
+        if route == .registries {
+            return "Log in to a registry to store a reviewed credential, then refresh this list."
+        }
+        return "Create a resource or refresh after the runtime starts."
+    }
+
+    private static let contract = try? ContractRepository.bundled(
+        version: RuntimeVersion(major: 1, minor: 1, patch: 0)
+    )
 
     private var machineActions: some View {
         ViewThatFits(in: .horizontal) {

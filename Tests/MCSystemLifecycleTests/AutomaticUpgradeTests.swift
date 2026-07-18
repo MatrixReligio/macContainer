@@ -17,6 +17,18 @@ struct AutomaticUpgradeTests {
         ])
     }
 
+    @Test func `check reports up to date when reviewed candidate is already installed`() async throws {
+        let fixture = try AutomaticFixture(
+            installedRuntimeVersion: "1.1.0",
+            installedPackageSHA256: ReviewedRuntime110Manifest.package.sha256,
+            mode: .checkOnly
+        )
+
+        #expect(try await fixture.coordinator.process(.fixture) == .upToDate)
+        #expect(fixture.actions.values == ["context"])
+        #expect(await fixture.sink.states == [.checking, .upToDate])
+    }
+
     @Test func `download and notify caches verified package without install preflight`() async throws {
         let fixture = try AutomaticFixture(mode: .downloadAndNotify)
 
@@ -148,6 +160,8 @@ private final class AutomaticFixture {
     init(
         candidateVersion: String = "1.1.0",
         candidateDigest: String? = nil,
+        installedRuntimeVersion: String = "1.0.0",
+        installedPackageSHA256: String? = nil,
         activity: [RuntimeActivitySnapshot] = [.init(), .init()],
         packageFails: Bool = false,
         rollbackFails: Bool = false,
@@ -167,6 +181,8 @@ private final class AutomaticFixture {
             actions: actions,
             catalog: catalog,
             entry: entry,
+            installedRuntimeVersion: installedRuntimeVersion,
+            installedPackageSHA256: installedPackageSHA256,
             activity: activity,
             mode: mode
         )
@@ -220,6 +236,8 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
     let actions: LockedAutomaticActions
     let catalog: CompatibilityCatalog
     let entry: CompatibilityEntry
+    let installedRuntimeVersion: String
+    let installedPackageSHA256: String?
     var activity: [RuntimeActivitySnapshot]
     let mode: RuntimeUpdateMode
 
@@ -227,12 +245,16 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
         actions: LockedAutomaticActions,
         catalog: CompatibilityCatalog,
         entry: CompatibilityEntry,
+        installedRuntimeVersion: String,
+        installedPackageSHA256: String?,
         activity: [RuntimeActivitySnapshot],
         mode: RuntimeUpdateMode
     ) {
         self.actions = actions
         self.catalog = catalog
         self.entry = entry
+        self.installedRuntimeVersion = installedRuntimeVersion
+        self.installedPackageSHA256 = installedPackageSHA256
         self.activity = activity
         self.mode = mode
     }
@@ -250,8 +272,8 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
                 macOSMajor: 26,
                 capabilities: []
             ),
-            installedRuntimeVersion: "1.0.0",
-            installedPackageSHA256: entry.allowedUpgradeSources[0].packageSHA256,
+            installedRuntimeVersion: installedRuntimeVersion,
+            installedPackageSHA256: installedPackageSHA256 ?? entry.allowedUpgradeSources[0].packageSHA256,
             verifiedAttestationIDs: [entry.attestation.id],
             blockedAttestationID: nil,
             destructiveMigrationConsent: false,

@@ -3,8 +3,13 @@ import MCSystemLifecycle
 
 public actor SimulatedRuntimeLifecycleService: RuntimeLifecycleServicing {
     private var helperRegistration: PrivilegedHelperRegistrationStatus = .enabled
+    private var installedVersion: String?
 
     public init() {}
+
+    public func installedReviewedRuntimeVersion() -> String? {
+        installedVersion
+    }
 
     public func helperStatus() -> PrivilegedHelperRegistrationStatus {
         helperRegistration
@@ -18,7 +23,8 @@ public actor SimulatedRuntimeLifecycleService: RuntimeLifecycleServicing {
     public func openHelperApprovalSettings() {}
 
     public func installReviewedRuntime() -> InstallReport {
-        .init(
+        installedVersion = "1.1.0"
+        return .init(
             runtimeVersion: "1.1.0",
             packageSHA256: ReviewedRuntime110Manifest.package.sha256,
             receipt: .init(
@@ -46,6 +52,7 @@ public actor SimulatedRuntimeLifecycleService: RuntimeLifecycleServicing {
         inventoryFingerprint _: String,
         acknowledgesIrreversibleDeletion _: Bool
     ) -> UninstallResult {
+        installedVersion = nil
         let preserved: Set<ResidueKind> = mode == .preserveData
             ? [.applicationSupport, .configuration, .defaultsDomain, .registryCredential]
             : []

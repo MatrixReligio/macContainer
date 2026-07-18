@@ -74,11 +74,15 @@ public struct CompatibilityDecisionEngine: Sendable {
         else {
             return .hold(.unsupportedHost)
         }
-        guard input.package == entry.package,
-              entry.allowedUpgradeSources.contains(where: {
-                  $0.runtimeVersion == input.installedRuntimeVersion &&
-                      $0.packageSHA256 == input.installedPackageSHA256
-              })
+        let installedIdentityMatches = if input.installedRuntimeVersion == entry.runtimeVersion {
+            input.installedPackageSHA256 == entry.package.sha256
+        } else {
+            entry.allowedUpgradeSources.contains(where: {
+                $0.runtimeVersion == input.installedRuntimeVersion &&
+                    $0.packageSHA256 == input.installedPackageSHA256
+            })
+        }
+        guard input.package == entry.package, installedIdentityMatches
         else {
             return .hold(.packageIdentityMismatch)
         }

@@ -5,6 +5,30 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.5 - 2026-07-18
+
+### Added
+
+- The template library now shows built-in details and provides persistent New,
+  Duplicate, Edit, Save, Import, Export, and Delete workflows for safe custom
+  templates.
+- The Registries page now provides a direct reviewed login operation when no
+  credentials have been stored.
+
+### Fixed
+
+- Runtime installation recognizes an already installed reviewed runtime and
+  disables duplicate installation, while complete uninstall clears its typed
+  confirmation after success.
+- Runtime update checks now report up to date when the reviewed target version
+  and package identity are already installed instead of holding the same version
+  as an invalid upgrade source.
+- Scenario cards advance directly to configuration, Settings actions perform
+  their advertised work, and redundant principal-title capsules no longer appear
+  above Settings content.
+- Registry and template empty states now explain the available next action
+  instead of presenting a refresh-only or selection-only dead end.
+
 ## 0.1.4 - 2026-07-18
 
 ### Changed

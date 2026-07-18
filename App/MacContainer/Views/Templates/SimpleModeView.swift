@@ -294,6 +294,7 @@ struct SimpleModeView: View {
         let metadata = TemplateMetadata(template)
         return Button {
             selectedTemplateID = template.id
+            compactSection = .configuration
         } label: {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: metadata.symbol)
@@ -319,6 +320,7 @@ struct SimpleModeView: View {
             .foregroundStyle(selectedTemplateID == template.id ? .white : .primary)
         }
         .buttonStyle(.plain)
+        .accessibilityHint("Selects this scenario and opens configuration")
         .accessibilityIdentifier("template.\(template.id)")
     }
 
@@ -384,7 +386,7 @@ struct SimpleModeView: View {
     }()
 }
 
-private struct TemplateMetadata {
+struct TemplateMetadata {
     let title: LocalizedStringKey
     let summary: LocalizedStringKey
     let shortSummary: LocalizedStringKey

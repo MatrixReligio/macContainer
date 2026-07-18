@@ -36,6 +36,26 @@ public final class RuntimeLifecycleController {
         }
     }
 
+    public var canInstall: Bool {
+        guard !isBusy else { return false }
+        if case .installed = state {
+            return false
+        }
+        return true
+    }
+
+    public func refreshInstallationStatus() async {
+        do {
+            if let version = try await service.installedReviewedRuntimeVersion() {
+                state = .installed(version: version)
+            } else if case .installed = state {
+                state = .ready
+            }
+        } catch {
+            state = .failed(code: "lifecycle.installation-status.failed")
+        }
+    }
+
     public func refreshHelperStatus() async {
         helperStatus = await service.helperStatus()
         if helperStatus == .requiresApproval {
@@ -59,6 +79,7 @@ public final class RuntimeLifecycleController {
     }
 
     public func install() async {
+        guard canInstall else { return }
         state = .installing
         do {
             let report = try await service.installReviewedRuntime()

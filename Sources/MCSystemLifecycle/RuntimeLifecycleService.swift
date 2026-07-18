@@ -3,6 +3,7 @@ import MCCompatibility
 import MCContainerBridge
 
 public protocol RuntimeLifecycleServicing: Sendable {
+    func installedReviewedRuntimeVersion() async throws -> String?
     func helperStatus() async -> PrivilegedHelperRegistrationStatus
     func requestHelperAvailability() async throws -> PrivilegedHelperRegistrationStatus
     func openHelperApprovalSettings() async
@@ -37,6 +38,14 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
 
     public func helperStatus() async -> PrivilegedHelperRegistrationStatus {
         await registrar.status()
+    }
+
+    public func installedReviewedRuntimeVersion() async throws -> String? {
+        do {
+            return try await targetResolver.resolve().manifest.runtimeVersion
+        } catch ProductionUninstallComponentError.runtimeNotInstalled {
+            return nil
+        }
     }
 
     public func requestHelperAvailability() async throws -> PrivilegedHelperRegistrationStatus {

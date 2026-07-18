@@ -28,7 +28,7 @@ Switch to Advanced controls whenever you need the complete Apple contract. Value
 - **Machines** manages the virtual machines used by the runtime, including configuration, logs, and default selection.
 - **Networks** creates and audits container networks, DNS, and packet-filter state.
 - **Volumes** creates, inspects, and removes persistent storage.
-- **Registries** manages registry sessions through secure credential entry. Secret values are never written into templates or diagnostics.
+- **Registries** manages registry sessions through **Log In** and secure credential entry. An empty list means no reviewed credential is stored; log in and then refresh. Secret values are never written into templates or diagnostics.
 - **System** exposes runtime status, version, disk use, logs, configuration, service state, and kernel selection.
 
 Select a resource row to inspect details. **Refresh** reloads the current domain. Destructive actions display an explicit confirmation with the affected resource and recovery expectation.
@@ -50,7 +50,7 @@ Required fields are marked. Repeated values preserve the order you enter. Path a
 <a id="templates"></a>
 ## Templates
 
-Open **Settings → Defaults & Templates → Open Template Library** to inspect built-in and imported templates. Import first creates a preview, migrates supported older schema versions, and blocks secrets or unknown high-impact fields. Review every value before saving. You can duplicate or export a safe custom template; credentials and authorization material are excluded.
+Open **Settings → Defaults & Templates → Open Template Library** to select a built-in template and inspect its purpose and operation. Built-ins are immutable. Use **New** or **Duplicate** to create a custom template, edit its name, operation, and workload fields in the detail pane, then select **Save**. Custom templates persist in Application Support and can be selected, edited, exported, or deleted later. Import migrates supported older schema versions and blocks secrets or unknown high-impact fields before saving; credentials and authorization material are always excluded.
 
 <a id="terminal"></a>
 ## Interactive terminal

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct DefaultsSettingsView: View {
+    @State private var libraryPresented = false
+
     var body: some View {
         SettingsForm {
             Section("Safe defaults") {
@@ -11,8 +13,14 @@ struct DefaultsSettingsView: View {
             }
             Section("Templates") {
                 Text("Eight built-in scenarios are immutable. Imported templates are migrated and checked for secrets.")
-                Button("Open Template Library") {}
+                Button("Open Template Library") {
+                    libraryPresented = true
+                }
+                .accessibilityIdentifier("open-template-library")
             }
+        }
+        .sheet(isPresented: $libraryPresented) {
+            TemplateLibraryView(isPresented: $libraryPresented)
         }
     }
 

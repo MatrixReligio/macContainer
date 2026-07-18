@@ -206,6 +206,10 @@ struct UninstallRuntimeView: View {
             inventory: inventory,
             acknowledgesIrreversibleDeletion: mode == .complete
         )
+        let completedFullUninstall = mode == .complete && appState.runtimeLifecycle.state == .uninstalled(.complete)
+        if completedFullUninstall {
+            confirmation = ""
+        }
     }
 }
 
