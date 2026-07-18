@@ -39,6 +39,13 @@ MacContainer는 검토된 Apple container 런타임을 네이티브 UI로 관리
 
 머신 하나를 선택하고 **구성**을 열어 CPU와 메모리를 변경하거나 읽기 전용 홈 폴더 공유와 중첩 가상화를 명시적으로 활성화할 수 있습니다. **시작**과 **중지**는 선택한 머신에 적용되며 **삭제** 전에는 영향을 받는 머신 식별자가 항상 표시됩니다.
 
+<a id="registry-workflow"></a>
+## 레지스트리 작업 흐름
+
+Apple container는 사용자를 위한 범용 이미지 호스팅 서비스를 운영하지 않습니다. 표준 OCI 이미지를 사용하므로 공개 이미지는 익명으로 가져올 수 있고, 비공개 레지스트리는 Docker Hub, GitHub Container Registry, Amazon ECR, Google Artifact Registry, Azure Container Registry, Harbor 및 호환되는 자체 호스팅 레지스트리와 함께 사용할 수 있습니다.
+
+**레지스트리**를 열고 **로그인**을 선택합니다. 이미지 경로가 없는 레지스트리 호스트 이름, 사용자 이름, 공급자가 요구하는 암호 또는 액세스 토큰을 입력합니다. Docker Hub에는 `docker.io`를 사용하고 GitHub Container Registry에는 `ghcr.io`와 필요한 패키지 범위가 있는 개인 액세스 토큰을 사용합니다. MacContainer는 엔드포인트를 확인한 후 Apple container가 이미지 가져오기, 푸시 및 머신 생성에 사용하는 동일한 보안 도메인에 기기 전용 자격 증명을 저장합니다. 공개 이미지의 익명 가져오기에는 저장된 로그인이 필요하지 않습니다.
+
 <a id="parameters"></a>
 ## 매개변수 및 검토
 

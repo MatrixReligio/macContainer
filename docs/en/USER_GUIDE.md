@@ -40,6 +40,13 @@ Open **Machines** and select **New Machine**. Simple Mode opens with **Linux mac
 
 Select one machine to use **Configure**, where you can change CPU and memory or explicitly enable read-only home-folder sharing and nested virtualization. **Start** and **Stop** act on the selected machines. **Delete** always shows the affected machine identifiers before removal.
 
+<a id="registry-workflow"></a>
+## Registry workflow
+
+Apple container does not operate a general-purpose image-hosting service. It consumes and produces standard OCI images, so public images can be pulled anonymously and private credentials can be used with OCI-compatible services such as Docker Hub, GitHub Container Registry, Amazon ECR, Google Artifact Registry, Azure Container Registry, Harbor, and compatible self-hosted registries.
+
+Open **Registries** and select **Log In**. Enter the registry hostname without an image path, your username, and the password or access token required by that provider. For Docker Hub use `docker.io`; for GitHub Container Registry use `ghcr.io` and a personal access token with the required package scope. MacContainer verifies the endpoint before storing a device-only credential in the same Apple container registry security domain used for image pulls, pushes, and machine creation. Public registries do not require a saved login for anonymous pulls.
+
 <a id="parameters"></a>
 ## Parameters and review
 

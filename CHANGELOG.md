@@ -5,6 +5,18 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.7 - 2026-07-18
+
+### Fixed
+
+- Linux machine creation now fully initializes Apple container's typed machine
+  management flags before using the library API, preventing an image pull from
+  ending without a persisted machine.
+- Successful machine creation refreshes the Machines inventory immediately.
+- Failed operations now retain redacted underlying diagnostics in Activity
+  Center and macOS unified logging instead of replacing them with a generic
+  error.
+
 ## 0.1.6 - 2026-07-18
 
 ### Fixed

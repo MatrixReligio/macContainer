@@ -40,6 +40,7 @@ public struct AppleMachineBackend: MachineBackend, Sendable {
         var management = Flags.MachineManagement()
         management.arch = Arch.hostArchitecture().rawValue
         management.os = "linux"
+        management.platform = nil
         let (machineConfiguration, machineResources) = try await MachineClient.machineConfigFromFlags(
             id: plan.name,
             image: plan.imageReference,

@@ -1,6 +1,7 @@
 import Foundation
 import MCContracts
 import MCModel
+import OSLog
 
 public struct OperationDispatchResult: Equatable, Sendable {
     public let summary: String
@@ -44,6 +45,8 @@ public enum OperationExecutorError: Error, Equatable, Sendable {
 
 @MainActor
 public final class OperationExecutor {
+    private static let logger = Logger(subsystem: "container.matrixreligio.com", category: "operations")
+
     public let supportedOperationIDs: Set<String>
 
     private let contract: UpstreamContract
@@ -105,17 +108,36 @@ public final class OperationExecutor {
                 summary: dispatchResult.summary
             )
         } catch {
+            let mappedError = ErrorMapper().map(
+                error,
+                domain: Self.errorDomain(for: operation.domain),
+                operationID: operation.id,
+                activityID: activityID
+            )
+            Self.logger.error(
+                "Operation \(operation.id, privacy: .public) failed: \(mappedError.diagnosticDetail, privacy: .public)"
+            )
             activities.update(activityID, phaseKey: "activity.phase.failed")
             activities.finish(
                 activityID,
                 outcome: .failed,
-                error: UserFacingError(
-                    code: "operation.failed",
-                    messageKey: "error.operation.failed",
-                    recoveryKey: "error.operation.retry"
-                )
+                error: mappedError
             )
             throw error
+        }
+    }
+
+    private static func errorDomain(for domain: OperationDomain) -> UserFacingErrorDomain {
+        switch domain {
+        case .containers: .container
+        case .images: .image
+        case .builder: .build
+        case .networks: .network
+        case .volumes: .volume
+        case .registries: .registry
+        case .machines: .machine
+        case .system, .dns, .kernel, .configuration: .system
+        case .core: .unknown
         }
     }
 }

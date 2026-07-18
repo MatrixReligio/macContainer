@@ -369,7 +369,7 @@ struct SimpleModeView: View {
     }
 
     private func run(_ review: TemplateReview) async throws -> String {
-        let result = try await state.operationExecutor.execute(review.draft)
+        let result = try await state.executeOperation(review.draft)
         let summary = "\(result.summary) · \(review.rows.count) reviewed values"
         statusMessage = summary
         return summary

@@ -1,4 +1,5 @@
 import MCContracts
+import MCModel
 import MCSystemLifecycle
 import Observation
 import SwiftUI
@@ -98,5 +99,13 @@ public final class AppState {
             activities: activities
         )
         health = environment.mode == .fakeRuntime ? .healthy : .checking
+    }
+
+    public func executeOperation(_ draft: OperationDraft) async throws -> OperationExecutionResult {
+        let result = try await operationExecutor.execute(draft)
+        if draft.operationID == "machines.create" {
+            await resourceBrowser.refresh(.machines)
+        }
+        return result
     }
 }

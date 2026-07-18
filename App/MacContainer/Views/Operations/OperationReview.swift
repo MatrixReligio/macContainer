@@ -101,7 +101,7 @@ struct OperationReview: View {
         errorMessage = nil
         Task {
             do {
-                let result = try await state.operationExecutor.execute(draft)
+                let result = try await state.executeOperation(draft)
                 resultSummary = result.summary
             } catch {
                 errorMessage = ErrorMapper().map(
