@@ -6,6 +6,15 @@ import Testing
 @MainActor
 @Suite("Runtime resource browser")
 struct RuntimeResourceBrowserControllerTests {
+    @Test func `mutating operation routes refresh their visible resource domain`() {
+        #expect(AppState.resourceRoute(after: "core.run") == .containers)
+        #expect(AppState.resourceRoute(after: "machines.create") == .machines)
+        #expect(AppState.resourceRoute(after: "networks.create") == .networks)
+        #expect(AppState.resourceRoute(after: "volumes.create") == .volumes)
+        #expect(AppState.resourceRoute(after: "images.pull") == .images)
+        #expect(AppState.resourceRoute(after: "registries.login") == .registries)
+    }
+
     @Test func `refresh replaces fixtures with provider snapshots`() async {
         let provider = RecordingRuntimeResourceProvider()
         let controller = RuntimeResourceBrowserController(
@@ -85,6 +94,23 @@ struct RuntimeResourceBrowserControllerTests {
         ])
         #expect(await provider.loadedRoutes == [.machines])
     }
+
+    @Test func `overview refresh loads system containers and machines and reports running counts`() async {
+        let provider = RecordingRuntimeResourceProvider()
+        let controller = RuntimeResourceBrowserController(
+            provider: provider,
+            activities: ActivityCenter()
+        )
+
+        await controller.refreshOverview()
+
+        #expect(controller.runningCount(for: .containers) == 1)
+        #expect(controller.runningCount(for: .machines) == 1)
+        #expect(controller.totalCount(for: .containers) == 1)
+        #expect(controller.totalCount(for: .machines) == 1)
+        #expect(controller.resources(for: .system).first?.status == "Running")
+        #expect(await provider.loadedRoutes == [.system, .containers, .machines])
+    }
 }
 
 private actor RecordingRuntimeResourceProvider: RuntimeResourceProviding {
@@ -121,8 +147,16 @@ private actor RecordingRuntimeResourceProvider: RuntimeResourceProviding {
         if fails {
             throw ResourceProviderTestError.failed
         }
-        guard route == .containers, deleted.isEmpty else { return [] }
-        return [.init(id: "live", name: "live", status: "Running", detail: "alpine:latest")]
+        switch route {
+        case .containers where deleted.isEmpty:
+            return [.init(id: "live", name: "live", status: "Running", detail: "alpine:latest")]
+        case .machines:
+            return [.init(id: "machine-a", name: "machine-a", status: "Running", detail: "4 CPU")]
+        case .system:
+            return [.init(id: "runtime", name: "Apple container", status: "Running", detail: "1.1.0")]
+        default:
+            return []
+        }
     }
 
     func delete(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult] {

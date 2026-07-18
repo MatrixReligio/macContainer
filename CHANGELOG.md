@@ -5,6 +5,36 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.8 - 2026-07-18
+
+### Added
+
+- A verified built-in Alpine 3.22 machine image with a complete OpenRC init
+  system is prepared automatically on first use, so the default virtual-machine
+  workflow boots successfully without requiring users to build an image.
+- Containers and virtual machines now expose embedded interactive terminals;
+  stopped machines are started before their terminal is opened.
+- Network creation supports IPv4, IPv6, host-only mode, plugins, and plugin
+  options; volume creation supports capacity and driver options. Inspectors show
+  these settings and the containers using each network or volume.
+
+### Changed
+
+- The guided workload flow explicitly separates application containers from
+  persistent Linux virtual machines, and connects container image, network, and
+  named-volume choices in one reviewable setup.
+- Overview reports total and running counts separately and directs users to an
+  existing stopped machine instead of suggesting an unrelated first container.
+- Custom machine images are clearly identified as advanced inputs that must
+  provide a working `/sbin/init`; the verified built-in image remains default.
+
+### Fixed
+
+- Network and volume parameters selected in the UI are preserved through the
+  typed bridge instead of being silently dropped.
+- Network replacement starts from the selected network's safe reusable settings
+  while allowing the runtime to allocate non-overlapping subnets.
+
 ## 0.1.7 - 2026-07-18
 
 ### Fixed

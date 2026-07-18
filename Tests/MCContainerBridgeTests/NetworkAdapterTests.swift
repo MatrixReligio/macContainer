@@ -25,7 +25,9 @@ struct NetworkAdapterTests {
             subnet: "10.10.0.0/24",
             gateway: "10.10.0.1",
             dnsServers: ["1.1.1.1", "8.8.8.8"],
-            labels: ["team": "app"]
+            labels: ["team": "app"],
+            hostOnly: true,
+            options: ["mtu": "1400"]
         )
 
         _ = try await adapter.create(request)

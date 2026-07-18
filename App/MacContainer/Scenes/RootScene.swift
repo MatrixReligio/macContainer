@@ -45,10 +45,14 @@ struct RootScene: View {
                     openWindow(id: "activity-center")
                 }
                 .sheet(isPresented: $state.simpleModePresented) {
-                    SimpleModeView(initialTemplateID: state.simpleModeInitialTemplateID)
-                        .onDisappear {
-                            state.simpleModeInitialTemplateID = "quick-run"
-                        }
+                    SimpleModeView(
+                        initialTemplateID: state.simpleModeInitialTemplateID,
+                        intent: state.creationIntent
+                    )
+                    .onDisappear {
+                        state.simpleModeInitialTemplateID = "quick-run"
+                        state.creationIntent = .workload
+                    }
                 }
             }
         }
@@ -95,12 +99,22 @@ private struct ResourceInspectorPlaceholder: View {
                             .accessibilityIdentifier("resource-detail-id")
                     }
                     LabeledContent("Kind", value: resource.kind)
+                    if resource.detail.isEmpty == false {
+                        LabeledContent("Details", value: resource.detail)
+                    }
                 }
                 Section("State") {
                     Label(
                         LocalizedStringKey(resource.status),
                         systemImage: resource.status == "Running" ? "play.fill" : "circle"
                     )
+                }
+                if resource.attributes.isEmpty == false {
+                    Section("Configuration and relationships") {
+                        ForEach(resource.attributes.keys.sorted(), id: \.self) { key in
+                            LabeledContent(key, value: resource.attributes[key] ?? "")
+                        }
+                    }
                 }
                 Section("Activity") {
                     Text("No recent activity")

@@ -20,17 +20,20 @@ struct OverviewView: View {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                     HealthSummary(
                         title: "Apple container",
-                        value: state.health == .healthy ? "Ready" : "Checking",
+                        value: runtimeStatus,
                         symbol: state.health == .healthy ? "checkmark.circle.fill" : "clock",
                         identifier: "runtime-health-value"
                     )
-                    HealthSummary(
-                        title: "Compatibility",
-                        value: state.health == .healthy ? "Compatible" : "Pending",
-                        symbol: state.health == .healthy ? "checkmark.shield.fill" : "shield.lefthalf.filled",
-                        identifier: "compatibility-health-value"
+                    MetricSummary(
+                        title: "Containers",
+                        value: resourceCount(for: .containers),
+                        symbol: "shippingbox"
                     )
-                    MetricSummary(title: "Running", value: "0", symbol: "play.circle")
+                    MetricSummary(
+                        title: "Virtual machines",
+                        value: resourceCount(for: .machines),
+                        symbol: "desktopcomputer"
+                    )
                     MetricSummary(
                         title: "Activities",
                         value: "\(state.activities.activities.values.filter { $0.outcome == nil }.count)",
@@ -45,10 +48,12 @@ struct OverviewView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Recommended")
                         .font(.headline)
+                    Text(recommendationDetail)
+                        .readableForeground()
                     Button {
-                        state.simpleModePresented = true
+                        performRecommendedAction()
                     } label: {
-                        Label("Create your first container", systemImage: "plus.circle.fill")
+                        Label(recommendationActionTitle, systemImage: recommendationActionSymbol)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
@@ -62,6 +67,72 @@ struct OverviewView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Overview")
         .accessibilityIdentifier("overview-content")
+        .task {
+            await state.refreshOverview()
+        }
+    }
+
+    private var runtimeStatus: LocalizedStringKey {
+        switch state.health {
+        case .healthy: "Ready"
+        case .attention: "Changing"
+        case .unavailable: "Unavailable"
+        case .checking: "Checking"
+        }
+    }
+
+    private var recommendationDetail: LocalizedStringKey {
+        let machineTotal = state.resourceBrowser.totalCount(for: .machines)
+        let machineRunning = state.resourceBrowser.runningCount(for: .machines)
+        let containerTotal = state.resourceBrowser.totalCount(for: .containers)
+        if machineRunning > 0 {
+            return "Your virtual machine is running. Open Virtual Machines for terminal and lifecycle controls."
+        }
+        if machineTotal > 0 {
+            return "Your virtual machine is stopped. Open Virtual Machines to start it or access its terminal."
+        }
+        if containerTotal > 0 {
+            return "Containers and virtual machines are separate resources. Open Containers to manage this workload."
+        }
+        return "Create a guided container or virtual machine. The verified Alpine image is prepared automatically."
+    }
+
+    private var recommendationActionTitle: LocalizedStringKey {
+        if state.resourceBrowser.totalCount(for: .machines) > 0 {
+            return "Open Virtual Machines"
+        }
+        if state.resourceBrowser.totalCount(for: .containers) > 0 {
+            return "Open Containers"
+        }
+        return "Create a workload…"
+    }
+
+    private var recommendationActionSymbol: String {
+        if state.resourceBrowser.totalCount(for: .machines) > 0 {
+            return "desktopcomputer"
+        }
+        if state.resourceBrowser.totalCount(for: .containers) > 0 {
+            return "shippingbox"
+        }
+        return "plus.circle.fill"
+    }
+
+    private func resourceCount(for route: AppRoute) -> String {
+        let total = state.resourceBrowser.totalCount(for: route)
+        let running = state.resourceBrowser.runningCount(for: route)
+        return "\(total) total · \(running) running"
+    }
+
+    private func performRecommendedAction() {
+        if state.resourceBrowser.totalCount(for: .machines) > 0 {
+            state.selection = .machines
+        } else if state.resourceBrowser.totalCount(for: .containers) > 0 {
+            state.selection = .containers
+        } else {
+            state.creationIntent = .workload
+            state.simpleModeInitialTemplateID = "quick-run"
+            state.simpleModePresented = true
+        }
     }
 }
 

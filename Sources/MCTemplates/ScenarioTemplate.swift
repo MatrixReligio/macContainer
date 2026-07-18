@@ -5,6 +5,7 @@ public struct TemplateContext: Sendable {
     public let image: ImageProfile
     public let selectedDirectory: String?
     public let selectedVolume: String?
+    public let selectedNetwork: String?
     public let hostPort: UInt16?
     public let containerPort: UInt16?
 
@@ -14,12 +15,14 @@ public struct TemplateContext: Sendable {
         selectedDirectory: String?,
         selectedVolume: String?,
         hostPort: UInt16?,
-        containerPort: UInt16? = nil
+        containerPort: UInt16? = nil,
+        selectedNetwork: String? = nil
     ) {
         self.host = host
         self.image = image
         self.selectedDirectory = selectedDirectory
         self.selectedVolume = selectedVolume
+        self.selectedNetwork = selectedNetwork
         self.hostPort = hostPort
         self.containerPort = containerPort
     }

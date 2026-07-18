@@ -196,32 +196,53 @@ public struct BuilderStartRequest: Codable, Equatable, Sendable {
 public struct NetworkCreateRequest: Codable, Equatable, Sendable {
     public let name: String
     public let subnet: String?
+    public let ipv6Subnet: String?
     public let gateway: String?
     public let dnsServers: [String]
     public let labels: [String: String]
+    public let hostOnly: Bool
+    public let plugin: String
+    public let options: [String: String]
 
     public init(
         name: String,
         subnet: String? = nil,
+        ipv6Subnet: String? = nil,
         gateway: String? = nil,
         dnsServers: [String] = [],
-        labels: [String: String] = [:]
+        labels: [String: String] = [:],
+        hostOnly: Bool = false,
+        plugin: String = "container-network-vmnet",
+        options: [String: String] = [:]
     ) {
         self.name = name
         self.subnet = subnet
+        self.ipv6Subnet = ipv6Subnet
         self.gateway = gateway
         self.dnsServers = dnsServers
         self.labels = labels
+        self.hostOnly = hostOnly
+        self.plugin = plugin
+        self.options = options
     }
 }
 
 public struct VolumeCreateRequest: Codable, Equatable, Sendable {
     public let name: String
     public let labels: [String: String]
+    public let driverOptions: [String: String]
+    public let sizeBytes: Int64?
 
-    public init(name: String, labels: [String: String] = [:]) {
+    public init(
+        name: String,
+        labels: [String: String] = [:],
+        driverOptions: [String: String] = [:],
+        sizeBytes: Int64? = nil
+    ) {
         self.name = name
         self.labels = labels
+        self.driverOptions = driverOptions
+        self.sizeBytes = sizeBytes
     }
 }
 

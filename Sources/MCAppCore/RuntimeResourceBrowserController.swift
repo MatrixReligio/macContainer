@@ -22,6 +22,7 @@ public struct RuntimeResourceSnapshot: Identifiable, Equatable, Sendable {
     public let detail: String
     public let isProtected: Bool
     public let machineConfiguration: RuntimeMachineConfigurationSnapshot?
+    public let attributes: [String: String]
 
     public init(
         id: String,
@@ -29,7 +30,8 @@ public struct RuntimeResourceSnapshot: Identifiable, Equatable, Sendable {
         status: String,
         detail: String,
         isProtected: Bool = false,
-        machineConfiguration: RuntimeMachineConfigurationSnapshot? = nil
+        machineConfiguration: RuntimeMachineConfigurationSnapshot? = nil,
+        attributes: [String: String] = [:]
     ) {
         self.id = id
         self.name = name
@@ -37,6 +39,7 @@ public struct RuntimeResourceSnapshot: Identifiable, Equatable, Sendable {
         self.detail = detail
         self.isProtected = isProtected
         self.machineConfiguration = machineConfiguration
+        self.attributes = attributes
     }
 }
 
@@ -55,19 +58,33 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
         self.bridge = bridge
     }
 
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     public func load(_ route: AppRoute) async throws -> [RuntimeResourceSnapshot] {
         switch route {
         case .overview:
             return []
         case .containers:
-            return try await bridge.containers.list().map {
-                .init(
-                    id: $0.id,
-                    name: $0.name,
-                    status: Self.status($0.state),
-                    detail: $0.imageReference
-                )
+            let summaries = try await bridge.containers.list()
+            var snapshots: [RuntimeResourceSnapshot] = []
+            for summary in summaries {
+                let detail = try await bridge.containers.inspect(id: summary.id)
+                snapshots.append(.init(
+                    id: summary.id,
+                    name: summary.name,
+                    status: Self.status(summary.state),
+                    detail: summary.imageReference,
+                    attributes: [
+                        "Image": summary.imageReference,
+                        "Networks": detail.networks.isEmpty ? "None" : detail.networks.joined(separator: ", "),
+                        "Storage mounts": detail.mounts.isEmpty ? "None" : detail.mounts.map {
+                            "\($0.source) → \($0.destination)"
+                        }.joined(separator: ", "),
+                        "CPU": String(detail.resources.cpuCount),
+                        "Memory": Self.byteCount(detail.resources.memoryBytes)
+                    ]
+                ))
             }
+            return snapshots
         case .images:
             return try await bridge.images.list().map {
                 .init(
@@ -102,24 +119,76 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
                         resources: summary.resources,
                         homeMount: detail.homeMount,
                         nestedVirtualization: detail.nestedVirtualization
-                    )
+                    ),
+                    attributes: [
+                        "Image": detail.imageReference ?? "System default",
+                        "Home folder mount": detail.homeMount,
+                        "Networks": detail.networks.isEmpty ? "Default" : detail.networks.joined(separator: ", "),
+                        "Kernel": detail.kernelIdentifier ?? "Recommended",
+                        "Nested virtualization": detail.nestedVirtualization ? "Enabled" : "Disabled"
+                    ]
                 ))
             }
             return snapshots
         case .networks:
-            return try await bridge.networks.list().map {
-                .init(
-                    id: $0.id,
-                    name: $0.name,
-                    status: Self.status($0.state),
-                    detail: $0.builtIn ? "Built in" : "Custom",
-                    isProtected: $0.builtIn
-                )
+            let summaries = try await bridge.networks.list()
+            let containerDetails = try await Self.containerDetails(bridge)
+            var snapshots: [RuntimeResourceSnapshot] = []
+            for summary in summaries {
+                let detail = try await bridge.networks.inspect(id: summary.id)
+                let configuration = [detail.subnet, detail.gateway.map { "Gateway \($0)" }, detail.plugin]
+                    .compactMap(\.self)
+                    .joined(separator: " · ")
+                snapshots.append(.init(
+                    id: summary.id,
+                    name: summary.name,
+                    status: Self.status(summary.state),
+                    detail: configuration.isEmpty ? (summary.builtIn ? "Built in" : "Custom") : configuration,
+                    isProtected: summary.builtIn,
+                    attributes: [
+                        "Subnet": detail.subnet ?? "Runtime assigned",
+                        "IPv6 subnet": detail.ipv6Subnet ?? "Runtime assigned",
+                        "Gateway": detail.gateway ?? "Runtime assigned",
+                        "DNS servers": detail.dnsServers.isEmpty
+                            ? "Runtime default" : detail.dnsServers.joined(separator: ", "),
+                        "Plugin": detail.plugin ?? "Built in",
+                        "Mode": detail.mode ?? "NAT",
+                        "Labels": Self.keyValues(detail.labels),
+                        "Plugin options": Self.keyValues(detail.options),
+                        "Used by containers": Self.containers(usingNetwork: summary.id, details: containerDetails),
+                        "Editing": summary.builtIn
+                            ? "Built-in network cannot be changed"
+                            : "Create replacement, move workloads, then delete this network"
+                    ]
+                ))
             }
+            return snapshots
         case .volumes:
-            return try await bridge.volumes.list().map {
-                .init(id: $0.name, name: $0.name, status: "Ready", detail: "Local")
+            let summaries = try await bridge.volumes.list()
+            let containerDetails = try await Self.containerDetails(bridge)
+            var snapshots: [RuntimeResourceSnapshot] = []
+            for summary in summaries {
+                let detail = try await bridge.volumes.inspect(name: summary.name)
+                snapshots.append(.init(
+                    id: summary.name,
+                    name: summary.name,
+                    status: "Ready",
+                    detail: detail.source ?? "Container persistent storage",
+                    attributes: [
+                        "Source": detail.source ?? "Runtime managed",
+                        "Labels": detail.labels.isEmpty ? "None" : detail.labels
+                            .sorted { $0.key < $1.key }
+                            .map { "\($0.key)=\($0.value)" }
+                            .joined(separator: ", "),
+                        "Driver": detail.driver ?? "local",
+                        "Capacity": detail.sizeBytes.map(Self.byteCount) ?? "Runtime default",
+                        "Driver options": Self.keyValues(detail.options),
+                        "Used by containers": Self.containers(usingVolume: summary.name, details: containerDetails),
+                        "Attach in": "Create Container → Storage"
+                    ]
+                ))
             }
+            return snapshots
         case .registries:
             return try await bridge.registries.list().map {
                 .init(
@@ -177,8 +246,12 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
     }
 
     public func start(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult] {
-        guard route == .machines else { throw RuntimeResourceProviderError.unsupportedAction }
-        return try await bridge.machines.start(ids: ids).map(Self.activityResult)
+        let results: [BatchItemResult] = switch route {
+        case .machines: try await bridge.machines.start(ids: ids)
+        case .containers: try await bridge.containers.start(ids: ids)
+        default: throw RuntimeResourceProviderError.unsupportedAction
+        }
+        return results.map(Self.activityResult)
     }
 
     public func configureMachine(id: String, request: MachineSetRequest) async throws {
@@ -186,8 +259,12 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
     }
 
     public func stop(_ route: AppRoute, ids: [String]) async throws -> [ActivityItemResult] {
-        guard route == .machines else { throw RuntimeResourceProviderError.unsupportedAction }
-        return try await bridge.machines.stop(ids: ids, force: false).map(Self.activityResult)
+        let results: [BatchItemResult] = switch route {
+        case .machines: try await bridge.machines.stop(ids: ids, force: false)
+        case .containers: try await bridge.containers.stop(ids: ids, timeout: .seconds(30))
+        default: throw RuntimeResourceProviderError.unsupportedAction
+        }
+        return results.map(Self.activityResult)
     }
 
     private static func activityResult(_ result: BatchItemResult) -> ActivityItemResult {
@@ -211,6 +288,40 @@ public struct ProductionRuntimeResourceProvider: RuntimeResourceProviding, Senda
 
     private static func resourceDescription(_ resources: RuntimeResources) -> String {
         "\(resources.cpuCount) CPU · \(byteCount(resources.memoryBytes))"
+    }
+
+    private static func keyValues(_ values: [String: String]) -> String {
+        values.isEmpty ? "None" : values.sorted { $0.key < $1.key }
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: ", ")
+    }
+
+    private static func containerDetails(
+        _ bridge: any RuntimeBridge
+    ) async throws -> [ContainerDetail] {
+        var details: [ContainerDetail] = []
+        for container in try await bridge.containers.list() {
+            try await details.append(bridge.containers.inspect(id: container.id))
+        }
+        return details
+    }
+
+    private static func containers(
+        usingNetwork network: String,
+        details: [ContainerDetail]
+    ) -> String {
+        let names = details.filter { $0.networks.contains(network) }.map(\.summary.name)
+        return names.isEmpty ? "None" : names.joined(separator: ", ")
+    }
+
+    private static func containers(
+        usingVolume volume: String,
+        details: [ContainerDetail]
+    ) -> String {
+        let names = details.filter { detail in
+            detail.mounts.contains { $0.source == volume }
+        }.map(\.summary.name)
+        return names.isEmpty ? "None" : names.joined(separator: ", ")
     }
 }
 
@@ -244,6 +355,20 @@ public final class RuntimeResourceBrowserController {
 
     public func isLoading(_ route: AppRoute) -> Bool {
         loadingRoutes.contains(route.rawValue)
+    }
+
+    public func runningCount(for route: AppRoute) -> Int {
+        resources(for: route).count { $0.status == "Running" }
+    }
+
+    public func totalCount(for route: AppRoute) -> Int {
+        resources(for: route).count
+    }
+
+    public func refreshOverview() async {
+        for route in [AppRoute.system, .containers, .machines] {
+            await refresh(route)
+        }
     }
 
     public func refresh(_ route: AppRoute) async {
@@ -413,7 +538,9 @@ public actor SimulatedRuntimeResourceProvider: RuntimeResourceProviding {
         ids: [String],
         status: String
     ) throws -> [ActivityItemResult] {
-        guard route == .machines else { throw RuntimeResourceProviderError.unsupportedAction }
+        guard route == .machines || route == .containers else {
+            throw RuntimeResourceProviderError.unsupportedAction
+        }
         snapshots[route.rawValue] = snapshots[route.rawValue]?.map { snapshot in
             guard ids.contains(snapshot.id) else { return snapshot }
             return RuntimeResourceSnapshot(

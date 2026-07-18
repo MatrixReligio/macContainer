@@ -42,10 +42,12 @@ public struct AppleNetworkBackend: NetworkBackend, Sendable {
         }
         let configuration = try NetworkConfiguration(
             name: request.name,
-            mode: .nat,
+            mode: request.hostOnly ? .hostOnly : .nat,
             ipv4Subnet: request.subnet.map(CIDRv4.init),
+            ipv6Subnet: request.ipv6Subnet.map(CIDRv6.init),
             labels: ResourceLabels(request.labels),
-            plugin: "container-network-vmnet"
+            plugin: request.plugin,
+            options: request.options
         )
         return try await Self.detail(networkClient.create(configuration: configuration))
     }
@@ -104,8 +106,12 @@ public struct AppleNetworkBackend: NetworkBackend, Sendable {
                 builtIn: network.isBuiltin
             ),
             subnet: network.status.ipv4Subnet.description,
+            ipv6Subnet: network.status.ipv6Subnet?.description,
             gateway: network.status.ipv4Gateway.description,
-            plugin: network.configuration.plugin
+            plugin: network.configuration.plugin,
+            mode: String(describing: network.configuration.mode),
+            labels: network.configuration.labels.dictionary,
+            options: network.configuration.options
         )
     }
 }

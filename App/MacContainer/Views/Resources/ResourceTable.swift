@@ -4,6 +4,7 @@ import MCContracts
 import MCModel
 import SwiftUI
 
+// swiftlint:disable type_body_length
 struct ResourceTable: View {
     @Environment(AppState.self) private var state
     let route: AppRoute
@@ -14,6 +15,14 @@ struct ResourceTable: View {
     @State private var confirmationPresented = false
     @State private var machineConfigurationPresented = false
     @State private var registryLoginPresented = false
+    @State private var networkCreatePresented = false
+    @State private var networkCreateDraft: OperationDraft?
+    @State private var volumeCreatePresented = false
+    @State private var imagePullPresented = false
+    @State private var buildCreatePresented = false
+    @State private var machineTerminal: MachineTerminalPresentation?
+    @State private var machineTerminalOpening = false
+    @State private var machineTerminalErrorPresented = false
 
     private var filteredResources: [RuntimeResourceSnapshot] {
         guard searchText.isEmpty == false else { return resources }
@@ -42,6 +51,84 @@ struct ResourceTable: View {
 
                 if route == .machines {
                     machineActions
+                }
+
+                if route == .containers {
+                    Button {
+                        state.creationIntent = .container
+                        state.simpleModeInitialTemplateID = "quick-run"
+                        state.simpleModePresented = true
+                    } label: {
+                        Label("New Container", systemImage: "plus")
+                    }
+                    .accessibilityIdentifier("new-container")
+                    Button {
+                        openSelectedContainerTerminal()
+                    } label: {
+                        Label("Open Terminal", systemImage: "terminal")
+                    }
+                    .disabled(
+                        selectedRows.count != 1 || selectedRows.first?.status != "Running" || machineTerminalOpening
+                    )
+                    Button {
+                        startSelectedResources()
+                    } label: {
+                        Label("Start", systemImage: "play.fill")
+                    }
+                    .disabled(selectedRows.isEmpty || selectedRows.allSatisfy {
+                        $0.status == "Running" || $0.status == "Starting"
+                    })
+                    Button {
+                        stopSelectedResources()
+                    } label: {
+                        Label("Stop", systemImage: "stop.fill")
+                    }
+                    .disabled(selectedRows.isEmpty || selectedRows.allSatisfy {
+                        $0.status == "Stopped" || $0.status == "Stopping"
+                    })
+                }
+
+                if route == .images {
+                    Button {
+                        imagePullPresented = true
+                    } label: {
+                        Label("Pull Image", systemImage: "arrow.down.circle")
+                    }
+                    .accessibilityIdentifier("pull-image")
+                }
+
+                if route == .builds {
+                    Button {
+                        buildCreatePresented = true
+                    } label: {
+                        Label("New Build", systemImage: "hammer")
+                    }
+                    .accessibilityIdentifier("new-build")
+                }
+
+                if route == .networks {
+                    Button {
+                        presentNewNetwork()
+                    } label: {
+                        Label("New Network", systemImage: "plus")
+                    }
+                    .accessibilityIdentifier("new-network")
+                    Button {
+                        presentNetworkReplacement()
+                    } label: {
+                        Label("Create Replacement", systemImage: "plus.square.on.square")
+                    }
+                    .disabled(selectedRows.count != 1 || selectedRows.first?.isProtected == true)
+                    .help("Networks cannot be edited in place. Create a replacement, then move workloads.")
+                }
+
+                if route == .volumes {
+                    Button {
+                        volumeCreatePresented = true
+                    } label: {
+                        Label("New Volume", systemImage: "plus")
+                    }
+                    .accessibilityIdentifier("new-volume")
                 }
 
                 if route == .registries {
@@ -114,6 +201,10 @@ struct ResourceTable: View {
                             selection = selectedIDs
                         }
                         if route == .machines {
+                            Button("Open Terminal") {
+                                selection = selectedIDs
+                                openSelectedMachineTerminal()
+                            }
                             Button("Configure") {
                                 selection = selectedIDs
                                 machineConfigurationPresented = true
@@ -129,6 +220,29 @@ struct ResourceTable: View {
                                 stopSelectedMachines()
                             }
                             .disabled(resource.status == "Stopped" || resource.status == "Stopping")
+                        }
+                        if route == .containers {
+                            Button("Open Terminal") {
+                                selection = selectedIDs
+                                openSelectedContainerTerminal()
+                            }
+                            .disabled(resource.status != "Running")
+                            Button("Start") {
+                                selection = selectedIDs
+                                startSelectedResources()
+                            }
+                            .disabled(resource.status == "Running" || resource.status == "Starting")
+                            Button("Stop") {
+                                selection = selectedIDs
+                                stopSelectedResources()
+                            }
+                            .disabled(resource.status == "Stopped" || resource.status == "Stopping")
+                        }
+                        if route == .networks, resource.isProtected == false {
+                            Button("Create Replacement…") {
+                                selection = selectedIDs
+                                presentNetworkReplacement()
+                            }
                         }
                         Divider()
                         Button("Delete", role: .destructive) {
@@ -149,7 +263,9 @@ struct ResourceTable: View {
                         id: resource.id,
                         name: resource.name,
                         status: resource.status,
-                        kind: route.singularTitle
+                        kind: route.singularTitle,
+                        detail: resource.detail,
+                        attributes: resource.attributes
                     )
                 }
             }
@@ -185,6 +301,36 @@ struct ResourceTable: View {
                 )
             }
         }
+        .sheet(isPresented: $networkCreatePresented) {
+            if let operation = Self.contract?.operation(id: "networks.create"), let draft = networkCreateDraft {
+                DismissibleOperationSheet(
+                    operation: operation,
+                    runtimeVersion: .init(major: 1, minor: 1, patch: 0),
+                    draft: draft,
+                    isPresented: $networkCreatePresented
+                )
+            }
+        }
+        .sheet(isPresented: $volumeCreatePresented) {
+            operationSheet(id: "volumes.create", isPresented: $volumeCreatePresented)
+        }
+        .sheet(isPresented: $imagePullPresented) {
+            operationSheet(id: "images.pull", isPresented: $imagePullPresented)
+        }
+        .sheet(isPresented: $buildCreatePresented) {
+            operationSheet(id: "core.build", isPresented: $buildCreatePresented)
+        }
+        .sheet(item: $machineTerminal) { presentation in
+            TerminalSessionView(
+                controller: presentation.controller,
+                title: presentation.title
+            )
+        }
+        .alert("Unable to open terminal", isPresented: $machineTerminalErrorPresented) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The selected resource could not be started or its interactive shell could not be opened.")
+        }
     }
 
     private var emptyTitle: LocalizedStringKey {
@@ -195,6 +341,12 @@ struct ResourceTable: View {
     private var emptyMessage: LocalizedStringKey {
         if route == .registries {
             return "Log in to a registry to store a reviewed credential, then refresh this list."
+        }
+        if route == .volumes {
+            return "Create a named volume, then attach it to a container in the workload wizard."
+        }
+        if route == .networks {
+            return "Create a network, then select it while configuring a container workload."
         }
         return "Create a resource or refresh after the runtime starts."
     }
@@ -226,12 +378,26 @@ struct ResourceTable: View {
         HStack(spacing: 8) {
             Button {
                 state.simpleModeInitialTemplateID = "linux-machine-workspace"
+                state.creationIntent = .machine
                 state.simpleModePresented = true
             } label: {
                 Label("New Machine", systemImage: "plus")
             }
             .accessibilityIdentifier("new-machine")
             .help("New Machine")
+
+            Button {
+                openSelectedMachineTerminal()
+            } label: {
+                if machineTerminalOpening {
+                    ProgressView()
+                } else {
+                    Label("Open Terminal", systemImage: "terminal")
+                }
+            }
+            .disabled(selectedRows.count != 1 || machineTerminalOpening)
+            .accessibilityIdentifier("open-machine-terminal")
+            .help("Open Terminal")
 
             Button {
                 machineConfigurationPresented = true
@@ -270,6 +436,29 @@ struct ResourceTable: View {
         Task { await state.resourceBrowser.refresh(route) }
     }
 
+    private func presentNewNetwork() {
+        guard let operation = Self.contract?.operation(id: "networks.create") else { return }
+        networkCreateDraft = OperationDraftFactory().makeDraft(for: operation)
+        networkCreatePresented = true
+    }
+
+    private func presentNetworkReplacement() {
+        guard let source = selectedRows.first,
+              selectedRows.count == 1,
+              source.isProtected == false,
+              let operation = Self.contract?.operation(id: "networks.create")
+        else { return }
+        var draft = OperationDraftFactory().makeDraft(for: operation)
+        draft.fields["name"] = .init(value: .string("\(source.name)-replacement"), source: .userOverride)
+        let hostOnly = source.attributes["Mode"]?.localizedCaseInsensitiveContains("host") == true
+        draft.fields["internal"] = .init(value: .bool(hostOnly), source: .userOverride)
+        if let plugin = source.attributes["Plugin"], plugin != "Built in" {
+            draft.fields["plugin"] = .init(value: .string(plugin), source: .userOverride)
+        }
+        networkCreateDraft = draft
+        networkCreatePresented = true
+    }
+
     private func deleteSelectedRows() {
         let ids = selectedRows.map(\.id)
         selection = []
@@ -284,6 +473,22 @@ struct ResourceTable: View {
         Task { await state.resourceBrowser.start(.machines, ids: ids) }
     }
 
+    private func startSelectedResources() {
+        let ids = selectedRows
+            .filter { $0.status != "Running" && $0.status != "Starting" }
+            .map(\.id)
+        guard ids.isEmpty == false else { return }
+        Task { await state.resourceBrowser.start(route, ids: ids) }
+    }
+
+    private func stopSelectedResources() {
+        let ids = selectedRows
+            .filter { $0.status != "Stopped" && $0.status != "Stopping" }
+            .map(\.id)
+        guard ids.isEmpty == false else { return }
+        Task { await state.resourceBrowser.stop(route, ids: ids) }
+    }
+
     private func stopSelectedMachines() {
         let ids = selectedRows
             .filter { $0.status != "Stopped" && $0.status != "Stopping" }
@@ -291,6 +496,63 @@ struct ResourceTable: View {
         guard ids.isEmpty == false else { return }
         Task { await state.resourceBrowser.stop(.machines, ids: ids) }
     }
+
+    @ViewBuilder
+    private func operationSheet(id: String, isPresented: Binding<Bool>) -> some View {
+        if let operation = Self.contract?.operation(id: id) {
+            DismissibleOperationSheet(
+                operation: operation,
+                runtimeVersion: .init(major: 1, minor: 1, patch: 0),
+                draft: OperationDraftFactory().makeDraft(for: operation),
+                isPresented: isPresented
+            )
+        }
+    }
+
+    private func openSelectedMachineTerminal() {
+        guard let machine = selectedRows.first, selectedRows.count == 1 else { return }
+        machineTerminalOpening = true
+        Task {
+            do {
+                let controller = try await state.openMachineTerminal(machineID: machine.id)
+                machineTerminal = MachineTerminalPresentation(
+                    controller: controller,
+                    title: "Virtual machine terminal"
+                )
+            } catch {
+                machineTerminalErrorPresented = true
+            }
+            machineTerminalOpening = false
+        }
+    }
+
+    private func openSelectedContainerTerminal() {
+        guard let container = selectedRows.first,
+              selectedRows.count == 1,
+              container.status == "Running"
+        else { return }
+        machineTerminalOpening = true
+        Task {
+            do {
+                let controller = try await state.openContainerTerminal(containerID: container.id)
+                machineTerminal = MachineTerminalPresentation(
+                    controller: controller,
+                    title: "Container terminal"
+                )
+            } catch {
+                machineTerminalErrorPresented = true
+            }
+            machineTerminalOpening = false
+        }
+    }
+}
+
+// swiftlint:enable type_body_length
+
+private struct MachineTerminalPresentation: Identifiable {
+    let id = UUID()
+    let controller: TerminalSessionController
+    let title: LocalizedStringKey
 }
 
 private struct MachineConfigurationSheet: View {

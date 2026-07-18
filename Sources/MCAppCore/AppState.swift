@@ -23,17 +23,34 @@ public enum HealthState: String, Codable, Sendable {
     case checking
 }
 
+public enum CreationIntent: String, Codable, Sendable {
+    case workload
+    case container
+    case machine
+}
+
 public struct ResourceSelection: Equatable, Sendable {
     public let id: String
     public let name: String
     public let status: String
     public let kind: String
+    public let detail: String
+    public let attributes: [String: String]
 
-    public init(id: String, name: String, status: String, kind: String) {
+    public init(
+        id: String,
+        name: String,
+        status: String,
+        kind: String,
+        detail: String = "",
+        attributes: [String: String] = [:]
+    ) {
         self.id = id
         self.name = name
         self.status = status
         self.kind = kind
+        self.detail = detail
+        self.attributes = attributes
     }
 }
 
@@ -52,6 +69,7 @@ public final class AppState {
     public var activityCenterPresented = false
     public var simpleModePresented = false
     public var simpleModeInitialTemplateID = "quick-run"
+    public var creationIntent: CreationIntent = .workload
     public var health: HealthState = .checking
     public var hasUnsavedWork = false
     public var selectedResource: ResourceSelection?
@@ -102,10 +120,46 @@ public final class AppState {
     }
 
     public func executeOperation(_ draft: OperationDraft) async throws -> OperationExecutionResult {
+        if draft.operationID == "machines.create", case let .string(imageReference)? = draft.fields["image"]?.value {
+            try await environment.machineImagePreparer.prepareIfNeeded(imageReference: imageReference)
+        }
         let result = try await operationExecutor.execute(draft)
-        if draft.operationID == "machines.create" {
-            await resourceBrowser.refresh(.machines)
+        if let route = Self.resourceRoute(after: draft.operationID) {
+            await resourceBrowser.refresh(route)
         }
         return result
+    }
+
+    public func refreshOverview() async {
+        await resourceBrowser.refreshOverview()
+        let runtime = resourceBrowser.resources(for: .system).first
+        health = switch runtime?.status {
+        case "Running": .healthy
+        case "Starting", "Stopping": .attention
+        case nil: .unavailable
+        default: .unavailable
+        }
+    }
+
+    public func openMachineTerminal(machineID: String) async throws -> TerminalSessionController {
+        let session = try await environment.machineTerminalOpener.open(machineID: machineID)
+        return TerminalSessionController(session: session)
+    }
+
+    public func openContainerTerminal(containerID: String) async throws -> TerminalSessionController {
+        let session = try await environment.containerTerminalOpener.open(containerID: containerID)
+        return TerminalSessionController(session: session)
+    }
+
+    public static func resourceRoute(after operationID: String) -> AppRoute? {
+        switch operationID {
+        case "core.run", "containers.create": .containers
+        case "machines.create": .machines
+        case "networks.create": .networks
+        case "volumes.create": .volumes
+        case "images.pull", "core.build": .images
+        case "registries.login": .registries
+        default: nil
+        }
     }
 }

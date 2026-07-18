@@ -63,6 +63,33 @@ struct BridgeOperationDispatcherTests {
         #expect(await stoppedBridge.recordedInvocations().map(\.operationID) == ["machines.create"])
     }
 
+    @Test func `network and volume creation preserve every native setting`() async throws {
+        let bridge = FakeRuntimeBridge()
+        let dispatcher = BridgeOperationDispatcher(bridge: bridge)
+
+        _ = try await dispatcher.dispatch(.init(operationID: "networks.create", fields: [
+            "name": .init(value: .string("private-net"), source: .userOverride),
+            "internal": .init(value: .bool(true), source: .userOverride),
+            "ipv4Subnet": .init(value: .string("10.44.0.0/24"), source: .userOverride),
+            "ipv6Subnet": .init(value: .string("fd44::/64"), source: .userOverride),
+            "plugin": .init(value: .string("container-network-vmnet"), source: .upstreamDefault),
+            "options": .init(value: .keyValues([.init(key: "mtu", value: "1400")]), source: .userOverride)
+        ]))
+        _ = try await dispatcher.dispatch(.init(operationID: "volumes.create", fields: [
+            "name": .init(value: .string("data"), source: .userOverride),
+            "size": .init(value: .bytes(1_073_741_824), source: .userOverride),
+            "driverOptions": .init(value: .keyValues([.init(key: "format", value: "ext4")]), source: .userOverride)
+        ]))
+
+        let invocations = await bridge.recordedInvocations()
+        #expect(invocations[0].redactedArguments["subnet"] == "10.44.0.0/24")
+        #expect(invocations[0].redactedArguments["ipv6Subnet"] == "fd44::/64")
+        #expect(invocations[0].redactedArguments["hostOnly"] == "true")
+        #expect(invocations[0].redactedArguments["options"] == "mtu=1400")
+        #expect(invocations[1].redactedArguments["sizeBytes"] == "1073741824")
+        #expect(invocations[1].redactedArguments["driverOptions"] == "format=ext4")
+    }
+
     private func machineCreateDraft(name: String, noBoot: Bool) -> OperationDraft {
         OperationDraft(operationID: "machines.create", fields: [
             "image": .init(value: .string("ghcr.io/example/machine:1"), source: .userOverride),

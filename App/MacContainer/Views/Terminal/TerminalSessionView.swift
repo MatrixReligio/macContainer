@@ -3,6 +3,15 @@ import SwiftUI
 
 struct TerminalSessionView: View {
     let controller: TerminalSessionController
+    let title: LocalizedStringKey
+
+    init(
+        controller: TerminalSessionController,
+        title: LocalizedStringKey = "Direct interactive session"
+    ) {
+        self.controller = controller
+        self.title = title
+    }
 
     @State private var status = TerminalPresentationStatus.connected
     @State private var readerActive = true
@@ -11,7 +20,7 @@ struct TerminalSessionView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Direct interactive session")
+                    Text(title)
                         .font(.headline)
                     Text("Remote clipboard, links, notifications, and title changes are blocked.")
                         .font(.subheadline.weight(.semibold))
@@ -33,7 +42,7 @@ struct TerminalSessionView: View {
             SwiftTermRepresentable(controller: controller)
                 .frame(minWidth: 720, minHeight: 480)
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("Interactive container terminal")
+                .accessibilityLabel("Interactive terminal")
                 .accessibilityIdentifier("swiftterm-surface")
 
             Divider()

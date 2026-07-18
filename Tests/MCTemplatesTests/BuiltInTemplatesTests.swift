@@ -62,6 +62,13 @@ struct BuiltInTemplatesTests {
         #expect(BuiltInTemplates.webService.policy.requiresHostPortAvailabilityCheck)
     }
 
+    @Test func `container workflow carries the selected network into the native operation`() throws {
+        let result = try BuiltInTemplates.quickRun.render(.fixture(selectedNetwork: "team-network"))
+
+        #expect(result.fields["networks"]?.value == .strings(["team-network"]))
+        #expect(result.fields["networks"]?.source == .userOverride)
+    }
+
     @Test func `development workspace requires explicit directory`() throws {
         #expect(throws: TemplateError.missingDirectory) {
             try BuiltInTemplates.developmentWorkspace.render(.fixture(selectedDirectory: nil))
@@ -186,7 +193,8 @@ private extension TemplateContext {
         selectedDirectory: String? = "/Users/test/Project",
         selectedVolume: String? = "app-data",
         hostPort: UInt16? = 18080,
-        containerPort: UInt16? = nil
+        containerPort: UInt16? = nil,
+        selectedNetwork: String? = nil
     ) -> Self {
         TemplateContext(
             host: HostProfile(
@@ -206,7 +214,8 @@ private extension TemplateContext {
             selectedDirectory: selectedDirectory,
             selectedVolume: selectedVolume,
             hostPort: hostPort,
-            containerPort: containerPort
+            containerPort: containerPort,
+            selectedNetwork: selectedNetwork
         )
     }
 }

@@ -102,6 +102,7 @@ public enum BuiltInTemplates {
         policy: TemplatePolicy(hostMountPolicy: .explicitReadOnlyOnly)
     ) { context in
         var fields = try baseFields(context: context, workload: .secure, namePrefix: "secure")
+        fields.removeValue(forKey: "volumes")
         fields["readOnlyRootFilesystem"] = field(.bool(true))
         fields["capabilitiesToDrop"] = field(.strings(["ALL"]))
         fields["networks"] = field(.strings(["none"]))
@@ -169,12 +170,22 @@ public enum BuiltInTemplates {
     ) throws -> [String: DraftField] {
         let image = try imageReference(context)
         let recommendation = try recommendation(context: context, workload: workload)
-        return [
+        var fields: [String: DraftField] = [
             "image": field(.string(image), source: .userOverride),
             "name": field(.string(readableName(prefix: namePrefix, imageReference: image))),
             "cpus": field(.integer(Int64(recommendation.cpuCount)), source: .hostRecommendation),
             "memory": field(.bytes(recommendation.memoryBytes), source: .hostRecommendation)
         ]
+        if let network = nonempty(context.selectedNetwork) {
+            fields["networks"] = field(.strings([network]), source: .userOverride)
+        }
+        if let volume = nonempty(context.selectedVolume) {
+            fields["volumes"] = field(
+                .mounts([Mount(source: volume, destination: "/data", readOnly: false)]),
+                source: .userOverride
+            )
+        }
+        return fields
     }
 
     private static func recommendation(

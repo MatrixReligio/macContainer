@@ -244,7 +244,13 @@ private struct FakeNetworkOperations: NetworkOperations {
     let support: FakeRuntimeSupport
 
     func create(_ request: NetworkCreateRequest) async throws -> NetworkSummary {
-        try await support.record("networks.create", resources: [request.name])
+        try await support.record("networks.create", resources: [request.name], arguments: [
+            "subnet": request.subnet ?? "",
+            "ipv6Subnet": request.ipv6Subnet ?? "",
+            "hostOnly": String(request.hostOnly),
+            "plugin": request.plugin,
+            "options": request.options.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: ",")
+        ])
         return NetworkSummary(id: request.name, name: request.name, state: .stopped)
     }
 
@@ -273,7 +279,14 @@ private struct FakeVolumeOperations: VolumeOperations {
     let support: FakeRuntimeSupport
 
     func create(_ request: VolumeCreateRequest) async throws -> VolumeSummary {
-        try await support.record("volumes.create", resources: [request.name])
+        let driverOptions = request.driverOptions
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: ",")
+        try await support.record("volumes.create", resources: [request.name], arguments: [
+            "sizeBytes": request.sizeBytes.map(String.init) ?? "",
+            "driverOptions": driverOptions
+        ])
         return VolumeSummary(name: request.name)
     }
 

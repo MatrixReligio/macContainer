@@ -66,7 +66,8 @@ let package = Package(
                 "MCContainerBridge",
                 "MCCompatibility",
                 "MCSystemLifecycle"
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .executableTarget(
             name: "MCVerifyPackage",

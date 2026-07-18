@@ -171,6 +171,40 @@
         }
       }
     },
+    "A virtual machine is a persistent Linux host with its own CPU, memory, and disk." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A virtual machine is a persistent Linux host with its own CPU, memory, and disk."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシンは独自のCPU、メモリ、ディスクを持つ永続Linuxホストです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신은 자체 CPU, 메모리 및 디스크를 가진 영구 Linux 호스트입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机是一台具有独立 CPU、内存和磁盘的持久化 Linux 主机。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器是一台具有獨立 CPU、記憶體和磁碟的持久化 Linux 主機。"
+          }
+        }
+      }
+    },
     "About" : {
       "localizations" : {
         "en" : {
@@ -949,6 +983,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple container 1.1.0"
+          }
+        }
+      }
+    },
+    "Apple container networks cannot be edited in place. Create a replacement and move workloads after review." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container networks cannot be edited in place. Create a replacement and move workloads after review."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container のネットワークは直接編集できません。代替ネットワークを作成し、確認後にワークロードを移動してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container 네트워크는 직접 편집할 수 없습니다. 대체 네트워크를 만들고 검토 후 워크로드를 이동하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container 网络无法原地编辑。请创建替代网络，并在检查后迁移工作负载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple container 網路無法就地編輯。請建立替代網路，並在檢查後移轉工作負載。"
           }
         }
       }
@@ -2109,6 +2177,40 @@
         }
       }
     },
+    "Cancelled" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "취소됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
+          }
+        }
+      }
+    },
     "Capabilities" : {
       "localizations" : {
         "en" : {
@@ -2377,6 +2479,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在檢查應用程式更新…"
+          }
+        }
+      }
+    },
+    "Choose a container workload or a persistent virtual machine." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a container workload or a persistent virtual machine."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナワークロードまたは永続仮想マシンを選択します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너 워크로드 또는 영구 가상 머신을 선택하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择容器工作负载或持久化虚拟机。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇容器工作負載或持久化虛擬機器。"
           }
         }
       }
@@ -2925,6 +3061,40 @@
         }
       }
     },
+    "Completed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completed"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완료됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        }
+      }
+    },
     "Completely uninstall" : {
       "localizations" : {
         "en" : {
@@ -2989,6 +3159,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "設定"
+          }
+        }
+      }
+    },
+    "Configuration and relationships" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuration and relationships"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定と関連付け"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "구성 및 연결 관계"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置与关联关系"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定與關聯關係"
           }
         }
       }
@@ -3231,6 +3435,74 @@
         }
       }
     },
+    "Container" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Container"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器"
+          }
+        }
+      }
+    },
+    "Container terminal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Container terminal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナターミナル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너 터미널"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器终端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器終端機"
+          }
+        }
+      }
+    },
     "Containers" : {
       "localizations" : {
         "en" : {
@@ -3261,6 +3533,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "容器"
+          }
+        }
+      }
+    },
+    "Containers and virtual machines are separate resources. Open Containers to manage this workload." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Containers and virtual machines are separate resources. Open Containers to manage this workload."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナと仮想マシンは別のリソースです。コンテナを開いてこのワークロードを管理します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너와 가상 머신은 별도 리소스입니다. 컨테이너를 열어 이 워크로드를 관리합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器和虚拟机是不同的资源。打开容器页面管理此工作负载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器與虛擬機器是不同資源。開啟容器頁面管理此工作負載。"
+          }
+        }
+      }
+    },
+    "Containers run application workloads inside the Linux runtime." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Containers run application workloads inside the Linux runtime."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナはLinuxランタイム内でアプリケーションワークロードを実行します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너는 Linux 런타임에서 애플리케이션 워크로드를 실행합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器在 Linux 运行时中运行应用工作负载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "容器在 Linux 執行階段中執行應用程式工作負載。"
           }
         }
       }
@@ -3469,6 +3809,176 @@
         }
       }
     },
+    "Create a container" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a container"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナを作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너 만들기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建容器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立容器"
+          }
+        }
+      }
+    },
+    "Create a guided container or virtual machine. The verified Alpine image is prepared automatically." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a guided container or virtual machine. The verified Alpine image is prepared automatically."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ガイドに従ってコンテナまたは仮想マシンを作成します。検証済み Alpine イメージは自動準備されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "안내에 따라 컨테이너 또는 가상 머신을 만듭니다. 검증된 Alpine 이미지는 자동으로 준비됩니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通过向导创建容器或虚拟机。经过验证的 Alpine 镜像会自动准备。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過精靈建立容器或虛擬機器。經過驗證的 Alpine 映像會自動準備。"
+          }
+        }
+      }
+    },
+    "Create a Linux virtual machine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a Linux virtual machine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linux仮想マシンを作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linux 가상 머신 만들기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建 Linux 虚拟机"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立 Linux 虛擬機器"
+          }
+        }
+      }
+    },
+    "Create a named volume, then attach it to a container in the workload wizard." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a named volume, then attach it to a container in the workload wizard."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前付きボリュームを作成し、ワークロードウィザードでコンテナに接続します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이름 있는 볼륨을 만든 다음 워크로드 마법사에서 컨테이너에 연결하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建命名存储卷，然后在工作负载向导中将其挂载到容器。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立具名儲存卷宗，然後在工作負載精靈中將其掛載到容器。"
+          }
+        }
+      }
+    },
+    "Create a network, then select it while configuring a container workload." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a network, then select it while configuring a container workload."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネットワークを作成し、コンテナワークロードの設定時に選択します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "네트워크를 만든 다음 컨테이너 워크로드를 구성할 때 선택하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建网络，然后在配置容器工作负载时选择它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立網路，然後在設定容器工作負載時選擇它。"
+          }
+        }
+      }
+    },
     "Create a persistent Linux machine with sharing and nesting disabled." : {
       "localizations" : {
         "en" : {
@@ -3499,6 +4009,176 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "建立持久化 Linux 虛擬機器，預設關閉共享和巢狀虛擬化。"
+          }
+        }
+      }
+    },
+    "Create a workload" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a workload"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ワークロードを作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "워크로드 만들기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建工作负载"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立工作負載"
+          }
+        }
+      }
+    },
+    "Create a workload…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a workload…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ワークロードを作成…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "워크로드 만들기…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建工作负载…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立工作負載…"
+          }
+        }
+      }
+    },
+    "Create an application container. MacContainer will prepare the required Linux runtime safely." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create an application container. MacContainer will prepare the required Linux runtime safely."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリケーションコンテナを作成します。MacContainerが必要なLinuxランタイムを安全に準備します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "애플리케이션 컨테이너를 만드십시오. MacContainer가 필요한 Linux 런타임을 안전하게 준비합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建应用容器。MacContainer 会安全地准备所需的 Linux 运行时。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立應用程式容器。MacContainer 會安全地準備所需的 Linux 執行階段。"
+          }
+        }
+      }
+    },
+    "Create Replacement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Replacement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "置き換えを作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대체 네트워크 만들기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建替代网络"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立替代網路"
+          }
+        }
+      }
+    },
+    "Create Replacement…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Replacement…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "置き換えを作成…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대체 네트워크 만들기…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建替代网络…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立替代網路…"
           }
         }
       }
@@ -3605,6 +4285,40 @@
         }
       }
     },
+    "Custom images need /sbin/init. The verified built-in image is safest." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom images need /sbin/init. The verified built-in image is safest."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタムイメージには /sbin/init が必要です。検証済みの内蔵イメージが最も安全です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자 지정 이미지에는 /sbin/init가 필요합니다. 검증된 내장 이미지가 가장 안전합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义镜像需要 /sbin/init。经过验证的内置镜像最安全。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自訂映像需要 /sbin/init。經過驗證的內建映像最安全。"
+          }
+        }
+      }
+    },
     "Data volume" : {
       "localizations" : {
         "en" : {
@@ -3635,6 +4349,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "資料卷宗"
+          }
+        }
+      }
+    },
+    "Default" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デフォルト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본값"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "預設"
           }
         }
       }
@@ -3805,6 +4553,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已中斷連線——工作負載會繼續執行"
+          }
+        }
+      }
+    },
+    "Details" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세부 정보"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "详情"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細資訊"
           }
         }
       }
@@ -4183,6 +4965,40 @@
         }
       }
     },
+    "Downloading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロード中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드 중"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在下载"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在下載"
+          }
+        }
+      }
+    },
     "Downloads and verifies an approved package, then waits for your review." : {
       "localizations" : {
         "en" : {
@@ -4247,6 +5063,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "製作複本"
+          }
+        }
+      }
+    },
+    "Duplicate as New…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate as New…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規として複製…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 항목으로 복제…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制为新网络…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製為新網路…"
           }
         }
       }
@@ -4727,6 +5577,40 @@
         }
       }
     },
+    "Failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失敗"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실패"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失败"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失敗"
+          }
+        }
+      }
+    },
     "Fast foreground run" : {
       "localizations" : {
         "en" : {
@@ -4791,6 +5675,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最終閒置檢查"
+          }
+        }
+      }
+    },
+    "First use automatically prepares Alpine 3.22 with complete OpenRC init." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First use automatically prepares Alpine 3.22 with complete OpenRC init."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "初回使用時に完全な OpenRC init を含む Alpine 3.22 を自動準備します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "처음 사용할 때 완전한 OpenRC init가 포함된 Alpine 3.22를 자동으로 준비합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首次使用时会自动准备包含完整 OpenRC 初始化的 Alpine 3.22。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首次使用時會自動準備包含完整 OpenRC 初始化的 Alpine 3.22。"
           }
         }
       }
@@ -6121,6 +7039,40 @@
         }
       }
     },
+    "Interactive terminal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interactive terminal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "対話型ターミナル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대화형 터미널"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "交互式终端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互動式終端機"
+          }
+        }
+      }
+    },
     "Inventory refresh runs immediately before removal" : {
       "localizations" : {
         "en" : {
@@ -6835,6 +7787,40 @@
         }
       }
     },
+    "Machines retain files. Named volumes and custom networks attach to containers." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Machines retain files. Named volumes and custom networks attach to containers."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マシンは独自のファイルシステムを保持します。名前付きボリュームとカスタムネットワークはコンテナに接続します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "머신은 자체 파일 시스템을 유지합니다. 명명된 볼륨과 사용자 지정 네트워크는 컨테이너에 연결됩니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机会保留自己的文件系统。命名卷和自定义网络连接到容器。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器會保留自己的檔案系統。命名卷宗與自訂網路連接到容器。"
+          }
+        }
+      }
+    },
     "macOS 26 · Apple silicon · Runtime ready" : {
       "localizations" : {
         "en" : {
@@ -7345,6 +8331,40 @@
         }
       }
     },
+    "Network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネットワーク"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "네트워크"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路"
+          }
+        }
+      }
+    },
     "Network and DNS disabled" : {
       "localizations" : {
         "en" : {
@@ -7413,6 +8433,108 @@
         }
       }
     },
+    "Networks cannot be edited in place. Create a replacement, then move workloads." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Networks cannot be edited in place. Create a replacement, then move workloads."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネットワークはその場で編集できません。置き換えを作成してからワークロードを移動します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "네트워크는 제자리에서 편집할 수 없습니다. 대체 네트워크를 만든 후 워크로드를 이동하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络无法原地编辑。请创建替代网络，然后迁移工作负载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路無法原地編輯。請建立替代網路，然後遷移工作負載。"
+          }
+        }
+      }
+    },
+    "New Build" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Build"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規ビルド"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 빌드"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建构建"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增建置"
+          }
+        }
+      }
+    },
+    "New Container" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Container"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規コンテナ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 컨테이너"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建容器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增容器"
+          }
+        }
+      }
+    },
     "New Machine" : {
       "localizations" : {
         "en" : {
@@ -7443,6 +8565,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新增虛擬機器"
+          }
+        }
+      }
+    },
+    "New Network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Network"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規ネットワーク"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 네트워크"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建网络"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增網路"
+          }
+        }
+      }
+    },
+    "New Volume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Volume"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規ボリューム"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 볼륨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建存储卷"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增儲存卷宗"
           }
         }
       }
@@ -7855,6 +9045,40 @@
         }
       }
     },
+    "None" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "なし"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無"
+          }
+        }
+      }
+    },
     "Not set" : {
       "localizations" : {
         "en" : {
@@ -7957,6 +9181,40 @@
         }
       }
     },
+    "OK" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "好"
+          }
+        }
+      }
+    },
     "On" : {
       "localizations" : {
         "en" : {
@@ -8021,6 +9279,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟活動中心"
+          }
+        }
+      }
+    },
+    "Open Containers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Containers"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナを開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨테이너 열기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开容器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟容器"
           }
         }
       }
@@ -8161,6 +9453,40 @@
         }
       }
     },
+    "Open Terminal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Terminal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナルを開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "터미널 열기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开终端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟終端機"
+          }
+        }
+      }
+    },
     "Open the image's supported shell and remove the container on exit." : {
       "localizations" : {
         "en" : {
@@ -8191,6 +9517,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟映像檔支援的 Shell，並在結束時移除容器。"
+          }
+        }
+      }
+    },
+    "Open Virtual Machines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Virtual Machines"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシンを開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신 열기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开虚拟机"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟虛擬機器"
           }
         }
       }
@@ -68579,6 +69939,40 @@
         }
       }
     },
+    "Persistent volume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persistent volume"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "永続ボリューム"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "영구 볼륨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "持久化存储卷"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "持久化儲存卷宗"
+          }
+        }
+      }
+    },
     "Platform" : {
       "localizations" : {
         "en" : {
@@ -68749,6 +70143,40 @@
         }
       }
     },
+    "Preparing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "準備中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "준비 중"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在準備"
+          }
+        }
+      }
+    },
     "Previous package verification" : {
       "localizations" : {
         "en" : {
@@ -68847,6 +70275,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "需要特殊權限"
+          }
+        }
+      }
+    },
+    "Pull Image" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pull Image"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "イメージを取得"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미지 가져오기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拉取镜像"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提取映像檔"
           }
         }
       }
@@ -69769,6 +71231,40 @@
         }
       }
     },
+    "Resource type" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resource type"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リソースの種類"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리소스 유형"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "资源类型"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "資源類型"
+          }
+        }
+      }
+    },
     "Resources" : {
       "localizations" : {
         "en" : {
@@ -70415,6 +71911,74 @@
         }
       }
     },
+    "Running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実行中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실행 중"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在运行"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在執行"
+          }
+        }
+      }
+    },
+    "Running containers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running containers"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実行中のコンテナ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실행 중인 컨테이너"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行中的容器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行中的容器"
+          }
+        }
+      }
+    },
     "Running through the native runtime bridge…" : {
       "localizations" : {
         "en" : {
@@ -70445,6 +72009,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在透過原生執行階段橋接執行…"
+          }
+        }
+      }
+    },
+    "Running virtual machines" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running virtual machines"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実行中の仮想マシン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실행 중인 가상 머신"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行中的虚拟机"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行中的虛擬機器"
           }
         }
       }
@@ -73033,6 +74631,40 @@
         }
       }
     },
+    "The selected resource could not be started or its interactive shell could not be opened." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The selected resource could not be started or its interactive shell could not be opened."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したリソースを起動できないか、対話型シェルを開けませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택한 리소스를 시작할 수 없거나 대화형 셸을 열 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法启动所选资源，或无法打开其交互式 Shell。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法啟動所選資源，或無法開啟其互動式 Shell。"
+          }
+        }
+      }
+    },
     "This permanently removes runtime data, credentials, caches, and rollback points." : {
       "localizations" : {
         "en" : {
@@ -73097,6 +74729,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "輸入 REMOVE APPLE CONTAINER"
+          }
+        }
+      }
+    },
+    "Unable to open terminal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to open terminal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナルを開けません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "터미널을 열 수 없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开终端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法開啟終端機"
           }
         }
       }
@@ -73645,6 +75311,74 @@
         }
       }
     },
+    "Virtual machine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual machine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器"
+          }
+        }
+      }
+    },
+    "Virtual machine terminal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual machine terminal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシンターミナル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신 터미널"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机终端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器終端機"
+          }
+        }
+      }
+    },
     "volume" : {
       "localizations" : {
         "en" : {
@@ -73849,6 +75583,40 @@
         }
       }
     },
+    "What do you want to create?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What do you want to create?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "何を作成しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무엇을 만드시겠습니까?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你想创建什么？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你想建立什麼？"
+          }
+        }
+      }
+    },
     "What do you want to do?" : {
       "localizations" : {
         "en" : {
@@ -73951,58 +75719,106 @@
         }
       }
     },
-    "Preparing" : {
+    "Your virtual machine is ready. Containers are application workloads that run inside the Linux runtime." : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preparing" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "準備中" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "준비 중" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在准备" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在準備" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your virtual machine is ready. Containers are application workloads that run inside the Linux runtime."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシンの準備ができています。コンテナはLinuxランタイム内で実行されるアプリケーションワークロードです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신이 준비되었습니다. 컨테이너는 Linux 런타임에서 실행되는 애플리케이션 워크로드입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机已就绪。容器是在 Linux 运行时中运行的应用工作负载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器已就緒。容器是在 Linux 執行階段中執行的應用程式工作負載。"
+          }
+        }
       }
     },
-    "Running" : {
+    "Your virtual machine is running. Open Virtual Machines for terminal and lifecycle controls." : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Running" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "実行中" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "실행 중" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在运行" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在執行" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your virtual machine is running. Open Virtual Machines for terminal and lifecycle controls."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシンは実行中です。仮想マシンを開いてターミナルとライフサイクルを管理できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신이 실행 중입니다. 가상 머신을 열어 터미널과 수명 주기를 관리할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机正在运行。打开虚拟机页面即可使用终端和生命周期控制。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器正在執行。開啟虛擬機器頁面即可使用終端機與生命週期控制。"
+          }
+        }
       }
     },
-    "Downloading" : {
+    "Your virtual machine is stopped. Open Virtual Machines to start it or access its terminal." : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Downloading" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ダウンロード中" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다운로드 중" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在下载" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在下載" } }
-      }
-    },
-    "Completed" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Completed" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "완료됨" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } }
-      }
-    },
-    "Failed" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "失敗" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "실패" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "失败" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "失敗" } }
-      }
-    },
-    "Cancelled" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancelled" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル済み" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "취소됨" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已取消" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已取消" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your virtual machine is stopped. Open Virtual Machines to start it or access its terminal."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仮想マシンは停止中です。仮想マシンを開いて起動またはターミナルに接続できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가상 머신이 중지되었습니다. 가상 머신을 열어 시작하거나 터미널에 접근할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虚拟机已停止。打开虚拟机页面即可启动或访问终端。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虛擬機器已停止。開啟虛擬機器頁面即可啟動或存取終端機。"
+          }
+        }
       }
     }
   },

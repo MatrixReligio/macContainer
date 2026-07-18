@@ -38,7 +38,13 @@ Select a resource row to inspect details. **Refresh** reloads the current domain
 
 Open **Machines** and select **New Machine**. Simple Mode opens with **Linux machine** selected; review the generated machine name, image, CPU, and memory, then select **Run**. The machine is created and started by default. Home-folder sharing and nested virtualization remain disabled during creation.
 
+The default image is a boot-tested Alpine 3.22 system with complete OpenRC initialization. MacContainer prepares it automatically on first use and caches it locally. A custom machine image is an advanced choice and must provide a working `/sbin/init`. Select a machine and choose **Open Terminal** to start it if necessary and open its interactive Linux console.
+
+Containers and machines are different resources. A container is an application workload with its own lightweight Linux isolation; a machine is a persistent Linux environment that runs its own init system. Named volumes and custom container networks attach to containers. A machine instead keeps its own filesystem.
+
 Select one machine to use **Configure**, where you can change CPU and memory or explicitly enable read-only home-folder sharing and nested virtualization. **Start** and **Stop** act on the selected machines. **Delete** always shows the affected machine identifiers before removal.
+
+For a stateful container, choose or create its network and named volume in the same guided configuration page. Network and volume pages show their native configuration, attached containers, and safe delete actions. Because Apple container networks cannot be edited in place, **Create Replacement** copies reusable settings and lets the runtime allocate a non-overlapping subnet; move workloads before deleting the old network.
 
 <a id="registry-workflow"></a>
 ## Registry workflow

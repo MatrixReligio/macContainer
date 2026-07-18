@@ -201,11 +201,14 @@ public struct BridgeOperationDispatcher: OperationDispatching, Sendable {
             return .init(summary: "Builder deleted")
         case "networks.create":
             let name = try fields.requiredString("name")
-            let subnet = fields.string("ipv4Subnet") ?? fields.string("ipv6Subnet")
             _ = try await bridge.networks.create(.init(
                 name: name,
-                subnet: subnet,
-                labels: Dictionary(uniqueKeysWithValues: fields.keyValues("labels").map { ($0.key, $0.value) })
+                subnet: fields.string("ipv4Subnet"),
+                ipv6Subnet: fields.string("ipv6Subnet"),
+                labels: Dictionary(uniqueKeysWithValues: fields.keyValues("labels").map { ($0.key, $0.value) }),
+                hostOnly: fields.bool("internal"),
+                plugin: fields.string("plugin") ?? "container-network-vmnet",
+                options: Dictionary(uniqueKeysWithValues: fields.keyValues("options").map { ($0.key, $0.value) })
             ))
             return .init(summary: "Created network \(name)")
         case "networks.delete":
@@ -222,9 +225,14 @@ public struct BridgeOperationDispatcher: OperationDispatching, Sendable {
             return .init(summary: "Inspected \(ids.count) networks")
         case "volumes.create":
             let name = try fields.requiredString("name")
+            let driverOptions = Dictionary(
+                uniqueKeysWithValues: fields.keyValues("driverOptions").map { ($0.key, $0.value) }
+            )
             _ = try await bridge.volumes.create(.init(
                 name: name,
-                labels: Dictionary(uniqueKeysWithValues: fields.keyValues("labels").map { ($0.key, $0.value) })
+                labels: Dictionary(uniqueKeysWithValues: fields.keyValues("labels").map { ($0.key, $0.value) }),
+                driverOptions: driverOptions,
+                sizeBytes: fields.int("size")
             ))
             return .init(summary: "Created volume \(name)")
         case "volumes.delete":

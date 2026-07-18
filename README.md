@@ -9,7 +9,7 @@ document_id: readme
 
 MacContainer is a native macOS control center for Apple's `container` runtime. It makes the complete reviewed runtime surface approachable through SwiftUI while retaining advanced parameters, explicit safety gates, and truthful recovery details.
 
-> **Pre-release:** version 0.1.7 targets macOS 26 or later on Apple silicon. Treat it as early software: keep independent backups of important container data and review every destructive action.
+> **Pre-release:** version 0.1.8 targets macOS 26 or later on Apple silicon. Treat it as early software: keep independent backups of important container data and review every destructive action.
 
 [English](README.md) · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
@@ -18,6 +18,8 @@ MacContainer is a native macOS control center for Apple's `container` runtime. I
 
 - Native controls for containers, images, builds, machines, networks, volumes, registries, and system operations.
 - Eight safe scenario templates for common workloads, with every generated value visible before execution.
+- A boot-tested Alpine 3.22 virtual-machine image is prepared automatically on first use, with embedded terminal access after creation.
+- Guided container setup connects an OCI image, container network, and named persistent volume in one reviewable flow.
 - Direct, typed integration with reviewed Apple container libraries and protocols; production code does not shell out to the `container` CLI.
 - Explicit privileged boundaries for runtime installation, upgrade, rollback, and product-owned cleanup.
 - Compatibility-gated runtime updates. Unknown versions are held until a signed physical-test attestation and the required probes approve them.

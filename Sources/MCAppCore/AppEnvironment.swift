@@ -16,6 +16,9 @@ public struct AppEnvironment {
     public let runtimeUpdateManager: any RuntimeUpdateManaging
     public let runtimeResourceProvider: any RuntimeResourceProviding
     public let operationDispatcher: any OperationDispatching
+    public let machineTerminalOpener: any MachineTerminalOpening
+    public let containerTerminalOpener: any ContainerTerminalOpening
+    public let machineImagePreparer: any MachineImagePreparing
     public let now: @Sendable () -> Date
     public let makeID: @Sendable () -> UUID
 
@@ -28,6 +31,9 @@ public struct AppEnvironment {
         runtimeUpdateManager: (any RuntimeUpdateManaging)? = nil,
         runtimeResourceProvider: (any RuntimeResourceProviding)? = nil,
         operationDispatcher: (any OperationDispatching)? = nil,
+        machineTerminalOpener: (any MachineTerminalOpening)? = nil,
+        containerTerminalOpener: (any ContainerTerminalOpening)? = nil,
+        machineImagePreparer: (any MachineImagePreparing)? = nil,
         now: @escaping @Sendable () -> Date = Date.init,
         makeID: @escaping @Sendable () -> UUID = UUID.init
     ) {
@@ -60,6 +66,21 @@ public struct AppEnvironment {
             mode == .fakeRuntime
                 ? SimulatedOperationDispatcher()
                 : BridgeOperationDispatcher()
+        )
+        self.machineTerminalOpener = machineTerminalOpener ?? (
+            mode == .fakeRuntime
+                ? SimulatedMachineTerminalOpener()
+                : ProductionMachineTerminalOpener()
+        )
+        self.containerTerminalOpener = containerTerminalOpener ?? (
+            mode == .fakeRuntime
+                ? SimulatedContainerTerminalOpener()
+                : ProductionContainerTerminalOpener()
+        )
+        self.machineImagePreparer = machineImagePreparer ?? (
+            mode == .fakeRuntime
+                ? SimulatedMachineImagePreparer()
+                : ProductionMachineImagePreparer()
         )
         self.now = now
         self.makeID = makeID

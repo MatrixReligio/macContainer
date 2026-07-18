@@ -9,15 +9,20 @@ struct SimpleModeView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedTemplateID: String
-    @State private var imageReference = "alpine:latest"
+    @State private var imageReference: String
     @State private var workspaceDirectory = "/tmp/maccontainer-workspace"
-    @State private var volumeName = "maccontainer-data"
+    @State private var volumeName = ""
+    @State private var networkName = "default"
     @State private var hostPort = "8080"
     @State private var advancedPresented = false
     @State private var reviewPresented = false
     @State private var libraryPresented = false
+    @State private var networkCreatePresented = false
+    @State private var volumeCreatePresented = false
     @State private var statusMessage: String?
     @State private var compactSection: CompactSection = .templates
+    @State private var resourceKind: WorkloadResourceKind
+    private let intent: CreationIntent
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -26,8 +31,24 @@ struct SimpleModeView: View {
         case configuration
     }
 
-    init(initialTemplateID: String = "quick-run") {
+    private enum WorkloadResourceKind: String, CaseIterable {
+        case container
+        case machine
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .container: "Container"
+            case .machine: "Virtual machine"
+            }
+        }
+    }
+
+    init(initialTemplateID: String = "quick-run", intent: CreationIntent = .workload) {
         _selectedTemplateID = State(initialValue: initialTemplateID)
+        let startsAsMachine = initialTemplateID == "linux-machine-workspace" || intent == .machine
+        _resourceKind = State(initialValue: startsAsMachine ? .machine : .container)
+        _imageReference = State(initialValue: startsAsMachine ? MachineImageDefaults.reference : "alpine:latest")
+        self.intent = intent
     }
 
     var body: some View {
@@ -87,6 +108,16 @@ struct SimpleModeView: View {
         .sheet(isPresented: $libraryPresented) {
             TemplateLibraryView(isPresented: $libraryPresented)
         }
+        .sheet(isPresented: $networkCreatePresented) {
+            operationSheet(id: "networks.create", isPresented: $networkCreatePresented)
+        }
+        .sheet(isPresented: $volumeCreatePresented) {
+            operationSheet(id: "volumes.create", isPresented: $volumeCreatePresented)
+        }
+        .task {
+            await state.resourceBrowser.refresh(.networks)
+            await state.resourceBrowser.refresh(.volumes)
+        }
     }
 
     private var compactSectionPicker: some View {
@@ -139,15 +170,32 @@ struct SimpleModeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("What do you want to do?")
+                    Text(workflowTitle)
                         .font(.title.bold())
-                    Text("Choose an outcome. MacContainer fills in safe, host-aware defaults.")
+                    Text(workflowSummary)
                         .fontWeight(.medium)
                         .readableForeground()
                 }
 
+                if intent == .workload {
+                    Picker("Resource type", selection: $resourceKind) {
+                        ForEach(WorkloadResourceKind.allCases, id: \.self) { kind in
+                            Text(kind.title).tag(kind)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: resourceKind) {
+                        selectedTemplateID = resourceKind == .machine
+                            ? "linux-machine-workspace"
+                            : "quick-run"
+                        imageReference = resourceKind == .machine
+                            ? MachineImageDefaults.reference
+                            : "alpine:latest"
+                    }
+                }
+
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(BuiltInTemplates.all) { template in
+                    ForEach(availableTemplates) { template in
                         templateCard(template)
                     }
                 }
@@ -183,9 +231,52 @@ struct SimpleModeView: View {
                 GroupBox("Required choices") {
                     VStack(alignment: .leading, spacing: 12) {
                         LabeledContent("Image") {
-                            TextField("Image reference", text: $imageReference)
-                                .frame(minWidth: 280)
-                                .accessibilityIdentifier("template-choice.image")
+                            VStack(alignment: .trailing, spacing: 4) {
+                                TextField("Image reference", text: $imageReference)
+                                    .frame(minWidth: 280)
+                                    .accessibilityIdentifier("template-choice.image")
+                                if resourceKind == .machine, imageReference == MachineImageDefaults.reference {
+                                    Text("First use automatically prepares Alpine 3.22 with complete OpenRC init.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else if resourceKind == .machine {
+                                    Text("Custom images need /sbin/init. The verified built-in image is safest.")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                        }
+                        if resourceKind == .container, selectedTemplateID != "restricted-secure" {
+                            LabeledContent("Network") {
+                                HStack {
+                                    Picker("Network", selection: $networkName) {
+                                        Text("Default").tag("default")
+                                        ForEach(state.resourceBrowser.resources(for: .networks)) { network in
+                                            if network.id != "default" {
+                                                Text(network.name).tag(network.id)
+                                            }
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    Button("New…") { networkCreatePresented = true }
+                                }
+                            }
+                            LabeledContent("Persistent volume") {
+                                HStack {
+                                    Picker("Persistent volume", selection: $volumeName) {
+                                        Text("None").tag("")
+                                        ForEach(state.resourceBrowser.resources(for: .volumes)) { volume in
+                                            Text(volume.name).tag(volume.id)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    Button("New…") { volumeCreatePresented = true }
+                                }
+                            }
+                        } else if resourceKind == .machine {
+                            Text("Machines retain files. Named volumes and custom networks attach to containers.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                         if selectedTemplateID == "web-service" || selectedTemplateID == "local-database" {
                             LabeledContent("Host port") {
@@ -328,6 +419,34 @@ struct SimpleModeView: View {
         BuiltInTemplates.all.first { $0.id == selectedTemplateID }
     }
 
+    private var availableTemplates: [ScenarioTemplate] {
+        switch intent {
+        case .workload: BuiltInTemplates.all.filter {
+                resourceKind == .machine
+                    ? $0.operationID == "machines.create"
+                    : $0.operationID != "machines.create"
+            }
+        case .container: BuiltInTemplates.all.filter { $0.operationID != "machines.create" }
+        case .machine: BuiltInTemplates.all.filter { $0.operationID == "machines.create" }
+        }
+    }
+
+    private var workflowTitle: LocalizedStringKey {
+        switch intent {
+        case .workload: "Create a workload"
+        case .container: "Create a container"
+        case .machine: "Create a Linux virtual machine"
+        }
+    }
+
+    private var workflowSummary: LocalizedStringKey {
+        switch intent {
+        case .workload: "Choose a container workload or a persistent virtual machine."
+        case .container: "Containers run application workloads inside the Linux runtime."
+        case .machine: "A virtual machine is a persistent Linux host with its own CPU, memory, and disk."
+        }
+    }
+
     private var review: TemplateReview? {
         guard let selectedTemplate else { return nil }
         return try? TemplateRenderer(contract: Self.contract).render(
@@ -364,7 +483,8 @@ struct SimpleModeView: View {
             selectedDirectory: workspaceDirectory,
             selectedVolume: volumeName,
             hostPort: UInt16(hostPort),
-            containerPort: 8080
+            containerPort: 8080,
+            selectedNetwork: networkName
         )
     }
 
@@ -373,6 +493,18 @@ struct SimpleModeView: View {
         let summary = "\(result.summary) · \(review.rows.count) reviewed values"
         statusMessage = summary
         return summary
+    }
+
+    @ViewBuilder
+    private func operationSheet(id: String, isPresented: Binding<Bool>) -> some View {
+        if let operation = Self.contract.operation(id: id) {
+            DismissibleOperationSheet(
+                operation: operation,
+                runtimeVersion: Self.contract.runtimeVersion,
+                draft: OperationDraftFactory().makeDraft(for: operation),
+                isPresented: isPresented
+            )
+        }
     }
 
     private static let contract: UpstreamContract = {

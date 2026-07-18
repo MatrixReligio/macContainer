@@ -137,22 +137,34 @@ public struct NetworkSummary: Codable, Equatable, Sendable {
 public struct NetworkDetail: Codable, Equatable, Sendable {
     public let summary: NetworkSummary
     public let subnet: String?
+    public let ipv6Subnet: String?
     public let gateway: String?
     public let dnsServers: [String]
     public let plugin: String?
+    public let mode: String?
+    public let labels: [String: String]
+    public let options: [String: String]
 
     public init(
         summary: NetworkSummary,
         subnet: String? = nil,
+        ipv6Subnet: String? = nil,
         gateway: String? = nil,
         dnsServers: [String] = [],
-        plugin: String? = nil
+        plugin: String? = nil,
+        mode: String? = nil,
+        labels: [String: String] = [:],
+        options: [String: String] = [:]
     ) {
         self.summary = summary
         self.subnet = subnet
+        self.ipv6Subnet = ipv6Subnet
         self.gateway = gateway
         self.dnsServers = dnsServers
         self.plugin = plugin
+        self.mode = mode
+        self.labels = labels
+        self.options = options
     }
 }
 
@@ -170,11 +182,24 @@ public struct VolumeDetail: Codable, Equatable, Sendable {
     public let summary: VolumeSummary
     public let source: String?
     public let labels: [String: String]
+    public let driver: String?
+    public let options: [String: String]
+    public let sizeBytes: Int64?
 
-    public init(summary: VolumeSummary, source: String? = nil, labels: [String: String] = [:]) {
+    public init(
+        summary: VolumeSummary,
+        source: String? = nil,
+        labels: [String: String] = [:],
+        driver: String? = nil,
+        options: [String: String] = [:],
+        sizeBytes: Int64? = nil
+    ) {
         self.summary = summary
         self.source = source
         self.labels = labels
+        self.driver = driver
+        self.options = options
+        self.sizeBytes = sizeBytes
     }
 }
 

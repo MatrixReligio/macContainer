@@ -19,9 +19,14 @@ public struct AppleVolumeBackend: VolumeBackend, Sendable {
     }
 
     public func create(_ request: VolumeCreateRequest) async throws -> VolumeDetail {
-        try await Self.detail(
+        var options = request.driverOptions
+        if let size = request.sizeBytes {
+            options["size"] = String(size)
+        }
+        return try await Self.detail(
             ClientVolume.create(
                 name: request.name,
+                driverOpts: options,
                 labels: request.labels
             )
         )
@@ -73,7 +78,10 @@ public struct AppleVolumeBackend: VolumeBackend, Sendable {
         VolumeDetail(
             summary: VolumeSummary(name: volume.name, createdAt: volume.creationDate),
             source: volume.source,
-            labels: volume.labels
+            labels: volume.labels,
+            driver: volume.driver,
+            options: volume.options,
+            sizeBytes: volume.sizeInBytes.map { Int64(clamping: $0) }
         )
     }
 
