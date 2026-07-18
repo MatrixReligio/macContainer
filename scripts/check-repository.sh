@@ -61,6 +61,7 @@ zsh Tests/ToolingTests/physical-runner-policy.bats
 zsh Tests/ToolingTests/physical-summary.bats
 zsh Tests/ToolingTests/release-script-policy.bats
 zsh Tests/ToolingTests/release-workflow-policy.bats
+zsh Tests/ToolingTests/settings-auxiliary-ui-policy.bats
 zsh Tests/ToolingTests/upstream-monitor-policy.bats
 scripts/verify-sparkle-update.sh --policy-check
 scripts/check-no-container-cli.sh

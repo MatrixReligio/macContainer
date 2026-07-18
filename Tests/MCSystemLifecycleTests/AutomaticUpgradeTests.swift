@@ -29,6 +29,19 @@ struct AutomaticUpgradeTests {
         #expect(await fixture.sink.states == [.checking, .upToDate])
     }
 
+    @Test func `installed candidate is up to date without requiring upgrade attestation`() async throws {
+        let fixture = try AutomaticFixture(
+            installedRuntimeVersion: "1.1.0",
+            installedPackageSHA256: ReviewedRuntime110Manifest.package.sha256,
+            verifiedAttestationIDs: [],
+            mode: .checkOnly
+        )
+
+        #expect(try await fixture.coordinator.process(.fixture) == .upToDate)
+        #expect(fixture.actions.values == ["context"])
+        #expect(await fixture.sink.states == [.checking, .upToDate])
+    }
+
     @Test func `download and notify caches verified package without install preflight`() async throws {
         let fixture = try AutomaticFixture(mode: .downloadAndNotify)
 
@@ -162,6 +175,7 @@ private final class AutomaticFixture {
         candidateDigest: String? = nil,
         installedRuntimeVersion: String = "1.0.0",
         installedPackageSHA256: String? = nil,
+        verifiedAttestationIDs: Set<String>? = nil,
         activity: [RuntimeActivitySnapshot] = [.init(), .init()],
         packageFails: Bool = false,
         rollbackFails: Bool = false,
@@ -183,6 +197,7 @@ private final class AutomaticFixture {
             entry: entry,
             installedRuntimeVersion: installedRuntimeVersion,
             installedPackageSHA256: installedPackageSHA256,
+            verifiedAttestationIDs: verifiedAttestationIDs ?? [entry.attestation.id],
             activity: activity,
             mode: mode
         )
@@ -238,6 +253,7 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
     let entry: CompatibilityEntry
     let installedRuntimeVersion: String
     let installedPackageSHA256: String?
+    let verifiedAttestationIDs: Set<String>
     var activity: [RuntimeActivitySnapshot]
     let mode: RuntimeUpdateMode
 
@@ -247,6 +263,7 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
         entry: CompatibilityEntry,
         installedRuntimeVersion: String,
         installedPackageSHA256: String?,
+        verifiedAttestationIDs: Set<String>,
         activity: [RuntimeActivitySnapshot],
         mode: RuntimeUpdateMode
     ) {
@@ -255,6 +272,7 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
         self.entry = entry
         self.installedRuntimeVersion = installedRuntimeVersion
         self.installedPackageSHA256 = installedPackageSHA256
+        self.verifiedAttestationIDs = verifiedAttestationIDs
         self.activity = activity
         self.mode = mode
     }
@@ -274,7 +292,7 @@ private actor RecordingAutomaticContextProvider: AutomaticUpdateContextProviding
             ),
             installedRuntimeVersion: installedRuntimeVersion,
             installedPackageSHA256: installedPackageSHA256 ?? entry.allowedUpgradeSources[0].packageSHA256,
-            verifiedAttestationIDs: [entry.attestation.id],
+            verifiedAttestationIDs: verifiedAttestationIDs,
             blockedAttestationID: nil,
             destructiveMigrationConsent: false,
             mode: mode,

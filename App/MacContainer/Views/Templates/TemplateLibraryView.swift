@@ -1,3 +1,4 @@
+import MCAppCore
 import MCModel
 import MCTemplates
 import SwiftUI
@@ -109,6 +110,7 @@ struct TemplateLibraryView: View {
                 }
             }
         }
+        .contentMargins(.top, AppWindowLayout.templateLibraryTopInset, for: .scrollContent)
         .accessibilityLabel("Templates")
     }
 

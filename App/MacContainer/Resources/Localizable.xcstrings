@@ -73950,6 +73950,60 @@
           }
         }
       }
+    },
+    "Preparing" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preparing" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "準備中" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "준비 중" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在准备" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在準備" } }
+      }
+    },
+    "Running" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Running" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "実行中" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "실행 중" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在运行" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在執行" } }
+      }
+    },
+    "Downloading" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Downloading" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ダウンロード中" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다운로드 중" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在下载" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在下載" } }
+      }
+    },
+    "Completed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Completed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "완료됨" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } }
+      }
+    },
+    "Failed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "失敗" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "실패" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "失败" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "失敗" } }
+      }
+    },
+    "Cancelled" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancelled" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル済み" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "취소됨" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已取消" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已取消" } }
+      }
     }
   },
   "version" : "1.0"

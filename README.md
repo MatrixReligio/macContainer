@@ -9,7 +9,7 @@ document_id: readme
 
 MacContainer is a native macOS control center for Apple's `container` runtime. It makes the complete reviewed runtime surface approachable through SwiftUI while retaining advanced parameters, explicit safety gates, and truthful recovery details.
 
-> **Pre-release:** version 0.1.5 targets macOS 26 or later on Apple silicon. Treat it as early software: keep independent backups of important container data and review every destructive action.
+> **Pre-release:** version 0.1.6 targets macOS 26 or later on Apple silicon. Treat it as early software: keep independent backups of important container data and review every destructive action.
 
 [English](README.md) · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 

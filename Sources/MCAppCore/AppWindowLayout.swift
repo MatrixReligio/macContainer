@@ -11,4 +11,5 @@ public enum AppWindowLayout {
     public static let settingsSidebarWidth: CGFloat = 220
     public static let settingsSectionSpacing: CGFloat = 20
     public static let inventoryColumnMinimumWidth: CGFloat = 240
+    public static let templateLibraryTopInset: CGFloat = 12
 }

@@ -17,7 +17,20 @@ struct ActivityCenterTests {
         #expect(center.activities[id]?.phaseKey == "activity.phase.downloading")
         center.finish(id, outcome: .succeeded)
         #expect(center.activities[id]?.outcome == .succeeded)
+        #expect(center.activities[id]?.phaseKey == "activity.phase.completed")
         #expect(center.hasOwnedTask(for: id) == false)
+    }
+
+    @Test func `terminal outcomes replace stale preparing phase`() {
+        let center = ActivityCenter()
+        let failed = center.start(titleKey: "activity.images.refresh")
+        let cancelled = center.start(titleKey: "activity.machines.refresh")
+
+        center.finish(failed, outcome: .failed)
+        center.finish(cancelled, outcome: .cancelled)
+
+        #expect(center.activities[failed]?.phaseKey == "activity.phase.failed")
+        #expect(center.activities[cancelled]?.phaseKey == "activity.phase.cancelled")
     }
 
     @Test

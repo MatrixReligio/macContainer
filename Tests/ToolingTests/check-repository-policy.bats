@@ -17,6 +17,7 @@ required_tooling_tests=(
     physical-summary.bats
     release-script-policy.bats
     release-workflow-policy.bats
+    settings-auxiliary-ui-policy.bats
     upstream-monitor-policy.bats
 )
 

@@ -18,6 +18,7 @@ struct AppWindowLayoutTests {
         #expect(AppWindowLayout.settingsSidebarWidth == 220)
         #expect(AppWindowLayout.settingsSectionSpacing == 20)
         #expect(AppWindowLayout.inventoryColumnMinimumWidth == 240)
+        #expect(AppWindowLayout.templateLibraryTopInset >= 12)
         #expect(
             AppWindowLayout.settingsContentMaxWidth + 2 * AppWindowLayout.settingsHorizontalInset <=
                 AppWindowLayout.defaultContentWidth + 2 * AppWindowLayout.settingsHorizontalInset

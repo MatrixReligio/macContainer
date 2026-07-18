@@ -139,10 +139,6 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
             return await finish(state)
         }
 
-        if reviewed.context.installedRuntimeVersion == candidate.version {
-            return await finish(.upToDate)
-        }
-
         await stateSink.publish(.available(version: candidate.version))
         switch updateAction(reviewed: reviewed, activity: reviewed.context.activity) {
         case .notify:
@@ -214,6 +210,15 @@ public actor RuntimeUpdateCoordinator: RuntimeUpdateCoordinating {
         }
         guard let entry = catalog.entry(runtimeVersion: candidate.version) else {
             return .stop(.held(.unknownRuntime))
+        }
+        if context.installedRuntimeVersion == candidate.version {
+            guard context.installedPackageSHA256 == entry.package.sha256,
+                  candidate.packageSHA256 == entry.package.sha256,
+                  candidate.packageURL.lastPathComponent == entry.package.assetName
+            else {
+                return .stop(.held(.packageIdentityMismatch))
+            }
+            return .stop(.upToDate)
         }
         let decision = decisionEngine.decide(.init(
             catalog: catalog,

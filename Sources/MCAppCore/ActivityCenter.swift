@@ -75,6 +75,14 @@ public final class ActivityCenter {
     ) {
         guard var activity = activities[id] else { return }
         activity.outcome = outcome
+        activity.phaseKey = switch outcome {
+        case .succeeded, .partiallySucceeded:
+            "activity.phase.completed"
+        case .failed:
+            "activity.phase.failed"
+        case .cancelled:
+            "activity.phase.cancelled"
+        }
         activity.error = error
         activity.itemResults = itemResults
         activity.isCancellable = false

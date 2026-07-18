@@ -5,6 +5,20 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.6 - 2026-07-18
+
+### Fixed
+
+- Runtime update checks now recognize an exact already-installed target before
+  applying upgrade-only physical-attestation gates, while still rejecting a
+  mismatched installed package identity.
+- The template library keeps its first row below the title area, and closing an
+  Activity Center opened from Settings no longer closes the Settings window or
+  terminates the application.
+- Activity titles and terminal phases now use localized user-facing copy instead
+  of exposing internal `activity.*` keys or leaving completed refreshes in a
+  stale preparing state.
+
 ## 0.1.5 - 2026-07-18
 
 ### Added

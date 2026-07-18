@@ -1,10 +1,12 @@
+import MCAppCore
 import MCSystemLifecycle
 import SwiftUI
 
 struct AdvancedSettingsView: View {
-    @Environment(\.openWindow) private var openWindow
+    @Environment(AppState.self) private var state
     @State private var retainDiagnostics = true
     @State private var auditState: AuditState = .idle
+    @State private var activityCenterPresented = false
 
     private enum AuditState: Equatable {
         case idle
@@ -22,7 +24,7 @@ struct AdvancedSettingsView: View {
             }
             Section("Recovery") {
                 Button("Open Activity Center") {
-                    openWindow(id: "activity-center")
+                    activityCenterPresented = true
                 }
                 .accessibilityIdentifier("settings-open-activity-center")
                 Button("Re-run residue audit") {
@@ -32,6 +34,12 @@ struct AdvancedSettingsView: View {
                 .accessibilityIdentifier("settings-run-residue-audit")
                 auditStatus
             }
+        }
+        .sheet(isPresented: $activityCenterPresented) {
+            SettingsActivityCenterSheet(
+                center: state.activities,
+                isPresented: $activityCenterPresented
+            )
         }
     }
 
@@ -70,5 +78,25 @@ struct AdvancedSettingsView: View {
                 unverifiable: report.items.count { $0.status == .unverifiable }
             )
         }
+    }
+}
+
+private struct SettingsActivityCenterSheet: View {
+    let center: ActivityCenter
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ActivityCenterView(center: center)
+            Divider()
+            HStack {
+                Spacer()
+                Button("Close") { isPresented = false }
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier("settings-close-activity-center")
+            }
+            .padding(16)
+        }
+        .frame(minWidth: 680, minHeight: 460)
     }
 }
