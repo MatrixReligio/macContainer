@@ -61,17 +61,17 @@ done
     verify = jobs.fetch("verify")
     release = jobs.fetch("release")
     abort "release preflight must use native macOS" unless verify.fetch("runs-on") == "macos-26"
-    abort "secret-bearing release must keep the 14 GB Intel runner" unless
-      release.fetch("runs-on") == "macos-26-intel"
+    abort "secret-bearing release must use native Apple Silicon macOS" unless
+      release.fetch("runs-on") == "macos-26"
     runs = verify.fetch("steps").map { |step| step["run"] }.compact.join("\n")
     forbidden = ["scripts/check-repository.sh", "swift test", "xcodebuild", "rm -rf .build"]
     abort "release preflight repeats main CI work" if forbidden.any? { |text| runs.include?(text) }
 ' "$release"
 
-intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' \
+native_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' \
     "$release" || true)"
-if [[ "$intel_runner_count" != 1 ]]; then
-    print -u2 -- "only secret-bearing publication should use a 14 GB Intel runner"
+if [[ "$native_runner_count" != 2 ]]; then
+    print -u2 -- "both release jobs must use native Apple Silicon macOS"
     exit 1
 fi
 

@@ -115,8 +115,8 @@ if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "
 fi
 release_intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' "$release" || true)"
 release_native_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' "$release" || true)"
-if [[ "$release_intel_runner_count" != "1" || "$release_native_runner_count" != "1" ]]; then
-    errors+=("release.yml must use native macOS for CI attestation and a 14 GB Intel runner for publication")
+if [[ "$release_intel_runner_count" != "0" || "$release_native_runner_count" != "2" ]]; then
+    errors+=("release.yml must use native Apple Silicon macOS for both CI attestation and arm64 publication")
 fi
 if ! /usr/bin/grep -Fq 'needs: verify' "$release" || \
    ! /usr/bin/grep -Fq "github.event_name != 'pull_request'" "$release"; then
