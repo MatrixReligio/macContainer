@@ -5,6 +5,27 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.3 - 2026-07-18
+
+### Changed
+
+- Package tests use controlled four-way compilation, while release publication
+  reuses the successful CI result for the exact `main` revision instead of
+  rebuilding the already-approved source a second time.
+- Settings content now keeps readable horizontal margins, the fixed settings
+  sidebar no longer shows an orphan toggle, runtime residue inventory aligns in
+  adaptive columns, and machine actions fall back to accessible icon controls
+  when the toolbar is narrow.
+
+### Fixed
+
+- Privileged lifecycle operations refresh a helper left running from a replaced
+  app bundle, preventing macOS code-signing identity checks from rejecting XPC
+  replies after an application update.
+- Runtime installation now reconciles an interrupted helper reply only after the
+  exact signed package receipt and installed payload independently verify,
+  avoiding a false failure and destructive rollback after Installer succeeded.
+
 ## 0.1.2 - 2026-07-18
 
 ### Added

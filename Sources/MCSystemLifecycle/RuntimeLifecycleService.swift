@@ -22,6 +22,7 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
     private let helper: HelperClient
     private let targetResolver: any InstalledRuntimeTargetResolving
     private let operationLock = LifecycleOperationLock()
+    private var helperRegistrationWasRefreshed = false
 
     public init(
         registrar: any PrivilegedHelperRegistering = PrivilegedHelperRegistrar(),
@@ -40,7 +41,7 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
     }
 
     public func requestHelperAvailability() async throws -> PrivilegedHelperRegistrationStatus {
-        try await registrar.ensureAvailable()
+        try await ensureCurrentHelper()
     }
 
     public func openHelperApprovalSettings() async {
@@ -48,7 +49,7 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
     }
 
     public func installReviewedRuntime() async throws -> InstallReport {
-        guard try await registrar.ensureAvailable() == .enabled else {
+        guard try await ensureCurrentHelper() == .enabled else {
             throw RuntimeLifecycleServiceError.helperApprovalRequired
         }
         let catalog = try CompatibilityCatalog.bundled()
@@ -86,7 +87,7 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
     }
 
     public func prepareUninstall(mode: UninstallMode) async throws -> UninstallInventory {
-        guard await registrar.status() == .enabled else {
+        guard try await ensureCurrentHelper() == .enabled else {
             throw RuntimeLifecycleServiceError.helperApprovalRequired
         }
         let target = try await targetResolver.resolve()
@@ -98,7 +99,7 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
         inventoryFingerprint: String,
         acknowledgesIrreversibleDeletion: Bool
     ) async throws -> UninstallResult {
-        guard await registrar.status() == .enabled else {
+        guard try await ensureCurrentHelper() == .enabled else {
             throw RuntimeLifecycleServiceError.helperApprovalRequired
         }
         let target = try await targetResolver.resolve()
@@ -132,6 +133,17 @@ public actor ProductionRuntimeLifecycle: RuntimeLifecycleServicing {
 
     public func unregisterHelper() async throws {
         try await registrar.unregister()
+        helperRegistrationWasRefreshed = false
+    }
+
+    private func ensureCurrentHelper() async throws -> PrivilegedHelperRegistrationStatus {
+        let status = try await registrar.ensureAvailable()
+        guard status == .enabled, !helperRegistrationWasRefreshed else { return status }
+        let refreshed = try await registrar.refreshEnabledRegistration()
+        if refreshed == .enabled {
+            helperRegistrationWasRefreshed = true
+        }
+        return refreshed
     }
 
     private func makeInventoryRefresher(target: RuntimeUninstallTarget) -> SystemUninstallInventoryRefresher {

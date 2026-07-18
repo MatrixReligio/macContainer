@@ -1,3 +1,4 @@
+import MCAppCore
 import SwiftUI
 
 struct SettingsScene: View {
@@ -16,12 +17,20 @@ struct SettingsScene: View {
             .accessibilityLabel("Settings categories")
         } detail: {
             selectedPane
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(
+                    maxWidth: AppWindowLayout.settingsContentMaxWidth,
+                    maxHeight: .infinity,
+                    alignment: .topLeading
+                )
+                .padding(.horizontal, AppWindowLayout.settingsHorizontalInset)
+                .padding(.vertical, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .navigationTitle(selection.title)
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Settings content")
                 .accessibilityIdentifier("settings-content.\(selection.rawValue)")
         }
+        .toolbar(removing: .sidebarToggle)
         .frame(minWidth: 760, minHeight: 620)
         .accessibilityIdentifier("settings-scene")
     }

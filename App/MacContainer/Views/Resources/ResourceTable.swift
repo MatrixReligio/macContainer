@@ -168,6 +168,25 @@ struct ResourceTable: View {
     }
 
     private var machineActions: some View {
+        ViewThatFits(in: .horizontal) {
+            machineActionButtons(compact: false)
+                .fixedSize()
+            machineActionButtons(compact: true)
+        }
+    }
+
+    @ViewBuilder
+    private func machineActionButtons(compact: Bool) -> some View {
+        if compact {
+            machineButtons
+                .labelStyle(.iconOnly)
+        } else {
+            machineButtons
+                .labelStyle(.titleAndIcon)
+        }
+    }
+
+    private var machineButtons: some View {
         HStack(spacing: 8) {
             Button {
                 state.simpleModeInitialTemplateID = "linux-machine-workspace"
@@ -176,6 +195,7 @@ struct ResourceTable: View {
                 Label("New Machine", systemImage: "plus")
             }
             .accessibilityIdentifier("new-machine")
+            .help("New Machine")
 
             Button {
                 machineConfigurationPresented = true
@@ -184,6 +204,7 @@ struct ResourceTable: View {
             }
             .disabled(selectedRows.count != 1 || selectedRows.first?.machineConfiguration == nil)
             .accessibilityIdentifier("configure-machine")
+            .help("Configure")
 
             Button {
                 startSelectedMachines()
@@ -194,6 +215,7 @@ struct ResourceTable: View {
                 $0.status == "Running" || $0.status == "Starting"
             })
             .accessibilityIdentifier("start-machine")
+            .help("Start")
 
             Button {
                 stopSelectedMachines()
@@ -204,6 +226,7 @@ struct ResourceTable: View {
                 $0.status == "Stopped" || $0.status == "Stopping"
             })
             .accessibilityIdentifier("stop-machine")
+            .help("Stop")
         }
     }
 

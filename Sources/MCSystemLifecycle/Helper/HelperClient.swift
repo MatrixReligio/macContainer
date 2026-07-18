@@ -37,7 +37,8 @@ public final class HelperClient: @unchecked Sendable {
             }
             connection.activate()
             guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
-                gate.fail(error)
+                _ = error
+                gate.fail(HelperClientError.connectionInvalidated)
                 connection.invalidate()
             }) as? MCPrivilegedHelperXPCProtocol else {
                 gate.fail(HelperClientError.proxyUnavailable)
