@@ -9,7 +9,7 @@ struct GeneralSettingsView: View {
         @Bindable var settings = state.environment.settings
         @Bindable var language = state.environment.languageController
 
-        Form {
+        SettingsForm {
             Section("Experience") {
                 Toggle("Use Simple Mode for new workloads", isOn: $settings.simpleModeEnabled)
                 Text("Advanced controls remain one click away and preserve every value you entered.")
@@ -73,8 +73,6 @@ struct GeneralSettingsView: View {
                     .foregroundStyle(Color(nsColor: .labelColor))
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 
     private func languageChangeMessage(_ result: LanguageChangeResult) -> LocalizedStringKey {

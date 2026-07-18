@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CompatibilitySettingsView: View {
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Policy") {
                 Label("Fail closed for unknown runtime versions", systemImage: "lock.shield.fill")
                 Text("Unknown, incomplete, or stale compatibility evidence blocks automatic installation.")
@@ -19,7 +19,5 @@ struct CompatibilitySettingsView: View {
                 }
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 }

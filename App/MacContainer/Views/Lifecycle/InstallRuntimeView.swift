@@ -11,66 +11,77 @@ struct InstallRuntimeView: View {
     @Environment(AppState.self) private var appState
     @State private var phase: InstallPhase = .ready
     let isAuditMode: Bool
+    let isSettingsSection: Bool
 
-    init(isAuditMode: Bool = false) {
+    init(isAuditMode: Bool = false, isSettingsSection: Bool = false) {
         self.isAuditMode = isAuditMode
+        self.isSettingsSection = isSettingsSection
     }
 
     var body: some View {
-        GroupBox("Install Apple container") {
-            VStack(alignment: .leading, spacing: 9) {
-                Label("Apple container 1.1.0", systemImage: "shippingbox.fill")
-                    .font(.headline)
-                Text("Source: developer.apple.com")
-                    .readableForeground()
-                Text("Signer: Apple Inc. - Containerization (UPBK2H6LZM)")
-                    .font(.subheadline.weight(.semibold))
-                    .readableForeground()
-                Label {
-                    Text("SHA-256 digest verified")
-                        .foregroundStyle(Color(nsColor: .labelColor))
-                } icon: {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
-                }
-                .fontWeight(.semibold)
-                Text("Disk impact: up to 420 MB")
-                Text("Administrator approval is requested only when installation begins.")
-                    .font(.subheadline.weight(.semibold))
-                    .readableForeground()
+        if isSettingsSection {
+            content
+                .padding(.vertical, 4)
+        } else {
+            GroupBox("Install Apple container") {
+                content
+                    .padding(8)
+            }
+        }
+    }
 
-                Button("Review and install") {
-                    if isAuditMode {
-                        phase = .postflightPending
-                    } else {
-                        Task { await appState.runtimeLifecycle.install() }
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!isAuditMode && appState.runtimeLifecycle.isBusy)
-                .accessibilityIdentifier("install-runtime")
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Label("Apple container 1.1.0", systemImage: "shippingbox.fill")
+                .font(.headline)
+            Text("Source: developer.apple.com")
+                .readableForeground()
+            Text("Signer: Apple Inc. - Containerization (UPBK2H6LZM)")
+                .font(.subheadline.weight(.semibold))
+                .readableForeground()
+            Label {
+                Text("SHA-256 digest verified")
+                    .foregroundStyle(Color(nsColor: .labelColor))
+            } icon: {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+            }
+            .fontWeight(.semibold)
+            Text("Disk impact: up to 420 MB")
+            Text("Administrator approval is requested only when installation begins.")
+                .font(.subheadline.weight(.semibold))
+                .readableForeground()
 
-                if isAuditMode, phase == .postflightPending {
-                    Label("Installing — compatibility postflight pending", systemImage: "hourglass")
-                    Button("Complete simulated postflight") {
-                        phase = .complete
-                    }
-                    .accessibilityIdentifier("simulate-install-postflight")
-                } else if isAuditMode, phase == .complete {
-                    Label {
-                        Text("Runtime ready")
-                            .foregroundStyle(Color(nsColor: .labelColor))
-                    } icon: {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    }
-                } else if !isAuditMode {
-                    productionState
+            Button("Review and install") {
+                if isAuditMode {
+                    phase = .postflightPending
+                } else {
+                    Task { await appState.runtimeLifecycle.install() }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(8)
+            .buttonStyle(.borderedProminent)
+            .disabled(!isAuditMode && appState.runtimeLifecycle.isBusy)
+            .accessibilityIdentifier("install-runtime")
+
+            if isAuditMode, phase == .postflightPending {
+                Label("Installing — compatibility postflight pending", systemImage: "hourglass")
+                Button("Complete simulated postflight") {
+                    phase = .complete
+                }
+                .accessibilityIdentifier("simulate-install-postflight")
+            } else if isAuditMode, phase == .complete {
+                Label {
+                    Text("Runtime ready")
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
+            } else if !isAuditMode {
+                productionState
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .task {
             guard !isAuditMode else { return }
             await appState.runtimeLifecycle.refreshHelperStatus()

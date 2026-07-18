@@ -2,13 +2,13 @@ import SwiftUI
 
 struct RuntimeSettingsView: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                InstallRuntimeView()
-                Divider()
-                UninstallRuntimeView()
+        SettingsForm {
+            Section("Install Apple container") {
+                InstallRuntimeView(isSettingsSection: true)
             }
-            .padding()
+            Section("Remove Apple container") {
+                UninstallRuntimeView(isSettingsSection: true)
+            }
         }
     }
 }

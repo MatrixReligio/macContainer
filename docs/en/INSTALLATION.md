@@ -34,6 +34,8 @@ MacContainer downloads into a private staging directory, rejects links and unexp
 
 Administrator approval is requested only after download, verification, and your final review, when installation actually begins. The privileged helper accepts fixed, typed operations and reviewed paths; it does not accept arbitrary shell text. Canceling the approval leaves the current runtime unchanged and clears the private staging area.
 
+On first use, macOS may separately require the MacContainer helper to be allowed in **System Settings → General → Login Items**. The Runtime page identifies this state and opens the correct settings page; approve it once, return to MacContainer, and select **Check approval** before retrying installation.
+
 During installation, Activity Center records the transaction phases. Closing the main window does not convert a failed or interrupted transaction into success. On the next launch, MacContainer reads the durable lifecycle journal and offers only the verified recovery action.
 
 <a id="post-install"></a>

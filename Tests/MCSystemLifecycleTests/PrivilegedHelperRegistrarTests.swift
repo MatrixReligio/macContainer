@@ -48,16 +48,6 @@ struct PrivilegedHelperRegistrarTests {
         try await PrivilegedHelperRegistrar(backend: absent).unregister()
         #expect(absent.actions == ["status"])
     }
-
-    @Test func `refresh replaces an enabled helper and verifies the new registration`() async throws {
-        let backend = RecordingHelperRegistrationBackend(statuses: [
-            .enabled, .notRegistered, .enabled
-        ])
-        let registrar = PrivilegedHelperRegistrar(backend: backend)
-
-        #expect(try await registrar.refreshEnabledRegistration() == .enabled)
-        #expect(backend.actions == ["status", "unregister", "status", "register", "status"])
-    }
 }
 
 private final class RecordingHelperRegistrationBackend: PrivilegedHelperRegistrationBackend, @unchecked Sendable {

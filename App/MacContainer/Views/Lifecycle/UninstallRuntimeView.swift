@@ -15,91 +15,106 @@ struct UninstallRuntimeView: View {
     @State private var confirmation = ""
     @State private var result: ResultState = .none
     let isAuditMode: Bool
+    let isSettingsSection: Bool
 
-    init(isAuditMode: Bool = false, initialConfirmation: String = "") {
+    init(
+        isAuditMode: Bool = false,
+        initialConfirmation: String = "",
+        isSettingsSection: Bool = false
+    ) {
         self.isAuditMode = isAuditMode
+        self.isSettingsSection = isSettingsSection
         _confirmation = State(initialValue: initialConfirmation)
     }
 
     var body: some View {
-        GroupBox("Remove Apple container") {
-            VStack(alignment: .leading, spacing: 8) {
-                inventorySummary
-                    .font(.headline)
+        if isSettingsSection {
+            content
+                .padding(.vertical, 4)
+        } else {
+            GroupBox("Remove Apple container") {
+                content
+                    .padding(8)
+            }
+        }
+    }
 
-                Text("Remove runtime, preserve container data")
-                    .font(.subheadline.bold())
-                Text("Keeps images, volumes, configuration, and registry credentials.")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
-                Button("Remove runtime and preserve data") {
-                    if isAuditMode {
-                        result = .dataPreserved
-                    } else {
-                        Task { await runUninstall(mode: .preserveData) }
-                    }
-                }
-                .disabled(!isAuditMode && appState.runtimeLifecycle.isBusy)
-                .accessibilityIdentifier("preserve-data-uninstall")
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            inventorySummary
+                .font(.headline)
 
-                Divider()
-                Text("Complete uninstall")
-                    .font(.subheadline.bold())
-                Label {
-                    Text("This permanently removes runtime data, credentials, caches, and rollback points.")
-                        .foregroundStyle(Color(nsColor: .labelColor))
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
-                }
+            Text("Remove runtime, preserve container data")
+                .font(.subheadline.bold())
+            Text("Keeps images, volumes, configuration, and registry credentials.")
                 .font(.subheadline.weight(.semibold))
-                TextField("Type REMOVE APPLE CONTAINER", text: $confirmation)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    .accessibilityIdentifier("complete-uninstall-confirmation")
-                Button("Completely uninstall") {
-                    if isAuditMode {
-                        result = .incomplete
-                    } else {
-                        Task { await runUninstall(mode: .complete) }
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-                .disabled(
-                    confirmation != Self.confirmationToken ||
-                        (!isAuditMode && appState.runtimeLifecycle.isBusy)
-                )
-                .accessibilityIdentifier("complete-uninstall")
-
-                resultView
-
-                Text("Owned artifact inventory")
-                    .font(.caption.bold())
-                LazyVGrid(
-                    columns: [
-                        GridItem(
-                            .adaptive(minimum: AppWindowLayout.inventoryColumnMinimumWidth),
-                            spacing: 12,
-                            alignment: .topLeading
-                        )
-                    ],
-                    alignment: .leading,
-                    spacing: 4
-                ) {
-                    ForEach(ResidueInventory.expectations, id: \.kind.rawValue) { item in
-                        Label(item.kind.displayName, systemImage: "circle.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color(nsColor: .labelColor))
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityIdentifier("residue.\(item.kind.rawValue)")
-                    }
+                .foregroundStyle(Color(nsColor: .labelColor))
+            Button("Remove runtime and preserve data") {
+                if isAuditMode {
+                    result = .dataPreserved
+                } else {
+                    Task { await runUninstall(mode: .preserveData) }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(8)
+            .disabled(!isAuditMode && appState.runtimeLifecycle.isBusy)
+            .accessibilityIdentifier("preserve-data-uninstall")
+
+            Divider()
+            Text("Complete uninstall")
+                .font(.subheadline.bold())
+            Label {
+                Text("This permanently removes runtime data, credentials, caches, and rollback points.")
+                    .foregroundStyle(Color(nsColor: .labelColor))
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+            }
+            .font(.subheadline.weight(.semibold))
+            TextField("Type REMOVE APPLE CONTAINER", text: $confirmation)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+                .accessibilityIdentifier("complete-uninstall-confirmation")
+            Button("Completely uninstall") {
+                if isAuditMode {
+                    result = .incomplete
+                } else {
+                    Task { await runUninstall(mode: .complete) }
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .disabled(
+                confirmation != Self.confirmationToken ||
+                    (!isAuditMode && appState.runtimeLifecycle.isBusy)
+            )
+            .accessibilityIdentifier("complete-uninstall")
+
+            resultView
+
+            Text("Owned artifact inventory")
+                .font(.caption.bold())
+            LazyVGrid(
+                columns: [
+                    GridItem(
+                        .adaptive(minimum: AppWindowLayout.inventoryColumnMinimumWidth),
+                        spacing: 12,
+                        alignment: .topLeading
+                    )
+                ],
+                alignment: .leading,
+                spacing: 4
+            ) {
+                ForEach(ResidueInventory.expectations, id: \.kind.rawValue) { item in
+                    Label(item.kind.displayName, systemImage: "circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color(nsColor: .labelColor))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("residue.\(item.kind.rawValue)")
+                }
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder

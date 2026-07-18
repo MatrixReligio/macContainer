@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0057AB09E8D3299974976223 /* MCCompatibility in Frameworks */ = {isa = PBXBuildFile; productRef = 581B57738A515A8AE83C748C /* MCCompatibility */; };
+		02F606D42BBCAC3F049464C9 /* SettingsForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEB689FF036180155B1F0D /* SettingsForm.swift */; };
 		104985B0301772CF93922BB3 /* apple-container-1.1.0.json in Resources */ = {isa = PBXBuildFile; fileRef = CA68C68CF6247C75575B502A /* apple-container-1.1.0.json */; };
 		12D87378C6D55758D541268B /* PhysicalRuntimeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395F8BBD8F48A6C62571ABF5 /* PhysicalRuntimeUITests.swift */; };
 		15EBE6AB00A1D4FFE22EA985 /* ErrorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC07E5974F1F669EDA3835D2 /* ErrorPresentation.swift */; };
@@ -170,6 +171,7 @@
 		989F811DF50B5619478CDABA /* SwiftTermRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTermRepresentable.swift; sourceTree = "<group>"; };
 		9BC1A31552E07923EC3F3B11 /* PrivilegedHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrivilegedHelper.entitlements; sourceTree = "<group>"; };
 		A2548BDB4028A5C02E2BAAD4 /* ResourceManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceManagementTests.swift; sourceTree = "<group>"; };
+		A9DEB689FF036180155B1F0D /* SettingsForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsForm.swift; sourceTree = "<group>"; };
 		ABAFFEE5CFB076D6D10FE65D /* VisualAdaptationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualAdaptationTests.swift; sourceTree = "<group>"; };
 		B0F5B7E5F7E83E3C6E7B2518 /* UpdateAgentLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAgentLocalization.swift; sourceTree = "<group>"; };
 		B646E9D495927C93F5326780 /* AboutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSettingsView.swift; sourceTree = "<group>"; };
@@ -294,6 +296,7 @@
 				6E35CEE43EA9DF8EFDFCD7BF /* GeneralSettingsView.swift */,
 				8AAFCBB0DE089548AE1DA5C0 /* RuntimeSettingsView.swift */,
 				2D97D4CDFBE2D7D6CED36D22 /* RuntimeUpdateSettingsView.swift */,
+				A9DEB689FF036180155B1F0D /* SettingsForm.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -831,6 +834,7 @@
 				E32CA06B338CAC8688D3BCCB /* RootScene.swift in Sources */,
 				CC0B36AF4E3C9E81F7A3EF03 /* RuntimeSettingsView.swift in Sources */,
 				916FE33CC6BB75F6A6F22E63 /* RuntimeUpdateSettingsView.swift in Sources */,
+				02F606D42BBCAC3F049464C9 /* SettingsForm.swift in Sources */,
 				E296281EE028B6DAF297D164 /* SettingsScene.swift in Sources */,
 				DBD0CD199EF64C42C8EC034F /* Sidebar.swift in Sources */,
 				EB5267F9D19CA944A88D09F6 /* SimpleModeView.swift in Sources */,
@@ -994,7 +998,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 4DUQGD879H;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1015,7 +1019,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.3;
+				MARKETING_VERSION = 0.1.4;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1095,7 +1099,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 4DUQGD879H;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1110,7 +1114,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.3;
+				MARKETING_VERSION = 0.1.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

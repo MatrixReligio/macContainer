@@ -15,6 +15,8 @@ struct AppWindowLayoutTests {
     @Test func `settings content keeps readable margins and responsive inventory columns`() {
         #expect(AppWindowLayout.settingsContentMaxWidth == 960)
         #expect(AppWindowLayout.settingsHorizontalInset == 24)
+        #expect(AppWindowLayout.settingsSidebarWidth == 220)
+        #expect(AppWindowLayout.settingsSectionSpacing == 20)
         #expect(AppWindowLayout.inventoryColumnMinimumWidth == 240)
         #expect(
             AppWindowLayout.settingsContentMaxWidth + 2 * AppWindowLayout.settingsHorizontalInset <=

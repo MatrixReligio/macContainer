@@ -18,15 +18,8 @@ public protocol PrivilegedHelperRegistrationBackend: Sendable {
 public protocol PrivilegedHelperRegistering: Sendable {
     func status() async -> PrivilegedHelperRegistrationStatus
     func ensureAvailable() async throws -> PrivilegedHelperRegistrationStatus
-    func refreshEnabledRegistration() async throws -> PrivilegedHelperRegistrationStatus
     func unregister() async throws
     func openApprovalSettings()
-}
-
-public extension PrivilegedHelperRegistering {
-    func refreshEnabledRegistration() async throws -> PrivilegedHelperRegistrationStatus {
-        try await ensureAvailable()
-    }
 }
 
 public actor PrivilegedHelperRegistrar: PrivilegedHelperRegistering {
@@ -85,28 +78,6 @@ public actor PrivilegedHelperRegistrar: PrivilegedHelperRegistering {
 
         guard backend.status() == .notRegistered else {
             throw PrivilegedHelperRegistrationError.unregistrationDidNotTakeEffect
-        }
-    }
-
-    @discardableResult
-    public func refreshEnabledRegistration() async throws -> PrivilegedHelperRegistrationStatus {
-        guard backend.status() == .enabled else {
-            return try await ensureAvailable()
-        }
-        try backend.unregister()
-        guard backend.status() == .notRegistered else {
-            throw PrivilegedHelperRegistrationError.unregistrationDidNotTakeEffect
-        }
-        try backend.register()
-        switch backend.status() {
-        case .enabled:
-            return .enabled
-        case .requiresApproval:
-            return .requiresApproval
-        case .notFound:
-            throw PrivilegedHelperRegistrationError.helperMissing
-        case .notRegistered, .unknown:
-            throw PrivilegedHelperRegistrationError.registrationDidNotTakeEffect
         }
     }
 

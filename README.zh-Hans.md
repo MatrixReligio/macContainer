@@ -9,7 +9,7 @@ document_id: readme
 
 MacContainer 是 Apple `container` 运行时的原生 macOS 控制中心。它用 SwiftUI 呈现完整的已审查功能，同时保留高级参数、明确的安全门禁和真实的恢复信息。
 
-> **预发布版本：** 0.1.3 需要 Apple 芯片与 macOS 26 或更高版本。请为重要的容器数据保留独立备份，并在执行破坏性操作前检查所有值。
+> **预发布版本：** 0.1.4 需要 Apple 芯片与 macOS 26 或更高版本。请为重要的容器数据保留独立备份，并在执行破坏性操作前检查所有值。
 
 [English](README.md) · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 

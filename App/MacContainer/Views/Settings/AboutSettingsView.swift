@@ -5,7 +5,7 @@ struct AboutSettingsView: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        Form {
+        SettingsForm {
             VStack(spacing: 14) {
                 Image(nsImage: NSApplication.shared.applicationIconImage)
                     .resizable()
@@ -65,8 +65,6 @@ struct AboutSettingsView: View {
                     .foregroundStyle(Color(nsColor: .labelColor))
             }
         }
-        .formStyle(.grouped)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var automaticChecksBinding: Binding<Bool> {

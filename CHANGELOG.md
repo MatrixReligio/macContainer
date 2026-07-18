@@ -5,6 +5,24 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.4 - 2026-07-18
+
+### Changed
+
+- Settings now use one fixed native sidebar and a shared grouped-form layout,
+  giving every pane consistent section typography, alignment, content width,
+  and margins without an orphaned sidebar-collapse control.
+
+### Fixed
+
+- Installing or updating the application no longer unregisters an already
+  approved privileged helper. The helper retires after its final client
+  disconnects so launchd starts the current signed copy on the next request
+  without revoking the user's system authorization.
+- A helper that still needs macOS approval is reported as an explicit approval
+  state with a direct link to Login Items settings instead of a generic
+  `lifecycle.install.failed` result.
+
 ## 0.1.3 - 2026-07-18
 
 ### Changed

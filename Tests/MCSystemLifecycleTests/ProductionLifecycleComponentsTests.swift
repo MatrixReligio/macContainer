@@ -225,6 +225,17 @@ struct ProductionLifecycleComponentsTests {
         #expect(registrar.ensureCalls == 1)
     }
 
+    @Test func `production lifecycle preserves an enabled helper registration`() async throws {
+        let registrar = FixtureHelperRegistrar(status: .enabled)
+        let lifecycle = ProductionRuntimeLifecycle(
+            registrar: registrar,
+            bridge: FakeRuntimeBridge()
+        )
+
+        #expect(try await lifecycle.requestHelperAvailability() == .enabled)
+        #expect(registrar.ensureCalls == 1)
+    }
+
     @Test func `uninstall inventory is fresh complete and bound to reviewed runtime`() async throws {
         let receipt = InstalledPackageReceipt(
             identifier: "com.apple.container-installer",

@@ -9,7 +9,7 @@ document_id: readme
 
 MacContainerは、Appleの`container`ランタイムを管理するネイティブmacOSコントロールセンターです。レビュー済みの全機能をSwiftUIで扱いやすくしながら、詳細パラメータ、明示的な安全ゲート、正確な復旧情報を維持します。
 
-> **プレリリース：** バージョン0.1.3はAppleシリコンとmacOS 26以降が必要です。重要なコンテナデータは別途バックアップし、破壊的な操作の前にすべての値を確認してください。
+> **プレリリース：** バージョン0.1.4はAppleシリコンとmacOS 26以降が必要です。重要なコンテナデータは別途バックアップし、破壊的な操作の前にすべての値を確認してください。
 
 [English](README.md) · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 

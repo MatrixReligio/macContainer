@@ -4,7 +4,7 @@ struct AdvancedSettingsView: View {
     @State private var retainDiagnostics = true
 
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Diagnostics") {
                 Toggle("Retain redacted compatibility and rollback diagnostics", isOn: $retainDiagnostics)
                 Text("Passwords, tokens, credentials, authorization data, and private temporary paths are redacted.")
@@ -16,7 +16,5 @@ struct AdvancedSettingsView: View {
                 Button("Re-run residue audit") {}
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 }

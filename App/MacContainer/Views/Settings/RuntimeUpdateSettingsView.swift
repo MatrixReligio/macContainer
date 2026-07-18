@@ -15,105 +15,125 @@ struct RuntimeUpdateSettingsView: View {
     var body: some View {
         @Bindable var settings = state.environment.settings
 
-        GroupBox("Runtime updates") {
-            VStack(alignment: .leading, spacing: 10) {
-                Toggle(
-                    "Automatically check for signed runtime updates",
-                    isOn: $settings.automaticallyCheckRuntimeUpdates
-                )
-                Picker("Approved update action", selection: $settings.runtimeUpdateMode) {
-                    Text("Check only").tag(RuntimeUpdateMode.checkOnly)
-                    Text("Download and notify").tag(RuntimeUpdateMode.downloadAndNotify)
-                    Text("Automatic when idle").tag(RuntimeUpdateMode.automaticWhenIdle)
+        updateSettings
+            .onChange(of: settings.automaticallyCheckRuntimeUpdates) { _, enabled in
+                Task {
+                    await state.runtimeUpdateAgentRegistration.reconcile(enabled: enabled)
                 }
-                .pickerStyle(.radioGroup)
-                .disabled(!settings.automaticallyCheckRuntimeUpdates)
-                .accessibilityIdentifier("runtime-update-mode")
-                Text(modeDescription(settings.runtimeUpdateMode))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
-                if settings.updatePreferencesPersistenceFailed {
-                    Label("Update preference could not be saved; the previous safe setting was restored.",
-                          systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
-                        .accessibilityIdentifier("runtime-update-preference-error")
-                }
-                updateAgentStatus
+            }
+    }
 
-                Divider()
-                updateStatus
-                if isAuditMode {
-                    Label {
-                        Text("Unknown version 1.2.0 is held — no automatic install")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(Color(nsColor: .labelColor))
-                    } icon: {
-                        Image(systemName: "pause.circle.fill")
-                            .foregroundStyle(.orange)
-                    }
-                    Text("Rollback point: 1.0.0 · verified · retained")
-                        .font(.subheadline.monospaced().weight(.semibold))
+    @ViewBuilder
+    private var updateSettings: some View {
+        if isAuditMode {
+            GroupBox("Runtime updates") {
+                updateContent
+                    .padding(8)
+            }
+        } else {
+            SettingsForm {
+                Section("Runtime updates") {
+                    updateContent
+                        .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private var updateContent: some View {
+        @Bindable var settings = state.environment.settings
+
+        return VStack(alignment: .leading, spacing: 10) {
+            Toggle(
+                "Automatically check for signed runtime updates",
+                isOn: $settings.automaticallyCheckRuntimeUpdates
+            )
+            Picker("Approved update action", selection: $settings.runtimeUpdateMode) {
+                Text("Check only").tag(RuntimeUpdateMode.checkOnly)
+                Text("Download and notify").tag(RuntimeUpdateMode.downloadAndNotify)
+                Text("Automatic when idle").tag(RuntimeUpdateMode.automaticWhenIdle)
+            }
+            .pickerStyle(.radioGroup)
+            .disabled(!settings.automaticallyCheckRuntimeUpdates)
+            .accessibilityIdentifier("runtime-update-mode")
+            Text(modeDescription(settings.runtimeUpdateMode))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color(nsColor: .labelColor))
+            if settings.updatePreferencesPersistenceFailed {
+                Label("Update preference could not be saved; the previous safe setting was restored.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("runtime-update-preference-error")
+            }
+            updateAgentStatus
+
+            Divider()
+            updateStatus
+            if isAuditMode {
+                Label {
+                    Text("Unknown version 1.2.0 is held — no automatic install")
+                        .font(.body.weight(.semibold))
                         .foregroundStyle(Color(nsColor: .labelColor))
+                } icon: {
+                    Image(systemName: "pause.circle.fill")
+                        .foregroundStyle(.orange)
                 }
+                Text("Rollback point: 1.0.0 · verified · retained")
+                    .font(.subheadline.monospaced().weight(.semibold))
+                    .foregroundStyle(Color(nsColor: .labelColor))
+            }
 
-                HStack {
-                    Button("Check now") {
-                        Task { await state.runtimeUpdates.checkNow() }
+            HStack {
+                Button("Check now") {
+                    Task { await state.runtimeUpdates.checkNow() }
+                }
+                .disabled(state.runtimeUpdates.isBusy)
+                .accessibilityIdentifier("check-runtime-update")
+                if case .available = state.runtimeUpdates.state {
+                    Button("Install compatible update") {
+                        Task { await state.runtimeUpdates.installAvailable() }
                     }
                     .disabled(state.runtimeUpdates.isBusy)
-                    .accessibilityIdentifier("check-runtime-update")
-                    if case .available = state.runtimeUpdates.state {
-                        Button("Install compatible update") {
-                            Task { await state.runtimeUpdates.installAvailable() }
-                        }
-                        .disabled(state.runtimeUpdates.isBusy)
-                        .accessibilityIdentifier("install-compatible-update")
-                    }
+                    .accessibilityIdentifier("install-compatible-update")
                 }
+            }
 
-                if isAuditMode {
-                    switch state.runtimeUpdates.state {
-                    case .checking:
-                        Button("Complete update check") {
-                            state.runtimeUpdates.setAuditState(.available(version: "1.1.0"))
-                        }
-                        .accessibilityIdentifier("complete-update-check")
-                    case .installing:
-                        Button("Simulate failed postflight") {
-                            state.runtimeUpdates.setAuditState(.rolledBack(
-                                previousVersion: "1.0.0",
-                                failedProbeID: .images
-                            ))
-                        }
-                        .accessibilityIdentifier("simulate-upgrade-failure")
-                        Button("Simulate rollback failure") {
-                            state.runtimeUpdates.setAuditState(.recoveryRequired(
-                                code: "rollback.previous-probes.run"
-                            ))
-                        }
-                        .accessibilityIdentifier("simulate-update-recovery")
-                    case .rolledBack, .recoveryRequired, .held, .pending:
-                        Button("Retry after review") {
-                            state.runtimeUpdates.setAuditState(.available(version: "1.1.0"))
-                        }
-                        .accessibilityIdentifier("retry-runtime-update")
-                    case .available, .downloading, .checkFailed, .upToDate:
-                        EmptyView()
+            if isAuditMode {
+                switch state.runtimeUpdates.state {
+                case .checking:
+                    Button("Complete update check") {
+                        state.runtimeUpdates.setAuditState(.available(version: "1.1.0"))
                     }
+                    .accessibilityIdentifier("complete-update-check")
+                case .installing:
+                    Button("Simulate failed postflight") {
+                        state.runtimeUpdates.setAuditState(.rolledBack(
+                            previousVersion: "1.0.0",
+                            failedProbeID: .images
+                        ))
+                    }
+                    .accessibilityIdentifier("simulate-upgrade-failure")
+                    Button("Simulate rollback failure") {
+                        state.runtimeUpdates.setAuditState(.recoveryRequired(
+                            code: "rollback.previous-probes.run"
+                        ))
+                    }
+                    .accessibilityIdentifier("simulate-update-recovery")
+                case .rolledBack, .recoveryRequired, .held, .pending:
+                    Button("Retry after review") {
+                        state.runtimeUpdates.setAuditState(.available(version: "1.1.0"))
+                    }
+                    .accessibilityIdentifier("retry-runtime-update")
+                case .available, .downloading, .checkFailed, .upToDate:
+                    EmptyView()
                 }
+            }
 
-                Text("Administrator approval appears only after download, signature verification, and review.")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(nsColor: .labelColor))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(8)
+            Text("Administrator approval appears only after download, signature verification, and review.")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color(nsColor: .labelColor))
         }
-        .onChange(of: settings.automaticallyCheckRuntimeUpdates) { _, enabled in
-            Task {
-                await state.runtimeUpdateAgentRegistration.reconcile(enabled: enabled)
-            }
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder

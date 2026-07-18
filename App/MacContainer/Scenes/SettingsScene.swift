@@ -5,17 +5,18 @@ struct SettingsScene: View {
     @State private var selection: SettingsPane = .general
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             List(SettingsPane.allCases, selection: $selection) { pane in
                 Label(pane.title, systemImage: pane.symbol)
                     .tag(pane)
                     .accessibilityIdentifier("settings-pane.\(pane.rawValue)")
             }
             .listStyle(.sidebar)
-            .navigationTitle("Settings")
-            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 240)
+            .frame(width: AppWindowLayout.settingsSidebarWidth)
             .accessibilityLabel("Settings categories")
-        } detail: {
+
+            Divider()
+
             selectedPane
                 .frame(
                     maxWidth: AppWindowLayout.settingsContentMaxWidth,
@@ -23,14 +24,18 @@ struct SettingsScene: View {
                     alignment: .topLeading
                 )
                 .padding(.horizontal, AppWindowLayout.settingsHorizontalInset)
-                .padding(.vertical, 20)
+                .padding(.vertical, AppWindowLayout.settingsSectionSpacing)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .navigationTitle(selection.title)
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Settings content")
                 .accessibilityIdentifier("settings-content.\(selection.rawValue)")
         }
-        .toolbar(removing: .sidebarToggle)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(selection.title)
+                    .font(.headline)
+            }
+        }
         .frame(minWidth: 760, minHeight: 620)
         .accessibilityIdentifier("settings-scene")
     }

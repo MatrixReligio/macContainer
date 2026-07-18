@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DefaultsSettingsView: View {
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Safe defaults") {
                 accessibleDefault("Network exposure", value: "Localhost only")
                 accessibleDefault("Workspace sharing", value: "Selected folder only")
@@ -14,8 +14,6 @@ struct DefaultsSettingsView: View {
                 Button("Open Template Library") {}
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 
     private func accessibleDefault(
