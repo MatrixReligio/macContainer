@@ -43,7 +43,7 @@ struct ContractAuditView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(operation.id)
                                 .font(.body.monospaced())
-                            Text(operation.domain.rawValue.capitalized)
+                            Text(operation.domain.localizedTitle)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -105,7 +105,7 @@ struct ContractAuditView: View {
                 options: .regularExpression
             )
             .capitalized
-        return "Configure \(operation.domain.rawValue.capitalized): \(action)"
+        return "\(String(localized: "Configure native operation")): \(action)"
     }
 }
 

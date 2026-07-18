@@ -7,6 +7,7 @@ public enum BridgeOperationDispatcherError: Error, Equatable, Sendable {
     case invalidField(String)
     case unsupportedOperation(String)
     case explicitConsentRequired(String)
+    case operationFailed(String)
 }
 
 public struct BridgeOperationDispatcher: OperationDispatching, Sendable {
@@ -255,6 +256,12 @@ public struct BridgeOperationDispatcher: OperationDispatching, Sendable {
         case "machines.create":
             let request = try machineCreateRequest(fields)
             _ = try await bridge.machines.create(request)
+            if fields.bool("noBoot") == false {
+                let results = try await bridge.machines.start(ids: [request.name])
+                guard results.allSatisfy(\.succeeded) else {
+                    throw BridgeOperationDispatcherError.operationFailed("machines.start")
+                }
+            }
             if fields.bool("setDefault") {
                 try await bridge.machines.setDefault(id: request.name)
             }

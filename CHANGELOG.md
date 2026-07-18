@@ -5,6 +5,31 @@ Changelog, and releases use semantic versioning where compatibility permits.
 
 ## Unreleased
 
+## 0.1.2 - 2026-07-18
+
+### Added
+
+- The Machines page now exposes direct **New Machine**, **Configure**, **Start**,
+  **Stop**, and **Delete** controls. New machines use the safe Linux-machine
+  template and start by default; home sharing and nested virtualization remain
+  off until explicitly enabled in Configure.
+- Machine configuration uses typed CPU, memory, read-only home sharing, and
+  nested-virtualization controls with one-time consent for home access.
+
+### Fixed
+
+- Apple container 1.1.0 installation now accepts the official kernel archive's
+  harmless `./` root directory marker instead of misclassifying it as path
+  traversal after the signed package and kernel download had succeeded.
+- Installation failures preserve the exact non-sensitive lifecycle stage so the
+  app reports an actionable diagnostic rather than a generic failure.
+- Simple Mode and every nested operation sheet have visible Cancel or Close
+  controls and Escape-key dismissal, preventing a modal workflow from trapping
+  the main window.
+- Controlled UI labels, scenario metadata, settings, runtime-update stages,
+  resource states, and lifecycle inventory names now resolve through the complete
+  five-language catalog instead of displaying internal English values.
+
 ## 0.1.1 - 2026-07-18
 
 ### Added

@@ -4,8 +4,9 @@ import SwiftUI
 
 struct EmptyStateView: View {
     let symbol: String
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
+    var diagnostic: String?
 
     var body: some View {
         VStack(spacing: 10) {
@@ -17,6 +18,11 @@ struct EmptyStateView: View {
             Text(message)
                 .font(.body)
                 .multilineTextAlignment(.center)
+            if let diagnostic {
+                Text(verbatim: diagnostic)
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+            }
         }
         .foregroundStyle(Color(nsColor: .labelColor))
         .padding(24)
@@ -40,9 +46,9 @@ struct ActivityCenterView: View {
                 } else {
                     List(center.activities.values.sorted { $0.startedAt > $1.startedAt }) { activity in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(activity.titleKey)
+                            Text(LocalizedStringKey(activity.titleKey))
                                 .font(.headline)
-                            Text(activity.phaseKey)
+                            Text(LocalizedStringKey(activity.phaseKey))
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(Color(nsColor: .labelColor))
                             if let progress = activity.progress {

@@ -38,9 +38,13 @@ private func catalog(at url: URL) throws -> [String: Any] {
 }
 
 private func staticUIKeys(in sourceRoots: [URL]) -> Set<String> {
-    // swiftlint:disable:next line_length
-    let pattern = #"(?:Text|Label|Button|Toggle|TextField|SecureField|Picker|LabeledContent|Section|GroupBox|Menu|ContentUnavailableView|navigationTitle|help|accessibilityLabel|alert|confirmationDialog|localizedString)\s*\(\s*"((?:\\.|[^"\\])*)""#
-    guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+    let patterns = [
+        // swiftlint:disable:next line_length
+        #"(?:Text|Label|Button|Toggle|TextField|SecureField|Picker|LabeledContent|Section|GroupBox|Menu|ContentUnavailableView|navigationTitle|help|accessibilityLabel|alert|confirmationDialog|localizedString)\s*\(\s*"((?:\\.|[^"\\])*)""#,
+        #"LocalizedStringKey\s*\(\s*"((?:\\.|[^"\\])*)""#,
+        #"String\s*\(\s*localized:\s*"((?:\\.|[^"\\])*)""#
+    ]
+    let regexes = patterns.compactMap { try? NSRegularExpression(pattern: $0) }
     var keys = Set<String>()
     for sourceRoot in sourceRoots {
         let enumerator = FileManager.default.enumerator(at: sourceRoot, includingPropertiesForKeys: nil)
@@ -48,11 +52,13 @@ private func staticUIKeys(in sourceRoots: [URL]) -> Set<String> {
             guard url.pathExtension == "swift",
                   let source = try? String(contentsOf: url, encoding: .utf8)
             else { continue }
-            for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
-                guard let range = Range(match.range(at: 1), in: source) else { continue }
-                let key = String(source[range])
-                guard key.contains(#"\("#) == false else { continue }
-                keys.insert(key.replacingOccurrences(of: #"\""#, with: #"""#))
+            for regex in regexes {
+                for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+                    guard let range = Range(match.range(at: 1), in: source) else { continue }
+                    let key = String(source[range])
+                    guard key.contains(#"\("#) == false else { continue }
+                    keys.insert(key.replacingOccurrences(of: #"\""#, with: #"""#))
+                }
             }
         }
     }

@@ -77,7 +77,7 @@ struct GeneralSettingsView: View {
         .padding()
     }
 
-    private func languageChangeMessage(_ result: LanguageChangeResult) -> String {
+    private func languageChangeMessage(_ result: LanguageChangeResult) -> LocalizedStringKey {
         switch result {
         case .noChange: "The current language remains active."
         case .saveBeforeRelaunch: "Save or discard the current draft before relaunching."

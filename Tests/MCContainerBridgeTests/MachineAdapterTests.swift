@@ -171,6 +171,24 @@ struct MachineAdapterTests {
         #expect(await backend.deletedIDs == ["alpha", "beta"])
     }
 
+    @Test func `start resolves exact and prefix identifiers before booting machines`() async throws {
+        let backend = FakeMachineBackend(machines: [
+            .fixture(id: "alpha-machine"),
+            .fixture(id: "beta-machine")
+        ])
+        let adapter = MachineAdapter(client: backend)
+
+        let results = try await adapter.start(ids: ["alpha", "beta-machine"])
+
+        #expect(results == [
+            BatchItemResult(id: "alpha", succeeded: true),
+            BatchItemResult(id: "beta-machine", succeeded: true)
+        ])
+        #expect(await backend.operationIDs == [
+            "list", "boot:alpha-machine", "boot:beta-machine"
+        ])
+    }
+
     @Test func `batch mutations preserve task cancellation`() async {
         let backend = FakeMachineBackend(machines: [.fixture(id: "alpha")])
         let adapter = MachineAdapter(client: backend)

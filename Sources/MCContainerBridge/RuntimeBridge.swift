@@ -80,6 +80,7 @@ public protocol RegistryOperations: Sendable {
 
 public protocol MachineOperations: Sendable {
     func create(_ request: MachineCreateRequest) async throws -> MachineSummary
+    func start(ids: [String]) async throws -> [BatchItemResult]
     func run(_ request: MachineRunRequest) async throws -> any ProcessSession
     func list() async throws -> [MachineSummary]
     func inspect(id: String) async throws -> MachineDetail

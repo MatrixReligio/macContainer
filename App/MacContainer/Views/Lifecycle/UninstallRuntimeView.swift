@@ -184,9 +184,23 @@ struct UninstallRuntimeView: View {
 }
 
 private extension ResidueKind {
-    var displayName: String {
-        rawValue
-            .replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
-            .capitalized
+    var displayName: LocalizedStringKey {
+        switch self {
+        case .launchService: "Launch service"
+        case .process: "Runtime process"
+        case .receipt: "Installer receipt"
+        case .receiptPayload: "Installed payload"
+        case .applicationSupport: "Application support"
+        case .configuration: "Configuration"
+        case .defaultsDomain: "Preferences"
+        case .registryCredential: "Registry credential"
+        case .resolver: "DNS resolver"
+        case .packetFilter: "Packet filter"
+        case .downloadedPackage: "Downloaded package"
+        case .rollbackPoint: "Rollback point"
+        case .testFixture: "Test fixture"
+        case .downloadCache: "Download cache"
+        case .runtimeOwnedDirectory: "Runtime-owned directory"
+        }
     }
 }

@@ -26,8 +26,8 @@ struct ParameterHelpButton: View {
                     Text(LocalizedStringKey(parameter.labelKey))
                         .font(.headline)
                     Spacer()
-                    Text(parameter.valueType.rawValue)
-                        .font(.caption.monospaced())
+                    Text(parameter.valueType.localizedTitle)
+                        .font(.caption)
                         .foregroundStyle(.primary)
                 }
                 Text(LocalizedStringKey(parameter.detailedHelpKey))
@@ -40,8 +40,12 @@ struct ParameterHelpButton: View {
                     LabeledContent("Validation", value: grammar)
                         .font(.caption)
                 }
-                LabeledContent("Required", value: parameter.required ? "Yes" : "No")
-                LabeledContent("Security impact", value: parameter.securityImpact.rawValue.capitalized)
+                LabeledContent("Required") {
+                    Text(parameter.required ? "Yes" : "No")
+                }
+                LabeledContent("Security impact") {
+                    Text(parameter.securityImpact.localizedTitle)
+                }
                 Text(LocalizedStringKey(parameter.recoveryKey))
                     .font(.caption)
                     .foregroundStyle(.primary)
@@ -51,6 +55,26 @@ struct ParameterHelpButton: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Information about \(parameter.labelKey)")
             .accessibilityIdentifier("parameter-help-popover")
+        }
+    }
+}
+
+private extension ParameterValueType {
+    var localizedTitle: LocalizedStringKey {
+        switch self {
+        case .boolean: "Boolean"
+        case .integer: "Integer"
+        case .bytes: "Bytes"
+        case .duration: "Duration"
+        case .string: "String"
+        case .path: "Path"
+        case .url: "URL"
+        case .enumeration: "Enumeration"
+        case .keyValue: "Key-value pair"
+        case .portMapping: "Port mapping"
+        case .mount: "Mount"
+        case .platform: "Platform"
+        case .signal: "Signal"
         }
     }
 }

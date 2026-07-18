@@ -48,7 +48,7 @@ struct TemplateReviewView: View {
                                     .privacySensitive(row.value.containsSecret)
                             }
                             HStack {
-                                Text(row.sourceDescriptionKey)
+                                Text(LocalizedStringKey(row.sourceDescriptionKey))
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(Color(nsColor: .labelColor))
                                 Spacer()
@@ -118,12 +118,12 @@ struct TemplateReviewView: View {
         .accessibilityIdentifier("template-review.\(template.id)")
         .sheet(isPresented: $advancedEditorPresented) {
             if let operation = contract.operation(id: review.draft.operationID) {
-                OperationForm(
+                DismissibleOperationSheet(
                     operation: operation,
                     runtimeVersion: contract.runtimeVersion,
-                    draft: review.draft
+                    draft: review.draft,
+                    isPresented: $advancedEditorPresented
                 )
-                .frame(minWidth: 900, minHeight: 650)
             }
         }
     }

@@ -18,7 +18,10 @@ struct DefaultsSettingsView: View {
         .padding()
     }
 
-    private func accessibleDefault(_ label: String, value: String) -> some View {
+    private func accessibleDefault(
+        _ label: LocalizedStringKey,
+        value: LocalizedStringKey
+    ) -> some View {
         LabeledContent(label) {
             Text(value)
                 .fontWeight(.semibold)

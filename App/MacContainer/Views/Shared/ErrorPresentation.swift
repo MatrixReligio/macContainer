@@ -15,14 +15,14 @@ struct ErrorPresentation: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 Label {
-                    Text(error.titleKey)
+                    Text(LocalizedStringKey(error.titleKey))
                         .foregroundStyle(Color(nsColor: .labelColor))
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
                 .font(.headline)
-                Text(error.explanationKey)
+                Text(LocalizedStringKey(error.explanationKey))
                 if style == .activity {
                     Text(error.diagnosticDetail)
                         .font(.subheadline.monospaced().weight(.semibold))
@@ -32,7 +32,7 @@ struct ErrorPresentation: View {
                 }
                 HStack {
                     ForEach(error.recoveryActions) { action in
-                        Button(action.titleKey) {
+                        Button(LocalizedStringKey(action.titleKey)) {
                             perform(action)
                         }
                         .accessibilityIdentifier("error-action.\(action.id)")
@@ -52,7 +52,7 @@ private struct ImmediateErrorModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content.alert(
-            error?.titleKey ?? "",
+            LocalizedStringKey(error?.titleKey ?? ""),
             isPresented: Binding(
                 get: { error != nil },
                 set: {
@@ -64,13 +64,13 @@ private struct ImmediateErrorModifier: ViewModifier {
             presenting: error
         ) { error in
             ForEach(error.recoveryActions) { action in
-                Button(action.titleKey) {}
+                Button(LocalizedStringKey(action.titleKey)) {}
             }
             Button("Cancel", role: .cancel) {
                 self.error = nil
             }
         } message: { error in
-            Text(error.explanationKey)
+            Text(LocalizedStringKey(error.explanationKey))
         }
     }
 }

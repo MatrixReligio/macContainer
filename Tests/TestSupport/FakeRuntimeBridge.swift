@@ -328,6 +328,11 @@ private struct FakeMachineOperations: MachineOperations {
         return summary(request)
     }
 
+    func start(ids: [String]) async throws -> [BatchItemResult] {
+        try await support.record("machines.start", resources: ids)
+        return successfulResults(ids)
+    }
+
     func run(_ request: MachineRunRequest) async throws -> any ProcessSession {
         try await support.record("machines.run", resources: [request.create.name])
         return FakeProcessSession(id: request.create.name)

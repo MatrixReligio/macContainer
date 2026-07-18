@@ -29,8 +29,8 @@ struct ParameterField: View {
                     .font(.body.weight(.semibold))
                     .readableForeground()
                 Spacer()
-                Text(field.source.rawValue)
-                    .font(.caption.weight(.semibold).monospaced())
+                Text(field.source.localizedTitle)
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color(nsColor: .labelColor))
             }
 
@@ -328,14 +328,15 @@ private struct AccessibleValuePicker: NSViewRepresentable {
     }
 
     private func configure(_ button: NSPopUpButton) {
-        let expectedTitles = ["Not set"] + values
+        let notSet = String(localized: "Not set")
+        let expectedTitles = [notSet] + values
         if button.itemTitles != expectedTitles {
             button.removeAllItems()
             button.addItems(withTitles: expectedTitles)
         }
         button.selectItem(at: max(0, (values.firstIndex(of: selection) ?? -1) + 1))
         button.setAccessibilityLabel(label)
-        button.setAccessibilityValue(selection.isEmpty ? "Not set" : selection)
+        button.setAccessibilityValue(selection.isEmpty ? notSet : selection)
     }
 
     @MainActor
@@ -349,6 +350,18 @@ private struct AccessibleValuePicker: NSViewRepresentable {
         @objc func didSelect(_ sender: NSPopUpButton) {
             let index = sender.indexOfSelectedItem - 1
             parent.selection = index >= 0 ? parent.values[index] : ""
+        }
+    }
+}
+
+extension ValueSource {
+    var localizedTitle: LocalizedStringKey {
+        switch self {
+        case .upstreamDefault: "Upstream default"
+        case .scenarioRule: "Scenario rule"
+        case .hostRecommendation: "Host recommendation"
+        case .imageMetadata: "Image metadata"
+        case .userOverride: "User override"
         }
     }
 }

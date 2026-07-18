@@ -67,6 +67,8 @@ public final class RuntimeLifecycleController {
         } catch RuntimeLifecycleServiceError.helperApprovalRequired {
             helperStatus = .requiresApproval
             state = .helperApprovalRequired
+        } catch let error as InstallError {
+            state = .failed(code: Self.installFailureCode(error))
         } catch {
             state = .failed(code: "lifecycle.install.failed")
         }
@@ -118,6 +120,31 @@ public final class RuntimeLifecycleController {
             helperStatus = .notRegistered
         } catch {
             state = .failed(code: "lifecycle.helper.unregistration-failed")
+        }
+    }
+
+    private static func installFailureCode(_ error: InstallError) -> String {
+        switch error {
+        case let .postflightFailed(stage), let .stageFailed(stage):
+            "lifecycle.install.\(stage.rawValue)"
+        case .consentDenied:
+            "lifecycle.install.consent-denied"
+        case .incompleteRecovery:
+            "lifecycle.install.recovery-incomplete"
+        case .installedButTemporaryCleanupFailed, .temporaryCleanupFailed:
+            "lifecycle.install.cleanup-failed"
+        case .invalidReleaseMetadata, .invalidTarget:
+            "lifecycle.install.metadata-invalid"
+        case .journalUnavailable:
+            "lifecycle.install.journal-unavailable"
+        case .receiptMismatch:
+            "lifecycle.install.receipt-mismatch"
+        case .temporaryDirectoryUnavailable, .unsafeTemporaryDirectory:
+            "lifecycle.install.staging-unavailable"
+        case .upgradeRequired:
+            "lifecycle.install.upgrade-required"
+        case .verificationReportMismatch:
+            "lifecycle.install.verification-mismatch"
         }
     }
 }

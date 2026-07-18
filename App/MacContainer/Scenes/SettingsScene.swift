@@ -19,7 +19,7 @@ struct SettingsScene: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .navigationTitle(selection.title)
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("\(selection.title) settings")
+                .accessibilityLabel("Settings content")
                 .accessibilityIdentifier("settings-content.\(selection.rawValue)")
         }
         .frame(minWidth: 760, minHeight: 620)
@@ -60,15 +60,15 @@ private enum SettingsPane: String, CaseIterable, Identifiable {
         rawValue
     }
 
-    var title: String {
+    var title: LocalizedStringKey {
         switch self {
-        case .general: "General"
-        case .runtime: "Runtime"
-        case .runtimeUpdates: "Runtime Updates"
-        case .compatibility: "Compatibility"
-        case .defaults: "Defaults & Templates"
-        case .advanced: "Advanced"
-        case .about: "About"
+        case .general: LocalizedStringKey("General")
+        case .runtime: LocalizedStringKey("Runtime")
+        case .runtimeUpdates: LocalizedStringKey("Runtime Updates")
+        case .compatibility: LocalizedStringKey("Compatibility")
+        case .defaults: LocalizedStringKey("Defaults & Templates")
+        case .advanced: LocalizedStringKey("Advanced")
+        case .about: LocalizedStringKey("About")
         }
     }
 
