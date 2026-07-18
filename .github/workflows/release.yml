@@ -17,10 +17,11 @@ defaults:
 
 jobs:
   verify:
-    name: Secret-free release verification
-    runs-on: macos-26-intel
-    timeout-minutes: 120
+    name: Reuse successful main CI
+    runs-on: macos-26
+    timeout-minutes: 10
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Check out the requested source revision
@@ -33,6 +34,9 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]]
+          remote_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          [[ -n "$remote_main" && "$GITHUB_SHA" == "$remote_main" ]]
           [[ "$RELEASE_TAG" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]]
           version="${RELEASE_TAG#v}"
           project_version="$(awk -F': ' '/^[[:space:]]*MARKETING_VERSION:/ { gsub(/"/, "", $2); print $2; exit }' project.yml)"
@@ -42,29 +46,22 @@ jobs:
             exit 1
           fi
 
-      - name: Bootstrap checksum-pinned XcodeGen and quality tools
-        run: scripts/bootstrap-tools.sh
-
-      - name: Run all secret-free repository and release policy tests
+      - name: Require successful main CI for this exact revision
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          MC_SWIFTPM_JOBS=2 scripts/check-repository.sh
-          zsh Tests/ToolingTests/release-script-policy.bats
-          zsh Tests/ToolingTests/release-workflow-policy.bats
-
-      - name: Reclaim SwiftPM build storage before Xcode verification
-        run: rm -rf .build
-
-      - name: Install the Xcode Metal toolchain component
-        run: xcodebuild -downloadComponent MetalToolchain
-
-      - name: Build the unsigned Release application
-        run: |
-          set -euo pipefail
-          xcodebuild -quiet -project MacContainer.xcodeproj -scheme MacContainer \
-            -configuration Release -derivedDataPath .build/release-verification \
-            -clonedSourcePackagesDirPath .build/xcode-packages \
-            ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+          runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml \
+            --commit "$GITHUB_SHA" --event push --limit 20 \
+            --json status,conclusion,headSha,headBranch,event,url)"
+          successful="$(jq -r --arg sha "$GITHUB_SHA" \
+            '[.[] | select(.headSha == $sha and .headBranch == "main" and .event == "push" and .status == "completed" and .conclusion == "success")] | length' \
+            <<< "$runs")"
+          if (( successful < 1 )); then
+            print -u2 -- "No successful main CI run exists for $GITHUB_SHA"
+            print -r -- "$runs" >&2
+            exit 1
+          fi
 
   release:
     name: Sign, notarize, verify, then publish

@@ -13,9 +13,13 @@ cp "$repo_root/.github/workflows/verify-compatibility-pr.yml" "$fixture/.github/
 cp "$repo_root/.github/workflows/release.yml" "$fixture/.github/workflows/"
 cp "$repo_root/.github/workflows/release-verify.yml" "$fixture/.github/workflows/"
 
-if ! /usr/bin/grep -Fq -- 'swift test --jobs 1 --enable-code-coverage --parallel' \
+if ! /usr/bin/grep -Fq -- 'swift test --jobs 4 --enable-code-coverage --parallel' \
     "$fixture/.github/workflows/ci.yml"; then
-    print -u2 -- "expected coverage compilation to respect the macOS runner resource limit"
+    print -u2 -- "expected coverage compilation to use four controlled SwiftPM jobs"
+    exit 1
+fi
+if /usr/bin/grep -Fq -- 'swift test --jobs 1' "$fixture/.github/workflows/ci.yml"; then
+    print -u2 -- "coverage compilation must not serialize the native macOS runner"
     exit 1
 fi
 

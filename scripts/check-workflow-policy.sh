@@ -114,12 +114,32 @@ if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*read([[:space:]]|$)' "
     errors+=("release.yml must default to read-only contents")
 fi
 release_intel_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26-intel[[:space:]]*$' "$release" || true)"
-if [[ "$release_intel_runner_count" != "2" ]]; then
-    errors+=("release.yml must use 14 GB Intel runners for verification and publication")
+release_native_runner_count="$(/usr/bin/grep -Ec '^[[:space:]]*runs-on:[[:space:]]*macos-26[[:space:]]*$' "$release" || true)"
+if [[ "$release_intel_runner_count" != "1" || "$release_native_runner_count" != "1" ]]; then
+    errors+=("release.yml must use native macOS for CI attestation and a 14 GB Intel runner for publication")
 fi
 if ! /usr/bin/grep -Fq 'needs: verify' "$release" || \
    ! /usr/bin/grep -Fq "github.event_name != 'pull_request'" "$release"; then
     errors+=("release secret-bearing job must follow secret-free verify and exclude pull requests")
+fi
+for required in 'gh run list' '--workflow ci.yml' '--commit "$GITHUB_SHA"' \
+    '.conclusion == "success"' 'refs/heads/main' 'actions: read'; do
+    if ! /usr/bin/grep -Fq -- "$required" "$release"; then
+        errors+=("release.yml missing exact-main CI attestation: $required")
+    fi
+done
+release_preflight_errors="$(/usr/bin/ruby - "$release" <<'RUBY'
+require "yaml"
+
+jobs = YAML.load_file(ARGV.fetch(0)).fetch("jobs")
+verify = jobs.fetch("verify")
+runs = verify.fetch("steps").map { |step| step["run"] }.compact.join("\n")
+forbidden = ["scripts/check-repository.sh", "swift test", "xcodebuild", "rm -rf .build"]
+puts "release preflight repeats work already passed on main" if forbidden.any? { |text| runs.include?(text) }
+RUBY
+)"
+if [[ -n "$release_preflight_errors" ]]; then
+    errors+=("${(f)release_preflight_errors}")
 fi
 if ! /usr/bin/grep -Eq '^[[:space:]]*contents:[[:space:]]*write([[:space:]]|$)' "$release"; then
     errors+=("release publish job requires scoped contents write access")

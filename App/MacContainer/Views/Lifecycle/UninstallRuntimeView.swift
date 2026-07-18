@@ -76,12 +76,23 @@ struct UninstallRuntimeView: View {
 
                 Text("Owned artifact inventory")
                     .font(.caption.bold())
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+                LazyVGrid(
+                    columns: [
+                        GridItem(
+                            .adaptive(minimum: AppWindowLayout.inventoryColumnMinimumWidth),
+                            spacing: 12,
+                            alignment: .topLeading
+                        )
+                    ],
+                    alignment: .leading,
+                    spacing: 4
+                ) {
                     ForEach(ResidueInventory.expectations, id: \.kind.rawValue) { item in
                         Label(item.kind.displayName, systemImage: "circle.fill")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Color(nsColor: .labelColor))
                             .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .accessibilityIdentifier("residue.\(item.kind.rawValue)")
                     }
                 }

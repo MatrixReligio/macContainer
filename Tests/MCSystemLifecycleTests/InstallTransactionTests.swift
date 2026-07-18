@@ -57,6 +57,18 @@ struct InstallTransactionTests {
         ])
     }
 
+    @Test func `lost helper reply after installer success is reconciled from verified host state`() async throws {
+        let fixture = try InstallFixture(helperReplyLostAfterInstall: true)
+        defer { fixture.cleanup() }
+
+        let report = try await fixture.transaction.install(.testTarget)
+
+        #expect(report.runtimeVersion == "1.1.0")
+        #expect(fixture.journal.appliedCount == 1)
+        #expect(fixture.journal.verifiedCount == 1)
+        #expect(!fixture.actions.values.contains("uninstall.partial"))
+    }
+
     @Test func `existing installation is routed to upgrade without download or mutation`() async throws {
         let fixture = try InstallFixture(existingVersion: "1.0.0")
         defer { fixture.cleanup() }
@@ -124,7 +136,8 @@ private final class InstallFixture {
         failingAt: InstallStage? = nil,
         audit: PartialInstallAudit = .init(isEmpty: true, hasUnverifiableItems: false),
         existingVersion: String? = nil,
-        metadataAssetName: String = RuntimePackageManifest.installFixture.assetName
+        metadataAssetName: String = RuntimePackageManifest.installFixture.assetName,
+        helperReplyLostAfterInstall: Bool = false
     ) throws {
         root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MacContainerInstallTests-\(UUID().uuidString)", isDirectory: true)
@@ -132,7 +145,10 @@ private final class InstallFixture {
         actions = LockedInstallActions(failingAt: failingAt)
         temporaryDirectories = RecordingTemporaryDirectoryProvider(base: root, actions: actions)
         journal = RecordingInstallJournal(actions: actions)
-        helper = RecordingInstallHelper(actions: actions)
+        helper = RecordingInstallHelper(
+            actions: actions,
+            replyLostAfterInstall: helperReplyLostAfterInstall
+        )
         retainer = RecordingInstallPackageRetainer(actions: actions)
         transaction = InstallTransaction(
             platform: RecordingPlatformChecker(
@@ -345,15 +361,20 @@ private final class RecordingInstallJournal: InstallJournalWriting, @unchecked S
 
 private final class RecordingInstallHelper: InstallPrivilegedHelping, @unchecked Sendable {
     let actions: LockedInstallActions
+    let replyLostAfterInstall: Bool
     private(set) var receivedDescriptor: Int32?
 
-    init(actions: LockedInstallActions) {
+    init(actions: LockedInstallActions, replyLostAfterInstall: Bool) {
         self.actions = actions
+        self.replyLostAfterInstall = replyLostAfterInstall
     }
 
     func install(_ package: VerifiedRuntimePackage) async throws {
         receivedDescriptor = package.openFile.fileDescriptor
         try actions.stage(.helperInstall)
+        if replyLostAfterInstall {
+            throw HelperClientError.connectionInvalidated
+        }
     }
 }
 

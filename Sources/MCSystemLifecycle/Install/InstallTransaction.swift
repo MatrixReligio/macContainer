@@ -439,24 +439,34 @@ public struct InstallTransaction: Sendable {
 
             currentStage = .helperInstall
             installAttempted = true
-            try await helper.install(verified)
+            var reconciledReceipt: InstalledPackageReceipt?
+            do {
+                try await helper.install(verified)
+            } catch is HelperClientError {
+                // A helper can finish the installer mutation and then lose its XPC reply when
+                // launchd is still running the helper from a replaced app bundle. Reconcile only
+                // from the independently verified receipt and exact payload before journaling the
+                // mutation as applied; ordinary privileged-operation rejections still fail closed.
+                currentStage = .receiptVerification
+                reconciledReceipt = try await verifiedReceipt(for: target.manifest)
+                currentStage = .payloadVerification
+                try await payload.verify(expected: target.manifest)
+            }
             try await journal.recordInstallApplied(
                 transactionID: transactionID,
                 digest: verified.sha256
             )
 
-            currentStage = .receiptVerification
-            let installedReceipt = try await receipt.verify(expected: target.manifest)
-            guard
-                installedReceipt.identifier == target.manifest.receiptIdentifier,
-                installedReceipt.version == target.manifest.runtimeVersion,
-                installedReceipt.installLocation == target.manifest.installLocation
-            else {
-                throw InstallError.receiptMismatch
-            }
+            let installedReceipt: InstalledPackageReceipt
+            if let reconciledReceipt {
+                installedReceipt = reconciledReceipt
+            } else {
+                currentStage = .receiptVerification
+                installedReceipt = try await verifiedReceipt(for: target.manifest)
 
-            currentStage = .payloadVerification
-            try await payload.verify(expected: target.manifest)
+                currentStage = .payloadVerification
+                try await payload.verify(expected: target.manifest)
+            }
 
             currentStage = .serviceStart
             try await service.startRuntime()
@@ -472,20 +482,12 @@ public struct InstallTransaction: Sendable {
                 verified,
                 assetName: target.manifest.assetName
             )
-            guard retained.runtimeVersion == verified.runtimeVersion,
-                  retained.sha256 == verified.sha256
-            else {
-                throw InstallError.verificationReportMismatch
-            }
+            try Self.validate(retained, against: verified)
 
             currentStage = .journalCommit
             try await journal.recordVerified(transactionID: transactionID)
             try await journal.commit(transactionID: transactionID)
-            report = InstallReport(
-                runtimeVersion: verified.runtimeVersion,
-                packageSHA256: verified.sha256,
-                receipt: installedReceipt
-            )
+            report = Self.report(for: verified, receipt: installedReceipt)
         } catch {
             let result = await recoverFailure(
                 error,
@@ -503,6 +505,40 @@ public struct InstallTransaction: Sendable {
         try Self.cleanupAfterSuccess(temporary)
         needsFallbackCleanup = false
         return report
+    }
+
+    private func verifiedReceipt(for manifest: RuntimePackageManifest) async throws -> InstalledPackageReceipt {
+        let installedReceipt = try await receipt.verify(expected: manifest)
+        guard
+            installedReceipt.identifier == manifest.receiptIdentifier,
+            installedReceipt.version == manifest.runtimeVersion,
+            installedReceipt.installLocation == manifest.installLocation
+        else {
+            throw InstallError.receiptMismatch
+        }
+        return installedReceipt
+    }
+
+    private static func validate(
+        _ retained: RetainedRuntimePackage,
+        against verified: VerifiedRuntimePackage
+    ) throws {
+        guard retained.runtimeVersion == verified.runtimeVersion,
+              retained.sha256 == verified.sha256
+        else {
+            throw InstallError.verificationReportMismatch
+        }
+    }
+
+    private static func report(
+        for package: VerifiedRuntimePackage,
+        receipt: InstalledPackageReceipt
+    ) -> InstallReport {
+        InstallReport(
+            runtimeVersion: package.runtimeVersion,
+            packageSHA256: package.sha256,
+            receipt: receipt
+        )
     }
 
     private func beginTransaction(for target: RuntimeInstallTarget) async throws -> UUID {
